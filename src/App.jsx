@@ -186,7 +186,9 @@ export default function RhinoPlanner(){
   const[color,setColor]=useState("#CC1111");
   const[size,setSize]=useState(3);
   const[opacity,setOpacity]=useState(1);
-  const[annotations,setAnnotations]=useState({...EMPTY_ANN});
+  const[annotations,setAnnotationsRaw]=useState({...EMPTY_ANN});
+  const[history,setHistory]=useState({externo:[[]], septal:[[]], frontal:[[]], lateral:[[]], basal:[[]], basalExt:[[]]});
+  const[histIdx,setHistIdx]=useState({externo:0, septal:0, frontal:0, lateral:0, basal:0, basalExt:0});
   const[drawing,setDrawing]=useState(false);
   const[current,setCurrent]=useState(null);
   const[textInput,setTextInput]=useState({visible:false,x:0,y:0,val:""});
@@ -198,8 +200,58 @@ export default function RhinoPlanner(){
   const bgRef=useRef(null);
   const hasP=!!patient.nombre;
 
+  // Wrap setAnnotations to track history per view
+  function setAnnotations(updater){
+    setAnnotationsRaw(prev=>{
+      const next=typeof updater==="function"?updater(prev):{...updater};
+      const v=activeView;
+      const newShapes=next[v]||[];
+      setHistory(h=>{
+        const viewHist=h[v].slice(0,histIdx[v]+1);
+        viewHist.push([...newShapes]);
+        return{...h,[v]:viewHist};
+      });
+      setHistIdx(hi=>({...hi,[v]:hi[v]+1}));
+      return next;
+    });
+  }
+
+  function undo(){
+    const v=activeView;
+    setHistIdx(hi=>{
+      const newIdx=Math.max(0,hi[v]-1);
+      const shapes=history[v][newIdx]||[];
+      setAnnotationsRaw(a=>({...a,[v]:[...shapes]}));
+      return{...hi,[v]:newIdx};
+    });
+  }
+
+  function redo(){
+    const v=activeView;
+    setHistIdx(hi=>{
+      const maxIdx=history[v].length-1;
+      const newIdx=Math.min(maxIdx,hi[v]+1);
+      const shapes=history[v][newIdx]||[];
+      setAnnotationsRaw(a=>({...a,[v]:[...shapes]}));
+      return{...hi,[v]:newIdx};
+    });
+  }
+
+  const canUndo=histIdx[activeView]>0;
+  const canRedo=histIdx[activeView]<(history[activeView]?.length||1)-1;
+
+  // Keyboard shortcuts
+  useEffect(()=>{
+    function onKey(e){
+      if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}
+      if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}
+    }
+    window.addEventListener("keydown",onKey);
+    return()=>window.removeEventListener("keydown",onKey);
+  });
+
   function handleLogin(tok,user){setToken(tok);setAuthUser(user);loadPacientes(tok);}
-  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setAnnotations({...EMPTY_ANN});setPacientes([]);}
+  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setAnnotationsRaw({...EMPTY_ANN});setPacientes([]);setHistory({externo:[[]],septal:[[]],frontal:[[]],lateral:[[]],basal:[[]],basalExt:[[]]});setHistIdx({externo:0,septal:0,frontal:0,lateral:0,basal:0,basalExt:0});}
 
   async function loadPacientes(tk){
     try{
@@ -223,14 +275,21 @@ export default function RhinoPlanner(){
     finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}
   }
 
+  function resetHistory(ann){
+    const h={},hi={};
+    for(const v of Object.keys(EMPTY_ANN)){h[v]=[[...(ann[v]||[])]];hi[v]=0;}
+    setHistory(h);setHistIdx(hi);
+  }
+
   function loadPacienteData(p){
     setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});
     setPatientId(p.id);
-    try{setAnnotations(p.anotaciones?JSON.parse(p.anotaciones):{...EMPTY_ANN});}catch(e){setAnnotations({...EMPTY_ANN});}
+    let ann;try{ann=p.anotaciones?JSON.parse(p.anotaciones):{...EMPTY_ANN};}catch(e){ann={...EMPTY_ANN};}
+    setAnnotationsRaw(ann);resetHistory(ann);
     setShowPacList(false);
   }
 
-  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setAnnotations({...EMPTY_ANN});}
+  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setAnnotationsRaw({...EMPTY_ANN});resetHistory(EMPTY_ANN);}
 
   // Load background image when view changes
   useEffect(()=>{
@@ -361,6 +420,8 @@ export default function RhinoPlanner(){
           </div>
 
           <div style={{display:"flex",gap:8,marginTop:10,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
+            <button style={{...btn,opacity:canUndo?1:0.35,fontSize:16,padding:"5px 12px"}} onClick={undo} disabled={!canUndo} title="Deshacer (Ctrl+Z)">↩</button>
+            <button style={{...btn,opacity:canRedo?1:0.35,fontSize:16,padding:"5px 12px"}} onClick={redo} disabled={!canRedo} title="Rehacer (Ctrl+Y)">↪</button>
             <button style={btn} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>Limpiar vista</button>
             <button style={btn} onClick={()=>setAnnotations({...EMPTY_ANN})}>Limpiar todo</button>
             <span style={{color:"#AAA",fontSize:10}}>{(annotations[activeView]||[]).length} anotaciones</span>
