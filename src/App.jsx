@@ -74,15 +74,22 @@ const VIEW_IMAGES = {
 /* ═══ Drawing ═══ */
 function drawShape(ctx,s,selected){
   ctx.save();ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=s.size;ctx.globalAlpha=s.opacity??1;ctx.lineCap="round";ctx.lineJoin="round";
-  if(s.type==="pen"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();}
-  else if(s.type==="line"){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();}
-  else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();}
+  if(s.type==="pen"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
+  else if(s.type==="line"){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#C9A96E";ctx.fillStyle="#C9A96E";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.setLineDash([]);}}
+  else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#C9A96E";ctx.fillStyle="#C9A96E";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();}}
   else if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
   else if(s.type==="ellipse"){const rot=s.rotation||0;ctx.translate(s.cx,s.cy);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fill();if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);const ry=Math.abs(s.ry)||1;ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
-  else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);}
+  else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
   ctx.restore();
 }
-function shapeCenter(s){if(s.type==="rect")return{x:s.x+s.w/2,y:s.y+s.h/2};if(s.type==="ellipse")return{x:s.cx,y:s.cy};return{x:0,y:0};}
+function shapeCenter(s){
+  if(s.type==="rect")return{x:s.x+s.w/2,y:s.y+s.h/2};
+  if(s.type==="ellipse")return{x:s.cx,y:s.cy};
+  if(s.type==="line"||s.type==="arrow")return{x:(s.x1+s.x2)/2,y:(s.y1+s.y2)/2};
+  if(s.type==="pen"&&s.points?.length){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);return{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};}
+  if(s.type==="text")return{x:s.x,y:s.y};
+  return{x:0,y:0};
+}
 function ptSeg(p,a,b){const ab={x:b.x-a.x,y:b.y-a.y},ap={x:p.x-a.x,y:p.y-a.y};const t=Math.max(0,Math.min(1,(ap.x*ab.x+ap.y*ab.y)/((ab.x*ab.x+ab.y*ab.y)||1)));return Math.hypot(ap.x-t*ab.x,ap.y-t*ab.y);}
 function hit(s,pos,d=20){
   if(s.type==="pen")return s.points?.some(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<d);
@@ -189,7 +196,7 @@ export default function RhinoPlanner(){
 
   function onDown(e){
     if(e.touches&&e.touches.length>1){setDrawing(false);setCurrent(null);return;}const p=getPos(e);
-    if(tool==="select"){const shapes=annotations[activeView]||[];if(selIdx>=0&&selIdx<shapes.length&&nearRotHandle(shapes[selIdx],p)){setDragMode("rotate");setDragStart(p);return;}for(let i=shapes.length-1;i>=0;i--){if((shapes[i].type==="rect"||shapes[i].type==="ellipse")&&hit(shapes[i],p,15)){setSelIdx(i);setDragMode("move");setDragStart(p);return;}}setSelIdx(-1);setDragMode(null);return;}
+    if(tool==="select"){const shapes=annotations[activeView]||[];if(selIdx>=0&&selIdx<shapes.length&&nearRotHandle(shapes[selIdx],p)){setDragMode("rotate");setDragStart(p);return;}for(let i=shapes.length-1;i>=0;i--){if(hit(shapes[i],p,15)){setSelIdx(i);setDragMode("move");setDragStart(p);return;}}setSelIdx(-1);setDragMode(null);return;}
     setSelIdx(-1);if(tool==="eraser"){setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
     if(tool==="text"){setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
     setDrawing(true);const b={type:tool,color,size,opacity};
@@ -198,8 +205,14 @@ export default function RhinoPlanner(){
   function onMove(e){
     if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);setDragMode(null);return;}const p=getPos(e);
     if(tool==="select"&&dragMode&&dragStart&&selIdx>=0){const shapes=annotations[activeView]||[];const s=shapes[selIdx];if(!s)return;
-      if(dragMode==="move"){const dx=p.x-dragStart.x,dy=p.y-dragStart.y;const u={...s};if(s.type==="rect"){u.x=s.x+dx;u.y=s.y+dy;}else{u.cx=s.cx+dx;u.cy=s.cy+dy;}const ns=[...shapes];ns[selIdx]=u;setAnnotationsRaw(a=>({...a,[activeView]:ns}));setDragStart(p);}
-      else if(dragMode==="rotate"){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setAnnotationsRaw(a=>({...a,[activeView]:ns}));}return;}
+      if(dragMode==="move"){const dx=p.x-dragStart.x,dy=p.y-dragStart.y;const u={...s};
+        if(s.type==="rect"){u.x=s.x+dx;u.y=s.y+dy;}
+        else if(s.type==="ellipse"){u.cx=s.cx+dx;u.cy=s.cy+dy;}
+        else if(s.type==="line"||s.type==="arrow"){u.x1=s.x1+dx;u.y1=s.y1+dy;u.x2=s.x2+dx;u.y2=s.y2+dy;}
+        else if(s.type==="pen"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
+        else if(s.type==="text"){u.x=s.x+dx;u.y=s.y+dy;}
+        const ns=[...shapes];ns[selIdx]=u;setAnnotationsRaw(a=>({...a,[activeView]:ns}));setDragStart(p);}
+      else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setAnnotationsRaw(a=>({...a,[activeView]:ns}));}return;}
     if(!drawing||!current)return;
     if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
   }
