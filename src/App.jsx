@@ -33,6 +33,7 @@ async function supaFetch(path, token, method = "GET", body = null) {
 
 /* ═══ CONSTANTS ═══ */
 const TOOLS=[
+  {id:"select",label:"Seleccionar",icon:"👆"},
   {id:"pen",label:"Lápiz",icon:"✏️"},
   {id:"line",label:"Línea",icon:"📏"},
   {id:"arrow",label:"Flecha",icon:"➡️"},
@@ -75,24 +76,73 @@ const VIEW_IMAGES = {
 
 
 /* ═══ Drawing ═══ */
-function drawShape(ctx,s){
+function drawShape(ctx,s,selected){
   ctx.save();ctx.strokeStyle=s.color;ctx.fillStyle=s.color;
   ctx.lineWidth=s.size;ctx.globalAlpha=s.opacity??1;
   ctx.lineCap="round";ctx.lineJoin="round";
   if(s.type==="pen"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();}
   else if(s.type==="line"){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();}
   else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();}
-  else if(s.type==="rect"){ctx.strokeRect(s.x,s.y,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fillRect(s.x,s.y,s.w,s.h);}
-  else if(s.type==="ellipse"){ctx.beginPath();ctx.ellipse(s.cx,s.cy,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fill();}
+  else if(s.type==="rect"){
+    const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;
+    ctx.translate(cx,cy);ctx.rotate(rot);
+    ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);
+    ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);
+    if(selected){
+      ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;
+      ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);
+      // Rotation handle
+      ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+      // Move indicator (center)
+      ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();
+    }
+  }
+  else if(s.type==="ellipse"){
+    const rot=s.rotation||0;
+    ctx.translate(s.cx,s.cy);ctx.rotate(rot);
+    ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fill();
+    if(selected){
+      ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      // Rotation handle
+      const ry=Math.abs(s.ry)||1;
+      ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+      // Move indicator
+      ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();
+    }
+  }
   else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);}
   ctx.restore();
+}
+// Get center of a shape
+function shapeCenter(s){
+  if(s.type==="rect")return{x:s.x+s.w/2,y:s.y+s.h/2};
+  if(s.type==="ellipse")return{x:s.cx,y:s.cy};
+  return{x:0,y:0};
 }
 function ptSeg(p,a,b){const ab={x:b.x-a.x,y:b.y-a.y},ap={x:p.x-a.x,y:p.y-a.y};const t=Math.max(0,Math.min(1,(ap.x*ab.x+ap.y*ab.y)/((ab.x*ab.x+ab.y*ab.y)||1)));return Math.hypot(ap.x-t*ab.x,ap.y-t*ab.y);}
 function hit(s,pos,d=20){
   if(s.type==="pen")return s.points?.some(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<d);
   if(s.type==="line"||s.type==="arrow")return ptSeg(pos,{x:s.x1,y:s.y1},{x:s.x2,y:s.y2})<d;
-  if(s.type==="rect")return pos.x>s.x-d&&pos.x<s.x+s.w+d&&pos.y>s.y-d&&pos.y<s.y+s.h+d;
-  if(s.type==="ellipse")return Math.hypot(pos.x-s.cx,pos.y-s.cy)<Math.max(Math.abs(s.rx),Math.abs(s.ry))+d;
+  if(s.type==="rect"){
+    // Transform point into rect's local coords (un-rotate around center)
+    const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=-(s.rotation||0);
+    const dx=pos.x-cx,dy=pos.y-cy;
+    const lx=dx*Math.cos(rot)-dy*Math.sin(rot);
+    const ly=dx*Math.sin(rot)+dy*Math.cos(rot);
+    return lx>-Math.abs(s.w)/2-d&&lx<Math.abs(s.w)/2+d&&ly>-Math.abs(s.h)/2-d&&ly<Math.abs(s.h)/2+d;
+  }
+  if(s.type==="ellipse"){
+    const rot=-(s.rotation||0);
+    const dx=pos.x-s.cx,dy=pos.y-s.cy;
+    const lx=dx*Math.cos(rot)-dy*Math.sin(rot);
+    const ly=dx*Math.sin(rot)+dy*Math.cos(rot);
+    const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;
+    return(lx*lx)/((rx+d)*(rx+d))+(ly*ly)/((ry+d)*(ry+d))<=1;
+  }
   if(s.type==="text")return Math.hypot(pos.x-s.x,pos.y-s.y)<30;
   return false;
 }
@@ -191,6 +241,9 @@ export default function RhinoPlanner(){
   const[histIdx,setHistIdx]=useState({externo:0, septal:0, frontal:0, lateral:0, basal:0, basalExt:0});
   const[drawing,setDrawing]=useState(false);
   const[current,setCurrent]=useState(null);
+  const[selIdx,setSelIdx]=useState(-1); // selected shape index
+  const[dragMode,setDragMode]=useState(null); // "move" | "rotate" | null
+  const[dragStart,setDragStart]=useState(null); // {x,y} start position
   const[textInput,setTextInput]=useState({visible:false,x:0,y:0,val:""});
   const[pacientes,setPacientes]=useState([]);
   const[showPacList,setShowPacList]=useState(false);
@@ -303,9 +356,9 @@ export default function RhinoPlanner(){
     const ctx=cv.getContext("2d");
     ctx.clearRect(0,0,W,H);
     if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);
-    (annotations[activeView]||[]).forEach(s=>drawShape(ctx,s));
+    (annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));
     if(current)drawShape(ctx,current);
-  },[annotations,activeView,current]);
+  },[annotations,activeView,current,selIdx,tool]);
 
   useEffect(()=>{redrawAll();},[redrawAll]);
 
@@ -329,24 +382,98 @@ export default function RhinoPlanner(){
   });
 
   function getPos(e){const cv=canvasRef.current,r=cv.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(cv.width/r.width),y:(s.clientY-r.top)*(cv.height/r.height)};}
+
+  // Check if pos is near the rotation handle of shape s
+  function nearRotHandle(s,pos){
+    if(s.type!=="rect"&&s.type!=="ellipse")return false;
+    const c=shapeCenter(s);const rot=s.rotation||0;
+    let dist;
+    if(s.type==="rect")dist=Math.abs(s.h)/2+28;
+    else dist=(Math.abs(s.ry)||1)+30;
+    const hx=c.x+dist*Math.sin(rot);
+    const hy=c.y-dist*Math.cos(rot);
+    return Math.hypot(pos.x-hx,pos.y-hy)<18;
+  }
+
   function onDown(e){
-    // Ignore multi-touch (2+ fingers = pan/zoom)
     if(e.touches&&e.touches.length>1){setDrawing(false);setCurrent(null);return;}
-    if(tool==="eraser"){const p=getPos(e);setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
-    if(tool==="text"){const p=getPos(e);setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
-    setDrawing(true);const p=getPos(e);const b={type:tool,color,size,opacity};
+    const p=getPos(e);
+
+    // ── SELECT TOOL ──
+    if(tool==="select"){
+      const shapes=annotations[activeView]||[];
+      // If something is selected, check rotation handle first
+      if(selIdx>=0&&selIdx<shapes.length){
+        if(nearRotHandle(shapes[selIdx],p)){
+          setDragMode("rotate");setDragStart(p);return;
+        }
+      }
+      // Check if clicking on any rect/ellipse (reverse order = top first)
+      for(let i=shapes.length-1;i>=0;i--){
+        const s=shapes[i];
+        if((s.type==="rect"||s.type==="ellipse")&&hit(s,p,15)){
+          setSelIdx(i);setDragMode("move");setDragStart(p);return;
+        }
+      }
+      setSelIdx(-1);setDragMode(null);return;
+    }
+
+    // ── OTHER TOOLS ──
+    setSelIdx(-1);
+    if(tool==="eraser"){setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
+    if(tool==="text"){setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
+    setDrawing(true);const b={type:tool,color,size,opacity};
     if(tool==="pen")setCurrent({...b,points:[p]});
     else if(tool==="line"||tool==="arrow")setCurrent({...b,x1:p.x,y1:p.y,x2:p.x,y2:p.y});
-    else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0});
-    else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0});
+    else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0,rotation:0});
+    else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0,rotation:0});
   }
-  function onMove(e){if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);return;}if(!drawing||!current)return;const p=getPos(e);
+
+  function onMove(e){
+    if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);setDragMode(null);return;}
+    const p=getPos(e);
+
+    // ── SELECT MOVE/ROTATE ──
+    if(tool==="select"&&dragMode&&dragStart&&selIdx>=0){
+      const shapes=annotations[activeView]||[];
+      const s=shapes[selIdx];if(!s)return;
+      if(dragMode==="move"){
+        const dx=p.x-dragStart.x,dy=p.y-dragStart.y;
+        const updated={...s};
+        if(s.type==="rect"){updated.x=s.x+dx;updated.y=s.y+dy;}
+        else if(s.type==="ellipse"){updated.cx=s.cx+dx;updated.cy=s.cy+dy;}
+        const newShapes=[...shapes];newShapes[selIdx]=updated;
+        setAnnotationsRaw(a=>({...a,[activeView]:newShapes}));
+        setDragStart(p);
+      }else if(dragMode==="rotate"){
+        const c=shapeCenter(s);
+        const angle=Math.atan2(p.x-c.x,-(p.y-c.y));
+        const updated={...s,rotation:angle};
+        const newShapes=[...shapes];newShapes[selIdx]=updated;
+        setAnnotationsRaw(a=>({...a,[activeView]:newShapes}));
+      }
+      return;
+    }
+
+    // ── DRAWING ──
+    if(!drawing||!current)return;
     if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));
     else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));
     else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));
     else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
   }
-  function onUp(){if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
+
+  function onUp(){
+    // Commit select changes to history
+    if(tool==="select"&&dragMode&&selIdx>=0){
+      const shapes=[...(annotations[activeView]||[])];
+      setAnnotations(a=>({...a,[activeView]:shapes}));
+      setDragMode(null);setDragStart(null);return;
+    }
+    if(!drawing||!current)return;
+    setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));
+    setCurrent(null);setDrawing(false);
+  }
   function submitText(){if(textInput.val.trim())setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),{type:"text",color,size,opacity,x:textInput.x,y:textInput.y,text:textInput.val}]}));setTextInput({visible:false,x:0,y:0,val:""});}
 
   const btn={background:"transparent",color:"#888",border:"1px solid #555",padding:"7px 13px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"};
@@ -427,7 +554,7 @@ export default function RhinoPlanner(){
           </div>
 
           <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:"1px solid #D0C8BC",display:"inline-block"}}>
-            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
+            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
             {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x,top:textInput.y-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #C9A96E",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
