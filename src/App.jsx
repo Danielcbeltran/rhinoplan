@@ -316,8 +316,22 @@ export default function RhinoPlanner(){
     link.href=cv.toDataURL("image/png");link.click();
   }
 
+  // 1 finger = draw (block scroll), 2 fingers = pan/zoom (let browser handle)
+  useEffect(()=>{
+    const cv=canvasRef.current;if(!cv)return;
+    const onT=e=>{if(e.touches.length===1)e.preventDefault();};
+    cv.addEventListener("touchstart",onT,{passive:false});
+    cv.addEventListener("touchmove",onT,{passive:false});
+    return()=>{
+      cv.removeEventListener("touchstart",onT);
+      cv.removeEventListener("touchmove",onT);
+    };
+  });
+
   function getPos(e){const cv=canvasRef.current,r=cv.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(cv.width/r.width),y:(s.clientY-r.top)*(cv.height/r.height)};}
   function onDown(e){
+    // Ignore multi-touch (2+ fingers = pan/zoom)
+    if(e.touches&&e.touches.length>1){setDrawing(false);setCurrent(null);return;}
     if(tool==="eraser"){const p=getPos(e);setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
     if(tool==="text"){const p=getPos(e);setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
     setDrawing(true);const p=getPos(e);const b={type:tool,color,size,opacity};
@@ -326,7 +340,7 @@ export default function RhinoPlanner(){
     else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0});
     else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0});
   }
-  function onMove(e){if(!drawing||!current)return;const p=getPos(e);
+  function onMove(e){if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);return;}if(!drawing||!current)return;const p=getPos(e);
     if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));
     else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));
     else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));
@@ -413,9 +427,9 @@ export default function RhinoPlanner(){
           </div>
 
           <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:"1px solid #D0C8BC",display:"inline-block"}}>
-            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10}}
+            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-              onTouchStart={e=>{e.preventDefault();onDown(e);}} onTouchMove={e=>{e.preventDefault();onMove(e);}} onTouchEnd={onUp}/>
+              onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
             {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x,top:textInput.y-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #C9A96E",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
           </div>
 
