@@ -32,6 +32,7 @@ const TOOLS=[
   {id:"rect",label:"Área",icon:"⬜"},
   {id:"ellipse",label:"Elipse",icon:"⭕"},
   {id:"text",label:"Texto",icon:"T"},
+  {id:"polygon",label:"Polígono",icon:"⬠"},
   {id:"eraser",label:"Borrar",icon:"🗑"},
 ];
 const COLORS=[
@@ -80,6 +81,7 @@ function drawShape(ctx,s,selected){
   else if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
   else if(s.type==="ellipse"){const rot=s.rotation||0;ctx.translate(s.cx,s.cy);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fill();if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);const ry=Math.abs(s.ry)||1;ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
   else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
+  else if(s.type==="polygon"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));if(s.preview&&!s.closed)ctx.lineTo(s.preview.x,s.preview.y);if(s.closed)ctx.closePath();ctx.stroke();if(s.closed){ctx.globalAlpha=(s.opacity??1)*0.18;ctx.fill();}if(!s.closed&&s.points.length>=3&&s.preview){const d=Math.hypot(s.preview.x-s.points[0].x,s.preview.y-s.points[0].y);if(d<20){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(s.points[0].x,s.points[0].y,8,0,Math.PI*2);ctx.strokeStyle="#C9A96E";ctx.lineWidth=2;ctx.stroke();}}s.points.forEach(p=>{ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
   ctx.restore();
 }
 function shapeCenter(s){
@@ -87,12 +89,14 @@ function shapeCenter(s){
   if(s.type==="ellipse")return{x:s.cx,y:s.cy};
   if(s.type==="line"||s.type==="arrow")return{x:(s.x1+s.x2)/2,y:(s.y1+s.y2)/2};
   if(s.type==="pen"&&s.points?.length){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);return{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};}
+  if(s.type==="polygon"&&s.points?.length){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);return{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};}
   if(s.type==="text")return{x:s.x,y:s.y};
   return{x:0,y:0};
 }
 function ptSeg(p,a,b){const ab={x:b.x-a.x,y:b.y-a.y},ap={x:p.x-a.x,y:p.y-a.y};const t=Math.max(0,Math.min(1,(ap.x*ab.x+ap.y*ab.y)/((ab.x*ab.x+ab.y*ab.y)||1)));return Math.hypot(ap.x-t*ab.x,ap.y-t*ab.y);}
 function hit(s,pos,d=20){
   if(s.type==="pen")return s.points?.some(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<d);
+  if(s.type==="polygon"){if(!s.points?.length)return false;for(let i=0;i<s.points.length;i++){const a=s.points[i],b=s.points[(i+1)%s.points.length];if(ptSeg(pos,a,b)<d)return true;}return false;}
   if(s.type==="line"||s.type==="arrow")return ptSeg(pos,{x:s.x1,y:s.y1},{x:s.x2,y:s.y2})<d;
   if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=-(s.rotation||0);const dx=pos.x-cx,dy=pos.y-cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);return lx>-Math.abs(s.w)/2-d&&lx<Math.abs(s.w)/2+d&&ly>-Math.abs(s.h)/2-d&&ly<Math.abs(s.h)/2+d;}
   if(s.type==="ellipse"){const rot=-(s.rotation||0);const dx=pos.x-s.cx,dy=pos.y-s.cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;return(lx*lx)/((rx+d)*(rx+d))+(ly*ly)/((ry+d)*(ry+d))<=1;}
@@ -165,7 +169,7 @@ export default function RhinoPlanner(){
   function undo(){const v=activeView;setHistIdx(hi=>{const ni=Math.max(0,hi[v]-1);const s=history[v][ni]||[];setAnnotationsRaw(a=>({...a,[v]:[...s]}));return{...hi,[v]:ni};});}
   function redo(){const v=activeView;setHistIdx(hi=>{const mx=history[v].length-1;const ni=Math.min(mx,hi[v]+1);const s=history[v][ni]||[];setAnnotationsRaw(a=>({...a,[v]:[...s]}));return{...hi,[v]:ni};});}
   const canUndo=histIdx[activeView]>0;const canRedo=histIdx[activeView]<(history[activeView]?.length||1)-1;
-  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
+  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"&&current?.type==="polygon"){setCurrent(null);setDrawing(false);}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
   function handleLogin(tok,user){setToken(tok);setAuthUser(user);loadPacientes(tok);loadUserTemplates(tok);}
   function resetHistory(ann){const h={},hi={};for(const v of Object.keys(EMPTY_ANN)){h[v]=[[...(ann[v]||[])]];hi[v]=0;}setHistory(h);setHistIdx(hi);}
@@ -217,6 +221,20 @@ export default function RhinoPlanner(){
     if(tool==="select"){const shapes=annotations[activeView]||[];if(selIdx>=0&&selIdx<shapes.length&&nearRotHandle(shapes[selIdx],p)){setDragMode("rotate");setDragStart(p);return;}for(let i=shapes.length-1;i>=0;i--){if(hit(shapes[i],p,15)){setSelIdx(i);setDragMode("move");setDragStart(p);return;}}setSelIdx(-1);setDragMode(null);return;}
     setSelIdx(-1);if(tool==="eraser"){setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
     if(tool==="text"){setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
+    if(tool==="polygon"){
+      if(current&&current.type==="polygon"){
+        // Close if click near first point
+        if(current.points.length>=3&&Math.hypot(p.x-current.points[0].x,p.y-current.points[0].y)<15){
+          setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),{...current,closed:true}]}));
+          setCurrent(null);setDrawing(false);
+        }else{
+          setCurrent(c=>({...c,points:[...c.points,p]}));
+        }
+      }else{
+        setDrawing(true);setCurrent({type:"polygon",color,size,opacity,points:[p],closed:false});
+      }
+      return;
+    }
     setDrawing(true);const b={type:tool,color,size,opacity};
     if(tool==="pen")setCurrent({...b,points:[p]});else if(tool==="line"||tool==="arrow")setCurrent({...b,x1:p.x,y1:p.y,x2:p.x,y2:p.y});else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0,rotation:0});else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0,rotation:0});
   }
@@ -228,13 +246,14 @@ export default function RhinoPlanner(){
         else if(s.type==="ellipse"){u.cx=s.cx+dx;u.cy=s.cy+dy;}
         else if(s.type==="line"||s.type==="arrow"){u.x1=s.x1+dx;u.y1=s.y1+dy;u.x2=s.x2+dx;u.y2=s.y2+dy;}
         else if(s.type==="pen"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
+        else if(s.type==="polygon"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
         else if(s.type==="text"){u.x=s.x+dx;u.y=s.y+dy;}
         const ns=[...shapes];ns[selIdx]=u;setAnnotationsRaw(a=>({...a,[activeView]:ns}));setDragStart(p);}
       else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setAnnotationsRaw(a=>({...a,[activeView]:ns}));}return;}
     if(!drawing||!current)return;
-    if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
+    if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="polygon")setCurrent(c=>({...c,preview:p}));else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
   }
-  function onUp(){if(tool==="select"&&dragMode&&selIdx>=0){const shapes=[...(annotations[activeView]||[])];setAnnotations(a=>({...a,[activeView]:shapes}));setDragMode(null);setDragStart(null);return;}if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
+  function onUp(){if(tool==="select"&&dragMode&&selIdx>=0){const shapes=[...(annotations[activeView]||[])];setAnnotations(a=>({...a,[activeView]:shapes}));setDragMode(null);setDragStart(null);return;}if(tool==="polygon")return;if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
   function submitText(){if(textInput.val.trim())setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),{type:"text",color,size,opacity,x:textInput.x,y:textInput.y,text:textInput.val}]}));setTextInput({visible:false,x:0,y:0,val:""});}
 
   const btn={background:"transparent",color:"#888",border:"1px solid #555",padding:"7px 13px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"};
@@ -312,7 +331,7 @@ export default function RhinoPlanner(){
         {/* SIDEBAR */}
         <div style={{width:175,background:"#1A1A1A",padding:"12px 8px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid #252525",flexShrink:0}}>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
-            {TOOLS.map(t=>(<button key={t.id} onClick={()=>setTool(t.id)} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#C9A96E":"#2E2E2E"}`,background:tool===t.id?"#C9A96E15":"transparent",color:tool===t.id?"#C9A96E":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
+            {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#C9A96E":"#2E2E2E"}`,background:tool===t.id?"#C9A96E15":"transparent",color:tool===t.id?"#C9A96E":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Color</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{COLORS.map(c=><div key={c.hex} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #C9A96E":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
             {COLORS.map(c=><div key={c.hex} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
