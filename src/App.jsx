@@ -189,12 +189,20 @@ export default function RhinoPlanner(){
     img.src=VIEW_IMAGES[activeView];
     img.onload=()=>{
       bgRef.current=img;
-      const cv=canvasRef.current;if(!cv)return;
-      const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);
-      ctx.drawImage(img,0,0,W,H);
-      (annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,false));
+      // Retry drawing until canvas is available
+      function tryDraw(attempts){
+        const cv=canvasRef.current;
+        if(cv){
+          const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);
+          ctx.drawImage(img,0,0,W,H);
+          (annotations[activeView]||[]).forEach(s=>drawShape(ctx,s,false));
+        } else if(attempts<20){
+          setTimeout(()=>tryDraw(attempts+1),50);
+        }
+      }
+      tryDraw(0);
     };
-  },[activeView]);
+  },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[annotations,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
   function handleExport(){const cv=canvasRef.current;if(!cv)return;const link=document.createElement("a");link.download=`rhinoplan_${patient.documento||"plan"}_${activeView}.png`;link.href=cv.toDataURL("image/png");link.click();}
