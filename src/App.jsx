@@ -45,9 +45,9 @@ const COLORS=[
   {hex:"#880E4F",label:"Rosa — Tejido blando"},
 ];
 const VIEWS=[
+  {id:"frontal",label:"Vista Frontal"},
   {id:"externo",label:"Perfil Externo"},
   {id:"septal",label:"Perfil Septal"},
-  {id:"frontal",label:"Vista Frontal"},
   {id:"lateral",label:"Pared Lateral"},
   {id:"basal",label:"Vista Basal"},
   {id:"basalExt",label:"Basal Externa"},
@@ -142,7 +142,7 @@ function LoginScreen({onLogin}){
 export default function RhinoPlanner(){
   const[token,setToken]=useState(null);const[authUser,setAuthUser]=useState(null);
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
-  const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("externo");
+  const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
   const[annotations,setAnnotationsRaw]=useState({...EMPTY_ANN});
   const[history,setHistory]=useState({externo:[[]],septal:[[]],frontal:[[]],lateral:[[]],basal:[[]],basalExt:[[]]});
