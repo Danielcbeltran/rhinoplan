@@ -156,6 +156,7 @@ export default function RhinoPlanner(){
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
   const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
+  const[bgReady,setBgReady]=useState(0);
 
   function setAnnotations(updater){
     setAnnotationsRaw(prev=>{const next=typeof updater==="function"?updater(prev):{...updater};const v=activeView;const newShapes=next[v]||[];
@@ -184,8 +185,8 @@ export default function RhinoPlanner(){
   async function updateTemplateAnnotations(id){if(!confirm("¿Actualizar esta plantilla con las anotaciones actuales?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(annotations)});loadUserTemplates();alert("Plantilla actualizada");}catch(e){alert("Error");}}
   function applyTemplate(ann){const parsed=typeof ann==="string"?JSON.parse(ann):ann;const merged={...EMPTY_ANN};for(const k of Object.keys(EMPTY_ANN)){merged[k]=[...(parsed[k]||[])];}setAnnotationsRaw(merged);resetHistory(merged);setShowTemplates(false);}
 
-  useEffect(()=>{const img=new Image();img.src=VIEW_IMAGES[activeView];img.onload=()=>{bgRef.current=img;redrawAll();};},[activeView]);
-  const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[annotations,activeView,current,selIdx,tool]);
+  useEffect(()=>{const img=new Image();img.src=VIEW_IMAGES[activeView];img.onload=()=>{bgRef.current=img;setBgReady(n=>n+1);};},[activeView]);
+  const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[annotations,activeView,current,selIdx,tool,bgReady]);
   useEffect(()=>{redrawAll();},[redrawAll]);
   function handleExport(){const cv=canvasRef.current;if(!cv)return;const link=document.createElement("a");link.download=`rhinoplan_${patient.documento||"plan"}_${activeView}.png`;link.href=cv.toDataURL("image/png");link.click();}
 
