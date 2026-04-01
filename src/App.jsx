@@ -35,15 +35,12 @@ const TOOLS=[
   {id:"polygon",label:"Polígono",icon:"⬠"},
   {id:"eraser",label:"Borrar",icon:"🗑"},
 ];
-const COLORS=[
-  {hex:"#CC1111",label:"Rojo — Resección"},
-  {hex:"#1B6B1B",label:"Verde — Injerto cartílago"},
-  {hex:"#1565C0",label:"Azul — Injerto óseo"},
-  {hex:"#E65100",label:"Naranja — Aloplasto"},
-  {hex:"#111111",label:"Negro — Suturas/Notas"},
-  {hex:"#6A0DAD",label:"Morado — Referencia"},
-  {hex:"#006064",label:"Teal — Medida"},
-  {hex:"#880E4F",label:"Rosa — Tejido blando"},
+const DEFAULT_COLORS=[
+  {hex:"#CC1111",label:"Resección / Incisiones"},
+  {hex:"#1B6B1B",label:"Injerto de cartílago"},
+  {hex:"#1565C0",label:"Injerto óseo"},
+  {hex:"#F9A825",label:"Injerto tejido blando"},
+  {hex:"#111111",label:"Suturas / Notas"},
 ];
 const VIEWS=[
   {id:"frontal",label:"Vista Frontal"},
@@ -148,6 +145,9 @@ export default function RhinoPlanner(){
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
+  const[colors,setColors]=useState(()=>{try{const s=window.localStorage.getItem("rhinoplan_colors");return s?JSON.parse(s):[...DEFAULT_COLORS];}catch(e){return[...DEFAULT_COLORS];}});
+  const[showColorEditor,setShowColorEditor]=useState(false);
+  function saveColors(c){setColors(c);try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}}
   const[annotations,setAnnotationsRaw]=useState({...EMPTY_ANN});
   const[history,setHistory]=useState({externo:[[]],septal:[[]],frontal:[[]],lateral:[[]],basal:[[]],basalExt:[[]]});
   const[histIdx,setHistIdx]=useState({externo:0,septal:0,frontal:0,lateral:0,basal:0,basalExt:0});
@@ -312,6 +312,23 @@ export default function RhinoPlanner(){
         {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>No hay pacientes</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#E8D5B0",fontWeight:600,fontSize:14}}>{p.nombre||"Sin nombre"}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
       </div></div>)}
 
+      {/* ═══ COLOR EDITOR MODAL ═══ */}
+      {showColorEditor&&(<div style={modalBg} onClick={()=>setShowColorEditor(false)}><div style={{...modalBox,width:380}} onClick={e=>e.stopPropagation()}>
+        <div style={{color:"#C9A96E",fontSize:16,fontWeight:700,marginBottom:16}}>Editar Tabla de Colores</div>
+        {colors.map((c,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <input type="color" value={c.hex} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],hex:e.target.value};saveColors(nc);}} style={{width:32,height:32,border:"1px solid #444",borderRadius:4,cursor:"pointer",background:"none",padding:0}}/>
+          <input value={c.label} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],label:e.target.value};saveColors(nc);}} style={{flex:1,background:"#111",border:"1px solid #3A3A3A",borderRadius:4,color:"#E8D5B0",padding:"6px 10px",fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+          <button onClick={()=>{if(colors.length<=1)return;const nc=colors.filter((_,j)=>j!==i);saveColors(nc);if(color===c.hex&&nc.length)setColor(nc[0].hex);}} style={{background:"none",border:"none",color:"#CC1111",cursor:"pointer",fontSize:14,padding:"2px 6px",opacity:colors.length<=1?0.3:1}} disabled={colors.length<=1}>✕</button>
+        </div>))}
+        <div style={{display:"flex",gap:8,marginTop:14}}>
+          <button onClick={()=>{saveColors([...colors,{hex:"#888888",label:"Nuevo color"}]);}} style={{flex:1,background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Agregar color</button>
+          <button onClick={()=>{saveColors([...DEFAULT_COLORS]);setColor(DEFAULT_COLORS[0].hex);}} style={{flex:1,background:"#252525",border:"1px solid #44444488",color:"#888",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Restaurar</button>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
+          <button onClick={()=>setShowColorEditor(false)} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
+        </div>
+      </div></div>)}
+
       {/* HEADER */}
       <div style={{background:"#1A1A1A",borderBottom:"3px solid #C9A96E",padding:"8px 18px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
         <div style={{color:"#C9A96E",fontSize:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
@@ -332,9 +349,9 @@ export default function RhinoPlanner(){
         <div style={{width:175,background:"#1A1A1A",padding:"12px 8px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid #252525",flexShrink:0}}>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
             {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#C9A96E":"#2E2E2E"}`,background:tool===t.id?"#C9A96E15":"transparent",color:tool===t.id?"#C9A96E":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
-          <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Color</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{COLORS.map(c=><div key={c.hex} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #C9A96E":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
-            {COLORS.map(c=><div key={c.hex} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
+          <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>Color</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#C9A96E88",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{colors.map((c,i)=><div key={i} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #C9A96E":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
+            {colors.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Grosor {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Opacidad {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
           {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"8px 10px"}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",marginBottom:4}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.5}}>{patient.notas}</div></div>}
