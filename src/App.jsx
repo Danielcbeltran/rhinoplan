@@ -53,6 +53,7 @@ const VIEWS=[
 const W=380,H=480;
 const EMPTY_PAT={nombre:"",documento:"",tipoDoc:"CC",edad:"",sexo:"F",fecha:new Date().toISOString().slice(0,10),cirujano:"",notas:""};
 const EMPTY_ANN={externo:[],septal:[],frontal:[],lateral:[],basal:[],basalExt:[]};
+const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 
 /* ═══ DEFAULT PLAN TEMPLATES ═══ */
 
@@ -148,9 +149,12 @@ export default function RhinoPlanner(){
   const[colors,setColors]=useState(()=>{try{const s=window.localStorage.getItem("rhinoplan_colors");return s?JSON.parse(s):[...DEFAULT_COLORS];}catch(e){return[...DEFAULT_COLORS];}});
   const[showColorEditor,setShowColorEditor]=useState(false);
   function saveColors(c){setColors(c);try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}}
-  const[annotations,setAnnotationsRaw]=useState({...EMPTY_ANN});
-  const[history,setHistory]=useState({externo:[[]],septal:[[]],frontal:[[]],lateral:[[]],basal:[[]],basalExt:[[]]});
-  const[histIdx,setHistIdx]=useState({externo:0,septal:0,frontal:0,lateral:0,basal:0,basalExt:0});
+  const[planMode,setPlanMode]=useState("pre");
+  const[plan,setPlanRaw]=useState({...EMPTY_PLAN});
+  const initHist=()=>{const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[]];hi[m+"_"+v]=0;}));return{h,hi};};
+  const[history,setHistory]=useState(()=>initHist().h);
+  const[histIdx,setHistIdx]=useState(()=>initHist().hi);
+  const hk=planMode+"_"+activeView;
   const[drawing,setDrawing]=useState(false);const[current,setCurrent]=useState(null);
   const[selIdx,setSelIdx]=useState(-1);const[dragMode,setDragMode]=useState(null);const[dragStart,setDragStart]=useState(null);
   const[textInput,setTextInput]=useState({visible:false,x:0,y:0,val:""});
@@ -162,31 +166,37 @@ export default function RhinoPlanner(){
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
 
   function setAnnotations(updater){
-    setAnnotationsRaw(prev=>{const next=typeof updater==="function"?updater(prev):{...updater};const v=activeView;const newShapes=next[v]||[];
-      setHistory(h=>{const vh=h[v].slice(0,histIdx[v]+1);vh.push([...newShapes]);return{...h,[v]:vh};});
-      setHistIdx(hi=>({...hi,[v]:hi[v]+1}));return next;});
+    setPlanRaw(prev=>{
+      const prevAnn=prev[planMode];
+      const nextAnn=typeof updater==="function"?updater(prevAnn):{...updater};
+      const newShapes=nextAnn[activeView]||[];
+      const k=planMode+"_"+activeView;
+      setHistory(h=>{const vh=(h[k]||[[]]).slice(0,histIdx[k]+1);vh.push([...newShapes]);return{...h,[k]:vh};});
+      setHistIdx(hi=>({...hi,[k]:(hi[k]||0)+1}));
+      return{...prev,[planMode]:nextAnn};
+    });
   }
-  function undo(){const v=activeView;setHistIdx(hi=>{const ni=Math.max(0,hi[v]-1);const s=history[v][ni]||[];setAnnotationsRaw(a=>({...a,[v]:[...s]}));return{...hi,[v]:ni};});}
-  function redo(){const v=activeView;setHistIdx(hi=>{const mx=history[v].length-1;const ni=Math.min(mx,hi[v]+1);const s=history[v][ni]||[];setAnnotationsRaw(a=>({...a,[v]:[...s]}));return{...hi,[v]:ni};});}
-  const canUndo=histIdx[activeView]>0;const canRedo=histIdx[activeView]<(history[activeView]?.length||1)-1;
+  function undo(){const k=hk;setHistIdx(hi=>{const ni=Math.max(0,(hi[k]||0)-1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
+  function redo(){const k=hk;setHistIdx(hi=>{const mx=(history[k]||[[]]).length-1;const ni=Math.min(mx,(hi[k]||0)+1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
+  const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"&&current?.type==="polygon"){setCurrent(null);setDrawing(false);}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
   function handleLogin(tok,user){setToken(tok);setAuthUser(user);loadPacientes(tok);loadUserTemplates(tok);}
-  function resetHistory(ann){const h={},hi={};for(const v of Object.keys(EMPTY_ANN)){h[v]=[[...(ann[v]||[])]];hi[v]=0;}setHistory(h);setHistIdx(hi);}
-  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setAnnotationsRaw({...EMPTY_ANN});setPacientes([]);resetHistory(EMPTY_ANN);}
+  function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
+  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);}
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(annotations),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg("Guardado");loadPacientes();}catch(e){setSaveMsg("Error");}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
-  function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let ann;try{ann=p.anotaciones?JSON.parse(p.anotaciones):{...EMPTY_ANN};}catch(e){ann={...EMPTY_ANN};}setAnnotationsRaw(ann);resetHistory(ann);setShowPacList(false);}
-  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setAnnotationsRaw({...EMPTY_ANN});resetHistory(EMPTY_ANN);}
+  async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg("Guardado");loadPacientes();}catch(e){setSaveMsg("Error");}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");setShowPacList(false);}
+  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");}
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function saveAsTemplate(){if(!saveTplName.trim())return;try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(annotations),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert("Error: "+e.message);}}
+  async function saveAsTemplate(){if(!saveTplName.trim())return;try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert("Error: "+e.message);}}
   async function deleteTemplate(id){if(!confirm("¿Eliminar esta plantilla?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"DELETE");loadUserTemplates();}catch(e){alert("Error");}}
   async function renameTemplate(id){if(!editTplName.trim())return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{nombre:editTplName});setEditTplId(null);setEditTplName("");loadUserTemplates();}catch(e){alert("Error");}}
-  async function updateTemplateAnnotations(id){if(!confirm("¿Actualizar esta plantilla con las anotaciones actuales?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(annotations)});loadUserTemplates();alert("Plantilla actualizada");}catch(e){alert("Error");}}
-  function applyTemplate(ann){const parsed=typeof ann==="string"?JSON.parse(ann):ann;const merged={...EMPTY_ANN};for(const k of Object.keys(EMPTY_ANN)){merged[k]=[...(parsed[k]||[])];}setAnnotationsRaw(merged);resetHistory(merged);setShowTemplates(false);}
+  async function updateTemplateAnnotations(id){if(!confirm("¿Actualizar esta plantilla con las anotaciones actuales?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(plan)});loadUserTemplates();alert("Plantilla actualizada");}catch(e){alert("Error");}}
+  function applyTemplate(ann){const parsed=typeof ann==="string"?JSON.parse(ann):ann;const merged={...EMPTY_ANN};for(const k of Object.keys(EMPTY_ANN)){merged[k]=[...(parsed[k]||[])];}setPlanRaw(p=>({...p,[planMode]:merged}));const newPl={...plan,[planMode]:merged};resetHistory(newPl);setShowTemplates(false);}
 
   useEffect(()=>{
     const img=new Image();
@@ -199,7 +209,7 @@ export default function RhinoPlanner(){
         if(cv){
           const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);
           ctx.drawImage(img,0,0,W,H);
-          (annotations[activeView]||[]).forEach(s=>drawShape(ctx,s,false));
+          (plan[planMode][activeView]||[]).forEach(s=>drawShape(ctx,s,false));
         } else if(attempts<20){
           setTimeout(()=>tryDraw(attempts+1),50);
         }
@@ -207,9 +217,9 @@ export default function RhinoPlanner(){
       tryDraw(0);
     };
   },[activeView,token]);
-  const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(annotations[activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[annotations,activeView,current,selIdx,tool]);
+  const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
-  function handleExport(){const cv=canvasRef.current;if(!cv)return;const link=document.createElement("a");link.download=`rhinoplan_${patient.documento||"plan"}_${activeView}.png`;link.href=cv.toDataURL("image/png");link.click();}
+  function handleExport(){const cv=canvasRef.current;if(!cv)return;const link=document.createElement("a");link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}_${activeView}.png`;link.href=cv.toDataURL("image/png");link.click();}
 
   useEffect(()=>{const cv=canvasRef.current;if(!cv)return;const onT=e=>{if(e.touches.length===1)e.preventDefault();};cv.addEventListener("touchstart",onT,{passive:false});cv.addEventListener("touchmove",onT,{passive:false});return()=>{cv.removeEventListener("touchstart",onT);cv.removeEventListener("touchmove",onT);};});
 
@@ -218,7 +228,7 @@ export default function RhinoPlanner(){
 
   function onDown(e){
     if(e.touches&&e.touches.length>1){setDrawing(false);setCurrent(null);return;}const p=getPos(e);
-    if(tool==="select"){const shapes=annotations[activeView]||[];if(selIdx>=0&&selIdx<shapes.length&&nearRotHandle(shapes[selIdx],p)){setDragMode("rotate");setDragStart(p);return;}for(let i=shapes.length-1;i>=0;i--){if(hit(shapes[i],p,15)){setSelIdx(i);setDragMode("move");setDragStart(p);return;}}setSelIdx(-1);setDragMode(null);return;}
+    if(tool==="select"){const shapes=plan[planMode][activeView]||[];if(selIdx>=0&&selIdx<shapes.length&&nearRotHandle(shapes[selIdx],p)){setDragMode("rotate");setDragStart(p);return;}for(let i=shapes.length-1;i>=0;i--){if(hit(shapes[i],p,15)){setSelIdx(i);setDragMode("move");setDragStart(p);return;}}setSelIdx(-1);setDragMode(null);return;}
     setSelIdx(-1);if(tool==="eraser"){setAnnotations(a=>({...a,[activeView]:(a[activeView]||[]).filter(s=>!hit(s,p))}));return;}
     if(tool==="text"){setTextInput({visible:true,x:p.x,y:p.y,val:""});return;}
     if(tool==="polygon"){
@@ -240,7 +250,7 @@ export default function RhinoPlanner(){
   }
   function onMove(e){
     if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);setDragMode(null);return;}const p=getPos(e);
-    if(tool==="select"&&dragMode&&dragStart&&selIdx>=0){const shapes=annotations[activeView]||[];const s=shapes[selIdx];if(!s)return;
+    if(tool==="select"&&dragMode&&dragStart&&selIdx>=0){const shapes=plan[planMode][activeView]||[];const s=shapes[selIdx];if(!s)return;
       if(dragMode==="move"){const dx=p.x-dragStart.x,dy=p.y-dragStart.y;const u={...s};
         if(s.type==="rect"){u.x=s.x+dx;u.y=s.y+dy;}
         else if(s.type==="ellipse"){u.cx=s.cx+dx;u.cy=s.cy+dy;}
@@ -248,12 +258,12 @@ export default function RhinoPlanner(){
         else if(s.type==="pen"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
         else if(s.type==="polygon"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
         else if(s.type==="text"){u.x=s.x+dx;u.y=s.y+dy;}
-        const ns=[...shapes];ns[selIdx]=u;setAnnotationsRaw(a=>({...a,[activeView]:ns}));setDragStart(p);}
-      else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setAnnotationsRaw(a=>({...a,[activeView]:ns}));}return;}
+        const ns=[...shapes];ns[selIdx]=u;setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:ns}}));setDragStart(p);}
+      else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:ns}}));}return;}
     if(!drawing||!current)return;
     if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="polygon")setCurrent(c=>({...c,preview:p}));else if(tool==="line"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
   }
-  function onUp(){if(tool==="select"&&dragMode&&selIdx>=0){const shapes=[...(annotations[activeView]||[])];setAnnotations(a=>({...a,[activeView]:shapes}));setDragMode(null);setDragStart(null);return;}if(tool==="polygon")return;if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
+  function onUp(){if(tool==="select"&&dragMode&&selIdx>=0){const shapes=[...(plan[planMode][activeView]||[])];setAnnotations(a=>({...a,[activeView]:shapes}));setDragMode(null);setDragStart(null);return;}if(tool==="polygon")return;if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
   function submitText(){if(textInput.val.trim())setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),{type:"text",color,size,opacity,x:textInput.x,y:textInput.y,text:textInput.val}]}));setTextInput({visible:false,x:0,y:0,val:""});}
 
   const btn={background:"transparent",color:"#888",border:"1px solid #555",padding:"7px 13px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"};
@@ -361,10 +371,17 @@ export default function RhinoPlanner(){
           {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:8,background:"#fff",border:"1px solid #D4C8B8",borderRadius:7,padding:"6px 14px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap",fontSize:12}}>
             <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"4px 10px"}}>Editar</button>
           </div>)}
+          {/* PLAN MODE TOGGLE */}
+          <div style={{display:"flex",marginBottom:10,background:"#1A1A1A",borderRadius:8,padding:3,maxWidth:420}}>
+            {[{id:"pre",label:"Planeación Prequirúrgica"},{id:"post",label:"Técnica Realizada"}].map(m=>(
+              <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"8px 12px",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#C9A96E":"#6A9F6A"):"transparent",color:planMode===m.id?"#1A1A1A":"#888",transition:"all 0.2s"}}>{m.label}</button>
+            ))}
+          </div>
           <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap",justifyContent:"center"}}>
             {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"5px 11px",border:`1.5px solid ${activeView===v.id?"#C9A96E":"#C4BAA8"}`,background:activeView===v.id?"#1A1A1A":"#E0D8CE",color:activeView===v.id?"#C9A96E":"#666",borderRadius:4,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>{v.label}</button>))}
           </div>
-          <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:"1px solid #D0C8BC",display:"inline-block"}}>
+          <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:`2px solid ${planMode==="pre"?"#C9A96E":"#6A9F6A"}`,display:"inline-block"}}>
+            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#C9A96E":"#6A9F6A",color:"#1A1A1A",padding:"2px 12px",borderRadius:10,fontSize:9,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
             <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
@@ -375,7 +392,7 @@ export default function RhinoPlanner(){
             <button style={{...btn,opacity:canRedo?1:0.35,fontSize:16,padding:"5px 12px"}} onClick={redo} disabled={!canRedo} title="Rehacer (Ctrl+Y)">↪</button>
             <button style={btn} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>Limpiar vista</button>
             <button style={btn} onClick={()=>setAnnotations({...EMPTY_ANN})}>Limpiar todo</button>
-            <span style={{color:"#AAA",fontSize:10}}>{(annotations[activeView]||[]).length} anotaciones</span>
+            <span style={{color:"#AAA",fontSize:10}}>{(plan[planMode][activeView]||[]).length} anot.</span>
           </div>
         </div>
       </div>
