@@ -230,6 +230,15 @@ export default function RhinoPlanner(){
   },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
+  // Load jsPDF from CDN once
+  useEffect(()=>{
+    if(!window.jspdf){
+      const s=document.createElement("script");
+      s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
+      document.head.appendChild(s);
+    }
+  },[]);
+
   function handleExport(){
     const pw=1200,margin=30,viewW=360,viewH=450,gap=20;
     const ex=document.createElement("canvas");
@@ -251,45 +260,40 @@ export default function RhinoPlanner(){
     ctx.fillText(info,margin,96);
     ctx.fillStyle="#C9A96E";ctx.fillRect(margin,headerH-8,pw-margin*2,2);
 
-    // Draw each view
     const viewIds=VIEWS.map(v=>v.id);
     const viewLabels=VIEWS.map(v=>v.label);
-    let loaded=0;
-    const imgs={};
-    viewIds.forEach((vid,idx)=>{
+    let loaded=0;const imgs={};
+    viewIds.forEach(vid=>{
       const img=new Image();img.src=VIEW_IMAGES[vid];
       img.onload=()=>{imgs[vid]=img;loaded++;if(loaded===6)drawAll();};
     });
     function drawAll(){
       viewIds.forEach((vid,idx)=>{
         const col=idx%cols,row=Math.floor(idx/cols);
-        const x=margin+col*(viewW+gap);
-        const y=headerH+10+row*(viewH+gap+18);
-        // Label
-        ctx.fillStyle="#333";ctx.font="bold 12px Georgia,serif";
-        ctx.fillText(viewLabels[idx],x,y+12);
-        // View background
+        const x=margin+col*(viewW+gap),y=headerH+10+row*(viewH+gap+18);
+        ctx.fillStyle="#333";ctx.font="bold 12px Georgia,serif";ctx.fillText(viewLabels[idx],x,y+12);
         ctx.fillStyle="#fff";ctx.strokeStyle="#D0C8BC";ctx.lineWidth=1;
         ctx.fillRect(x,y+16,viewW,viewH);ctx.strokeRect(x,y+16,viewW,viewH);
-        // Anatomical image
         ctx.drawImage(imgs[vid],x,y+16,viewW,viewH);
-        // Annotations
         const shapes=plan[planMode][vid]||[];
-        ctx.save();ctx.translate(x,y+16);
-        const sc=viewW/W;ctx.scale(sc,sc);
-        shapes.forEach(s=>drawShape(ctx,s,false));
-        ctx.restore();
+        ctx.save();ctx.translate(x,y+16);const sc=viewW/W;ctx.scale(sc,sc);
+        shapes.forEach(s=>drawShape(ctx,s,false));ctx.restore();
       });
-      // Patient notes
-      if(patient.notas){
-        const ny=headerH+10+rows*(viewH+gap+18)-20;
-        ctx.fillStyle="#666";ctx.font="italic 12px Georgia,serif";
-        ctx.fillText("Notas: "+patient.notas,margin,ny);
+      if(patient.notas){const ny=headerH+10+rows*(viewH+gap+18)-20;ctx.fillStyle="#666";ctx.font="italic 12px Georgia,serif";ctx.fillText("Notas: "+patient.notas,margin,ny);}
+
+      // Generate PDF
+      const imgData=ex.toDataURL("image/png");
+      if(window.jspdf){
+        const{jsPDF}=window.jspdf;
+        const pdf=new jsPDF({orientation:"landscape",unit:"px",format:[pw,totalH]});
+        pdf.addImage(imgData,"PNG",0,0,pw,totalH);
+        pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
+      }else{
+        // Fallback to PNG if jsPDF not loaded
+        const link=document.createElement("a");
+        link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}.png`;
+        link.href=imgData;link.click();
       }
-      // Download
-      const link=document.createElement("a");
-      link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}.png`;
-      link.href=ex.toDataURL("image/png");link.click();
     }
   }
 
