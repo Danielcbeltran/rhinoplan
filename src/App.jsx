@@ -230,7 +230,68 @@ export default function RhinoPlanner(){
   },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
-  function handleExport(){const cv=canvasRef.current;if(!cv)return;const link=document.createElement("a");link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}_${activeView}.png`;link.href=cv.toDataURL("image/png");link.click();}
+  function handleExport(){
+    const pw=1200,margin=30,viewW=360,viewH=450,gap=20;
+    const ex=document.createElement("canvas");
+    const cols=3,rows=2;
+    const headerH=120;
+    const totalH=headerH+rows*(viewH+gap+18)+margin;
+    ex.width=pw;ex.height=totalH;
+    const ctx=ex.getContext("2d");
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,pw,totalH);
+
+    // Header
+    ctx.fillStyle="#1A1A1A";ctx.fillRect(0,0,pw,headerH);
+    ctx.fillStyle="#C9A96E";ctx.font="bold 28px Georgia,serif";
+    ctx.fillText("RhinoPlan — "+(planMode==="pre"?"Planeación Prequirúrgica":"Técnica Realizada"),margin,42);
+    ctx.fillStyle="#E8D5B0";ctx.font="18px Georgia,serif";
+    if(patient.nombre)ctx.fillText("Paciente: "+patient.nombre,margin,72);
+    ctx.fillStyle="#AAA";ctx.font="14px Georgia,serif";
+    const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
+    ctx.fillText(info,margin,96);
+    ctx.fillStyle="#C9A96E";ctx.fillRect(margin,headerH-8,pw-margin*2,2);
+
+    // Draw each view
+    const viewIds=VIEWS.map(v=>v.id);
+    const viewLabels=VIEWS.map(v=>v.label);
+    let loaded=0;
+    const imgs={};
+    viewIds.forEach((vid,idx)=>{
+      const img=new Image();img.src=VIEW_IMAGES[vid];
+      img.onload=()=>{imgs[vid]=img;loaded++;if(loaded===6)drawAll();};
+    });
+    function drawAll(){
+      viewIds.forEach((vid,idx)=>{
+        const col=idx%cols,row=Math.floor(idx/cols);
+        const x=margin+col*(viewW+gap);
+        const y=headerH+10+row*(viewH+gap+18);
+        // Label
+        ctx.fillStyle="#333";ctx.font="bold 12px Georgia,serif";
+        ctx.fillText(viewLabels[idx],x,y+12);
+        // View background
+        ctx.fillStyle="#fff";ctx.strokeStyle="#D0C8BC";ctx.lineWidth=1;
+        ctx.fillRect(x,y+16,viewW,viewH);ctx.strokeRect(x,y+16,viewW,viewH);
+        // Anatomical image
+        ctx.drawImage(imgs[vid],x,y+16,viewW,viewH);
+        // Annotations
+        const shapes=plan[planMode][vid]||[];
+        ctx.save();ctx.translate(x,y+16);
+        const sc=viewW/W;ctx.scale(sc,sc);
+        shapes.forEach(s=>drawShape(ctx,s,false));
+        ctx.restore();
+      });
+      // Patient notes
+      if(patient.notas){
+        const ny=headerH+10+rows*(viewH+gap+18)-20;
+        ctx.fillStyle="#666";ctx.font="italic 12px Georgia,serif";
+        ctx.fillText("Notas: "+patient.notas,margin,ny);
+      }
+      // Download
+      const link=document.createElement("a");
+      link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}.png`;
+      link.href=ex.toDataURL("image/png");link.click();
+    }
+  }
 
   useEffect(()=>{const cv=canvasRef.current;if(!cv)return;const onT=e=>{if(e.touches.length===1)e.preventDefault();};cv.addEventListener("touchstart",onT,{passive:false});cv.addEventListener("touchmove",onT,{passive:false});return()=>{cv.removeEventListener("touchstart",onT);cv.removeEventListener("touchmove",onT);};});
 
@@ -361,7 +422,7 @@ export default function RhinoPlanner(){
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#C9A96E,#8B7355)":"#252525",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
           {!compact&&(hasP?(<div><div style={{color:"#E8D5B0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>Paciente</div>))}
         </div>
-        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>PNG</button>
+        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>Exportar</button>
         <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>Salir</button>
       </div>
 
