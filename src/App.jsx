@@ -164,6 +164,17 @@ export default function RhinoPlanner(){
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
   const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
+  const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
+  const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
+  useEffect(()=>{const onR=()=>{setWinSize({w:window.innerWidth,h:window.innerHeight});};window.addEventListener("resize",onR);return()=>window.removeEventListener("resize",onR);},[]);
+  const compact=winSize.w<900;
+  // Scale canvas to fit available space
+  const usedH=46+(hasP?34:0)+38+32+38+24;
+  const availH=Math.max(200,winSize.h-usedH);
+  const availW=Math.max(200,(compact||!sideOpen?winSize.w-32:winSize.w-195));
+  const canvasScale=Math.min(1,availH/H,availW/W);
+  const scaledW=Math.round(W*canvasScale);
+  const scaledH=Math.round(H*canvasScale);
 
   function setAnnotations(updater){
     setPlanRaw(prev=>{
@@ -340,23 +351,24 @@ export default function RhinoPlanner(){
       </div></div>)}
 
       {/* HEADER */}
-      <div style={{background:"#1A1A1A",borderBottom:"3px solid #C9A96E",padding:"8px 18px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <div style={{color:"#C9A96E",fontSize:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
-        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Pacientes</button>
-        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Plantillas</button>
-        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#C9A96E22",border:"1px solid #C9A96E",color:"#C9A96E",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>{saving?"...":saveMsg||"Guardar"}</button>}
-        <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:8,background:"#111",border:`1px solid ${hasP?"#C9A96E44":"#2E2E2E"}`,borderRadius:8,padding:"5px 12px",cursor:"pointer"}}>
-          <div style={{width:26,height:26,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#C9A96E,#8B7355)":"#252525",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>{hasP?"👤":"➕"}</div>
-          {hasP?(<div><div style={{color:"#E8D5B0",fontSize:11,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:9}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:11,fontStyle:"italic"}}>Paciente...</div>)}
+      <div style={{background:"#1A1A1A",borderBottom:"3px solid #C9A96E",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
+        <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#C9A96E",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
+        <div style={{color:"#C9A96E",fontSize:compact?14:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
+        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Pacientes</button>
+        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Plantillas</button>
+        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#C9A96E22",border:"1px solid #C9A96E",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||"Guardar"}</button>}
+        <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#C9A96E44":"#2E2E2E"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
+          <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#C9A96E,#8B7355)":"#252525",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
+          {!compact&&(hasP?(<div><div style={{color:"#E8D5B0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>Paciente</div>))}
         </div>
-        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"6px 14px",borderRadius:5,cursor:"pointer",fontSize:11,fontWeight:700}}>Exportar</button>
-        <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Salir</button>
+        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>PNG</button>
+        <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>Salir</button>
       </div>
 
       {/* BODY */}
       <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
         {/* SIDEBAR */}
-        <div style={{width:175,background:"#1A1A1A",padding:"12px 8px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid #252525",flexShrink:0}}>
+        {sideOpen&&<div style={{width:compact?155:175,background:"#1A1A1A",padding:"10px 6px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid #252525",flexShrink:0}}>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
             {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#C9A96E":"#2E2E2E"}`,background:tool===t.id?"#C9A96E15":"transparent",color:tool===t.id?"#C9A96E":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
           <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>Color</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#C9A96E88",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
@@ -364,35 +376,35 @@ export default function RhinoPlanner(){
             {colors.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Grosor {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
           <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Opacidad {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
-          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"8px 10px"}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",marginBottom:4}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.5}}>{patient.notas}</div></div>}
-        </div>
+          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"6px 8px"}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",marginBottom:3}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.4}}>{patient.notas}</div></div>}
+        </div>}
         {/* MAIN */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 14px",overflowY:"auto",background:"#EDEAE4"}}>
-          {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:8,background:"#fff",border:"1px solid #D4C8B8",borderRadius:7,padding:"6px 14px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap",fontSize:12}}>
-            <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"4px 10px"}}>Editar</button>
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 8px",overflowY:"auto",background:"#EDEAE4"}}>
+          {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:4,background:"#fff",border:"1px solid #D4C8B8",borderRadius:7,padding:"4px 10px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11}}>
+            <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"3px 8px",fontSize:10}}>Editar</button>
           </div>)}
           {/* PLAN MODE TOGGLE */}
-          <div style={{display:"flex",marginBottom:10,background:"#1A1A1A",borderRadius:8,padding:3,maxWidth:420}}>
+          <div style={{display:"flex",marginBottom:6,background:"#1A1A1A",borderRadius:8,padding:2,maxWidth:380,width:"100%"}}>
             {[{id:"pre",label:"Planeación Prequirúrgica"},{id:"post",label:"Técnica Realizada"}].map(m=>(
-              <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"8px 12px",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#C9A96E":"#6A9F6A"):"transparent",color:planMode===m.id?"#1A1A1A":"#888",transition:"all 0.2s"}}>{m.label}</button>
+              <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"6px 8px",border:"none",borderRadius:6,cursor:"pointer",fontSize:compact?10:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#C9A96E":"#6A9F6A"):"transparent",color:planMode===m.id?"#1A1A1A":"#888",transition:"all 0.2s"}}>{m.label}</button>
             ))}
           </div>
-          <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap",justifyContent:"center"}}>
-            {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"5px 11px",border:`1.5px solid ${activeView===v.id?"#C9A96E":"#C4BAA8"}`,background:activeView===v.id?"#1A1A1A":"#E0D8CE",color:activeView===v.id?"#C9A96E":"#666",borderRadius:4,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>{v.label}</button>))}
+          <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap",justifyContent:"center"}}>
+            {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"4px 8px",border:`1.5px solid ${activeView===v.id?"#C9A96E":"#C4BAA8"}`,background:activeView===v.id?"#1A1A1A":"#E0D8CE",color:activeView===v.id?"#C9A96E":"#666",borderRadius:4,cursor:"pointer",fontSize:compact?9:11,fontFamily:"inherit"}}>{v.label}</button>))}
           </div>
           <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:`2px solid ${planMode==="pre"?"#C9A96E":"#6A9F6A"}`,display:"inline-block"}}>
-            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#C9A96E":"#6A9F6A",color:"#1A1A1A",padding:"2px 12px",borderRadius:10,fontSize:9,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
-            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
+            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#C9A96E":"#6A9F6A",color:"#1A1A1A",padding:"2px 10px",borderRadius:10,fontSize:8,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
+            <canvas ref={canvasRef} width={W} height={H} style={{display:"block",width:scaledW,height:scaledH,cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
-            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x,top:textInput.y-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #C9A96E",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
+            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x*(scaledW/W),top:textInput.y*(scaledH/H)-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #C9A96E",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
           </div>
-          <div style={{display:"flex",gap:8,marginTop:10,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
-            <button style={{...btn,opacity:canUndo?1:0.35,fontSize:16,padding:"5px 12px"}} onClick={undo} disabled={!canUndo} title="Deshacer (Ctrl+Z)">↩</button>
-            <button style={{...btn,opacity:canRedo?1:0.35,fontSize:16,padding:"5px 12px"}} onClick={redo} disabled={!canRedo} title="Rehacer (Ctrl+Y)">↪</button>
-            <button style={btn} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>Limpiar vista</button>
-            <button style={btn} onClick={()=>setAnnotations({...EMPTY_ANN})}>Limpiar todo</button>
-            <span style={{color:"#AAA",fontSize:10}}>{(plan[planMode][activeView]||[]).length} anot.</span>
+          <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
+            <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title="Deshacer">↩</button>
+            <button style={{...btn,opacity:canRedo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={redo} disabled={!canRedo} title="Rehacer">↪</button>
+            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>Limpiar</button>
+            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>Todo</button>
+            <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} anot.</span>
           </div>
         </div>
       </div>
