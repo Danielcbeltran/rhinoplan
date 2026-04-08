@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { jsPDF } from "jspdf";
 
 const SUPA_URL = "https://tzmbybwytfpaqaajwumz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6bWJ5Ynd5dGZwYXFhYWp3dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTM2NDAsImV4cCI6MjA4ODI4OTY0MH0.6FqJRT7VaWp-k_tCV1a3PFiRmwXBUokXkvyBTZOVpcM";
@@ -230,22 +231,7 @@ export default function RhinoPlanner(){
   },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
-  function loadJsPDF(){
-    return new Promise((resolve)=>{
-      if(window.jspdf)return resolve(window.jspdf);
-      const s=document.createElement("script");
-      s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
-      s.onload=()=>resolve(window.jspdf);
-      s.onerror=()=>resolve(null);
-      document.head.appendChild(s);
-    });
-  }
-
   async function handleExport(){
-    const lib=await loadJsPDF();
-    if(!lib){alert("Error cargando generador de PDF");return;}
-    const{jsPDF}=lib;
-    // Letter size: 215.9 x 279.4 mm
     const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
     const pw=215.9,ph=279.4,mg=8;
     const usable_w=pw-mg*2,usable_h=ph-mg*2;
