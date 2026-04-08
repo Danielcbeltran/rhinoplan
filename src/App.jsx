@@ -336,19 +336,37 @@ export default function RhinoPlanner(){
       pdf.text("Fotos — "+(patient.nombre||"Paciente"),mg,12);
 
       let fy=24;
+      const fCols=3,fW=(usable_w-fCols*3)/fCols,fCellH=fW*1.35;
       for(const tipo of ["pre","post"]){
         const list=fotos[tipo];if(!list.length)continue;
         pdf.setTextColor(51,51,51);pdf.setFontSize(9);pdf.setFont("helvetica","bold");
         pdf.text(tipo==="pre"?"Prequirúrgicas":"Postquirúrgicas",mg,fy);fy+=4;
-        const fCols=3,fW=(usable_w-fCols*3)/fCols,fH=fW*0.75;
-        for(let i=0;i<list.length;i++){
+        // Load each image to get real dimensions, then center within cell
+        const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
+          const img=new Image();
+          img.onload=()=>{
+            const iRatio=img.naturalWidth/img.naturalHeight;
+            let dw=fW,dh=fW/iRatio;
+            if(dh>fCellH){dh=fCellH;dw=fCellH*iRatio;}
+            const cv2=document.createElement("canvas");
+            cv2.width=img.naturalWidth;cv2.height=img.naturalHeight;
+            cv2.getContext("2d").drawImage(img,0,0);
+            resolve({data:cv2.toDataURL("image/jpeg",0.85),dw,dh});
+          };
+          img.onerror=()=>resolve(null);
+          img.src=src;
+        })));
+        for(let i=0;i<rendered.length;i++){
+          const r=rendered[i];if(!r)continue;
           const col=i%fCols,row=Math.floor(i/fCols);
-          const fx=mg+col*(fW+3),fYpos=fy+row*(fH+3);
-          if(fYpos+fH>ph-mg){pdf.addPage("letter","portrait");fy=mg;} 
-          try{pdf.addImage(list[i],"JPEG",fx,fYpos,fW,fH);}catch(e){}
-          pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fYpos,fW,fH);
+          const fx=mg+col*(fW+3),fYpos=fy+row*(fCellH+3);
+          if(fYpos+fCellH>ph-mg){pdf.addPage("letter","portrait");fy=mg;}
+          // Center image within cell
+          const cx=fx+(fW-r.dw)/2,cy=fYpos+(fCellH-r.dh)/2;
+          try{pdf.addImage(r.data,"JPEG",cx,cy,r.dw,r.dh);}catch(e){}
+          pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fYpos,fW,fCellH);
         }
-        fy+=Math.ceil(list.length/fCols)*(fH+3)+8;
+        fy+=Math.ceil(rendered.length/fCols)*(fCellH+3)+8;
       }
     }
 
