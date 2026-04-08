@@ -248,7 +248,7 @@ export default function RhinoPlanner(){
     pdf.setDrawColor(201,169,110);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
 
     // Canvas for each view
-    const cols=3,rows=2,vgap=4,hgap=3;
+    const cols=2,rows=3,vgap=4,hgap=3;
     const startY=31;
     const availH=ph-startY-mg-(patient.notas?10:0);
     const vw=(usable_w-hgap*(cols-1))/cols;
