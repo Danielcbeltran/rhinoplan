@@ -251,8 +251,11 @@ export default function RhinoPlanner(){
     const cols=2,rows=3,vgap=4,hgap=3;
     const startY=31;
     const availH=ph-startY-mg-(patient.notas?10:0);
-    const vw=(usable_w-hgap*(cols-1))/cols;
-    const vh=(availH-vgap*(rows-1)-rows*5)/rows;
+    const maxVw=(usable_w-hgap*(cols-1))/cols;
+    const maxVh=(availH-vgap*(rows-1)-rows*5)/rows;
+    const ratio=W/H; // 380/480 = 0.79
+    let vw=maxVw,vh=vw/ratio;
+    if(vh>maxVh){vh=maxVh;vw=vh*ratio;}
 
     const viewIds=VIEWS.map(v=>v.id);
     const viewLabels=VIEWS.map(v=>v.label);
@@ -272,9 +275,11 @@ export default function RhinoPlanner(){
     }));
 
     const results=await Promise.all(promises);
+    const gridW=cols*vw+(cols-1)*hgap;
+    const offsetX=(pw-gridW)/2;
     results.forEach(({idx,data})=>{
       const col=idx%cols,row=Math.floor(idx/cols);
-      const x=mg+col*(vw+hgap);
+      const x=offsetX+col*(vw+hgap);
       const y=startY+row*(vh+vgap+5);
       // Label
       pdf.setTextColor(51,51,51);pdf.setFontSize(7);pdf.setFont("helvetica","bold");
