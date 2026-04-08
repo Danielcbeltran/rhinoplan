@@ -164,7 +164,7 @@ export default function RhinoPlanner(){
   const[saveTplName,setSaveTplName]=useState("");const[saveTplDesc,setSaveTplDesc]=useState("");const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
   const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");
-  const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);
+  const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);const[fotoPreview,setFotoPreview]=useState(null);
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
   const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
   const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
@@ -463,9 +463,9 @@ export default function RhinoPlanner(){
             {fotos[tipo].length===0?<div style={{color:"#666",fontSize:11,fontStyle:"italic",padding:"12px 0"}}>Sin fotos</div>:(
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
                 {fotos[tipo].map((src,i)=>(
-                  <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1"}}>
+                  <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>setFotoPreview(src)}>
                     <img src={src} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-                    <button onClick={()=>removeFoto(tipo,i)} style={{position:"absolute",top:3,right:3,background:"#000000AA",border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
+                    <button onClick={e=>{e.stopPropagation();removeFoto(tipo,i);}} style={{position:"absolute",top:3,right:3,background:"#000000AA",border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
                   </div>
                 ))}
               </div>
@@ -476,6 +476,12 @@ export default function RhinoPlanner(){
           <button onClick={()=>setShowFotos(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
         </div>
       </div></div>)}
+
+      {/* ═══ FOTO PREVIEW LIGHTBOX ═══ */}
+      {fotoPreview&&(<div onClick={()=>setFotoPreview(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000000EE",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
+        <img src={fotoPreview} style={{maxWidth:"92vw",maxHeight:"92vh",objectFit:"contain",borderRadius:8}}/>
+        <button onClick={()=>setFotoPreview(null)} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18}}>✕</button>
+      </div>)}
 
       {/* ═══ COLOR EDITOR MODAL ═══ */}
       {showColorEditor&&(<div style={modalBg} onClick={()=>setShowColorEditor(false)}><div style={{...modalBox,width:380}} onClick={e=>e.stopPropagation()}>
