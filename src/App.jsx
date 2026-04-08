@@ -230,71 +230,82 @@ export default function RhinoPlanner(){
   },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
-  // Load jsPDF from CDN once
-  useEffect(()=>{
-    if(!window.jspdf){
+  function loadJsPDF(){
+    return new Promise((resolve)=>{
+      if(window.jspdf)return resolve(window.jspdf);
       const s=document.createElement("script");
       s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
+      s.onload=()=>resolve(window.jspdf);
+      s.onerror=()=>resolve(null);
       document.head.appendChild(s);
-    }
-  },[]);
+    });
+  }
 
-  function handleExport(){
-    const pw=1200,margin=30,viewW=360,viewH=450,gap=20;
-    const ex=document.createElement("canvas");
-    const cols=3,rows=2;
-    const headerH=120;
-    const totalH=headerH+rows*(viewH+gap+18)+margin;
-    ex.width=pw;ex.height=totalH;
-    const ctx=ex.getContext("2d");
-    ctx.fillStyle="#fff";ctx.fillRect(0,0,pw,totalH);
+  async function handleExport(){
+    const lib=await loadJsPDF();
+    if(!lib){alert("Error cargando generador de PDF");return;}
+    const{jsPDF}=lib;
+    // Letter size: 215.9 x 279.4 mm
+    const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
+    const pw=215.9,ph=279.4,mg=8;
+    const usable_w=pw-mg*2,usable_h=ph-mg*2;
 
     // Header
-    ctx.fillStyle="#1A1A1A";ctx.fillRect(0,0,pw,headerH);
-    ctx.fillStyle="#C9A96E";ctx.font="bold 28px Georgia,serif";
-    ctx.fillText("RhinoPlan — "+(planMode==="pre"?"Planeación Prequirúrgica":"Técnica Realizada"),margin,42);
-    ctx.fillStyle="#E8D5B0";ctx.font="18px Georgia,serif";
-    if(patient.nombre)ctx.fillText("Paciente: "+patient.nombre,margin,72);
-    ctx.fillStyle="#AAA";ctx.font="14px Georgia,serif";
+    pdf.setFillColor(26,26,26);pdf.rect(0,0,pw,28,"F");
+    pdf.setTextColor(201,169,110);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
+    pdf.text("RhinoPlan — "+(planMode==="pre"?"Planeación Prequirúrgica":"Técnica Realizada"),mg,10);
+    pdf.setTextColor(232,213,176);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
+    if(patient.nombre)pdf.text("Paciente: "+patient.nombre,mg,17);
+    pdf.setTextColor(170,170,170);pdf.setFontSize(8);
     const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
-    ctx.fillText(info,margin,96);
-    ctx.fillStyle="#C9A96E";ctx.fillRect(margin,headerH-8,pw-margin*2,2);
+    pdf.text(info,mg,23);
+    pdf.setDrawColor(201,169,110);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
+
+    // Canvas for each view
+    const cols=3,rows=2,vgap=4,hgap=3;
+    const startY=31;
+    const availH=ph-startY-mg-(patient.notas?10:0);
+    const vw=(usable_w-hgap*(cols-1))/cols;
+    const vh=(availH-vgap*(rows-1)-rows*5)/rows;
 
     const viewIds=VIEWS.map(v=>v.id);
     const viewLabels=VIEWS.map(v=>v.label);
-    let loaded=0;const imgs={};
-    viewIds.forEach(vid=>{
-      const img=new Image();img.src=VIEW_IMAGES[vid];
-      img.onload=()=>{imgs[vid]=img;loaded++;if(loaded===6)drawAll();};
-    });
-    function drawAll(){
-      viewIds.forEach((vid,idx)=>{
-        const col=idx%cols,row=Math.floor(idx/cols);
-        const x=margin+col*(viewW+gap),y=headerH+10+row*(viewH+gap+18);
-        ctx.fillStyle="#333";ctx.font="bold 12px Georgia,serif";ctx.fillText(viewLabels[idx],x,y+12);
-        ctx.fillStyle="#fff";ctx.strokeStyle="#D0C8BC";ctx.lineWidth=1;
-        ctx.fillRect(x,y+16,viewW,viewH);ctx.strokeRect(x,y+16,viewW,viewH);
-        ctx.drawImage(imgs[vid],x,y+16,viewW,viewH);
-        const shapes=plan[planMode][vid]||[];
-        ctx.save();ctx.translate(x,y+16);const sc=viewW/W;ctx.scale(sc,sc);
-        shapes.forEach(s=>drawShape(ctx,s,false));ctx.restore();
-      });
-      if(patient.notas){const ny=headerH+10+rows*(viewH+gap+18)-20;ctx.fillStyle="#666";ctx.font="italic 12px Georgia,serif";ctx.fillText("Notas: "+patient.notas,margin,ny);}
 
-      // Generate PDF
-      const imgData=ex.toDataURL("image/png");
-      if(window.jspdf){
-        const{jsPDF}=window.jspdf;
-        const pdf=new jsPDF({orientation:"landscape",unit:"px",format:[pw,totalH]});
-        pdf.addImage(imgData,"PNG",0,0,pw,totalH);
-        pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
-      }else{
-        // Fallback to PNG if jsPDF not loaded
-        const link=document.createElement("a");
-        link.download=`rhinoplan_${patient.documento||"plan"}_${planMode}.png`;
-        link.href=imgData;link.click();
-      }
+    // Render all 6 views to image data
+    const promises=viewIds.map((vid,idx)=>new Promise((resolve)=>{
+      const cv=document.createElement("canvas");
+      cv.width=W;cv.height=H;
+      const c=cv.getContext("2d");
+      const img=new Image();img.src=VIEW_IMAGES[vid];
+      img.onload=()=>{
+        c.fillStyle="#fff";c.fillRect(0,0,W,H);
+        c.drawImage(img,0,0,W,H);
+        (plan[planMode][vid]||[]).forEach(s=>drawShape(c,s,false));
+        resolve({idx,data:cv.toDataURL("image/png")});
+      };
+    }));
+
+    const results=await Promise.all(promises);
+    results.forEach(({idx,data})=>{
+      const col=idx%cols,row=Math.floor(idx/cols);
+      const x=mg+col*(vw+hgap);
+      const y=startY+row*(vh+vgap+5);
+      // Label
+      pdf.setTextColor(51,51,51);pdf.setFontSize(7);pdf.setFont("helvetica","bold");
+      pdf.text(viewLabels[idx],x,y+3);
+      // Image
+      pdf.addImage(data,"PNG",x,y+4,vw,vh);
+      pdf.setDrawColor(208,200,188);pdf.setLineWidth(0.3);
+      pdf.rect(x,y+4,vw,vh);
+    });
+
+    // Notes
+    if(patient.notas){
+      pdf.setTextColor(102,102,102);pdf.setFontSize(7);pdf.setFont("helvetica","italic");
+      pdf.text("Notas: "+patient.notas,mg,ph-mg);
     }
+
+    pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
   }
 
   useEffect(()=>{const cv=canvasRef.current;if(!cv)return;const onT=e=>{if(e.touches.length===1)e.preventDefault();};cv.addEventListener("touchstart",onT,{passive:false});cv.addEventListener("touchmove",onT,{passive:false});return()=>{cv.removeEventListener("touchstart",onT);cv.removeEventListener("touchmove",onT);};});
