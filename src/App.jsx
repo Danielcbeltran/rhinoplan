@@ -164,7 +164,12 @@ export default function RhinoPlanner(){
   const[saveTplName,setSaveTplName]=useState("");const[saveTplDesc,setSaveTplDesc]=useState("");const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
   const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");
-  const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);const[fotoPreview,setFotoPreview]=useState(null);
+  const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);const[fotoIdx,setFotoIdx]=useState(-1);const[fotoZoom,setFotoZoom]=useState(1);const[fotoPan,setFotoPan]=useState({x:0,y:0});const[fotoDrag,setFotoDrag]=useState(null);
+  const allFotosFlat=[...fotos.pre,...fotos.post];
+  function openFoto(src){const idx=allFotosFlat.indexOf(src);setFotoIdx(idx>=0?idx:0);setFotoZoom(1);setFotoPan({x:0,y:0});}
+  function closeFoto(){setFotoIdx(-1);setFotoZoom(1);setFotoPan({x:0,y:0});}
+  function nextFoto(){if(fotoIdx<allFotosFlat.length-1){setFotoIdx(fotoIdx+1);setFotoZoom(1);setFotoPan({x:0,y:0});}}
+  function prevFoto(){if(fotoIdx>0){setFotoIdx(fotoIdx-1);setFotoZoom(1);setFotoPan({x:0,y:0});}}
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
   const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
   const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
@@ -192,7 +197,7 @@ export default function RhinoPlanner(){
   function undo(){const k=hk;setHistIdx(hi=>{const ni=Math.max(0,(hi[k]||0)-1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
   function redo(){const k=hk;setHistIdx(hi=>{const mx=(history[k]||[[]]).length-1;const ni=Math.min(mx,(hi[k]||0)+1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
-  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"&&current?.type==="polygon"){setCurrent(null);setDrawing(false);}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
+  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
   function handleLogin(tok,user){setToken(tok);setAuthUser(user);loadPacientes(tok);loadUserTemplates(tok);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
@@ -463,7 +468,7 @@ export default function RhinoPlanner(){
             {fotos[tipo].length===0?<div style={{color:"#666",fontSize:11,fontStyle:"italic",padding:"12px 0"}}>Sin fotos</div>:(
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
                 {fotos[tipo].map((src,i)=>(
-                  <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>setFotoPreview(src)}>
+                  <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>openFoto(src)}>
                     <img src={src} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                     <button onClick={e=>{e.stopPropagation();removeFoto(tipo,i);}} style={{position:"absolute",top:3,right:3,background:"#000000AA",border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
                   </div>
@@ -478,9 +483,30 @@ export default function RhinoPlanner(){
       </div></div>)}
 
       {/* ═══ FOTO PREVIEW LIGHTBOX ═══ */}
-      {fotoPreview&&(<div onClick={()=>setFotoPreview(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000000EE",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
-        <img src={fotoPreview} style={{maxWidth:"92vw",maxHeight:"92vh",objectFit:"contain",borderRadius:8}}/>
-        <button onClick={()=>setFotoPreview(null)} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18}}>✕</button>
+      {fotoIdx>=0&&fotoIdx<allFotosFlat.length&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000000EE",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",touchAction:"none"}}
+        onWheel={e=>{e.preventDefault();setFotoZoom(z=>Math.max(0.5,Math.min(5,z+(e.deltaY>0?-0.3:0.3))));}}
+        onDoubleClick={()=>{if(fotoZoom>1){setFotoZoom(1);setFotoPan({x:0,y:0});}else setFotoZoom(2.5);}}
+        onMouseDown={e=>{if(fotoZoom>1)setFotoDrag({x:e.clientX-fotoPan.x,y:e.clientY-fotoPan.y});}}
+        onMouseMove={e=>{if(fotoDrag&&fotoZoom>1)setFotoPan({x:e.clientX-fotoDrag.x,y:e.clientY-fotoDrag.y});}}
+        onMouseUp={()=>setFotoDrag(null)}
+        onTouchStart={e=>{if(e.touches.length===1&&fotoZoom>1)setFotoDrag({x:e.touches[0].clientX-fotoPan.x,y:e.touches[0].clientY-fotoPan.y});if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setFotoDrag({pinch:d,startZoom:fotoZoom});}}}
+        onTouchMove={e=>{e.preventDefault();if(e.touches.length===1&&fotoDrag&&!fotoDrag.pinch&&fotoZoom>1)setFotoPan({x:e.touches[0].clientX-fotoDrag.x,y:e.touches[0].clientY-fotoDrag.y});if(e.touches.length===2&&fotoDrag?.pinch){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setFotoZoom(Math.max(0.5,Math.min(5,fotoDrag.startZoom*(d/fotoDrag.pinch))));}}}
+        onTouchEnd={()=>setFotoDrag(null)}
+      >
+        <img src={allFotosFlat[fotoIdx]} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:8,transform:`scale(${fotoZoom}) translate(${fotoPan.x/fotoZoom}px,${fotoPan.y/fotoZoom}px)`,transition:fotoDrag?"none":"transform 0.15s",userSelect:"none",pointerEvents:"none"}} draggable={false}/>
+        {/* Close */}
+        <button onClick={closeFoto} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18,zIndex:10}}>✕</button>
+        {/* Prev */}
+        {fotoIdx>0&&<button onClick={e=>{e.stopPropagation();prevFoto();}} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"#ffffff22",border:"none",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,zIndex:10}}>‹</button>}
+        {/* Next */}
+        {fotoIdx<allFotosFlat.length-1&&<button onClick={e=>{e.stopPropagation();nextFoto();}} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"#ffffff22",border:"none",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,zIndex:10}}>›</button>}
+        {/* Counter + zoom controls */}
+        <div style={{position:"absolute",bottom:16,left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",gap:12,background:"#00000088",borderRadius:20,padding:"6px 16px",zIndex:10}}>
+          <button onClick={e=>{e.stopPropagation();setFotoZoom(z=>Math.max(0.5,z-0.5));}} style={{background:"none",border:"none",color:"#fff",fontSize:18,cursor:"pointer",padding:"0 4px"}}>−</button>
+          <span style={{color:"#fff",fontSize:11,minWidth:40,textAlign:"center"}}>{Math.round(fotoZoom*100)}%</span>
+          <button onClick={e=>{e.stopPropagation();setFotoZoom(z=>Math.min(5,z+0.5));}} style={{background:"none",border:"none",color:"#fff",fontSize:18,cursor:"pointer",padding:"0 4px"}}>+</button>
+          <span style={{color:"#ffffff88",fontSize:11}}>{fotoIdx+1} / {allFotosFlat.length}</span>
+        </div>
       </div>)}
 
       {/* ═══ COLOR EDITOR MODAL ═══ */}
