@@ -74,13 +74,13 @@ const VIEW_IMAGES = {
 /* ═══ Drawing ═══ */
 function drawShape(ctx,s,selected){
   ctx.save();ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=s.size;ctx.globalAlpha=s.opacity??1;ctx.lineCap="round";ctx.lineJoin="round";
-  if(s.type==="pen"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
-  else if(s.type==="line"){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#C9A96E";ctx.fillStyle="#C9A96E";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.setLineDash([]);}}
-  else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#C9A96E";ctx.fillStyle="#C9A96E";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();}}
-  else if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
-  else if(s.type==="ellipse"){const rot=s.rotation||0;ctx.translate(s.cx,s.cy);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);const ry=Math.abs(s.ry)||1;ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#C9A96E";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#C9A96E";ctx.globalAlpha=0.5;ctx.fill();}}
-  else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
-  else if(s.type==="polygon"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));if(s.preview&&!s.closed)ctx.lineTo(s.preview.x,s.preview.y);if(s.closed)ctx.closePath();ctx.stroke();if(s.closed){ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();}if(!s.closed&&s.points.length>=3&&s.preview){const d=Math.hypot(s.preview.x-s.points[0].x,s.preview.y-s.points[0].y);if(d<20){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(s.points[0].x,s.points[0].y,8,0,Math.PI*2);ctx.strokeStyle="#C9A96E";ctx.lineWidth=2;ctx.stroke();}}s.points.forEach(p=>{ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#C9A96E";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
+  if(s.type==="pen"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
+  else if(s.type==="line"){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#5B8DB8";ctx.fillStyle="#5B8DB8";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.setLineDash([]);}}
+  else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#5B8DB8";ctx.fillStyle="#5B8DB8";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();}}
+  else if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.5;ctx.fill();}}
+  else if(s.type==="ellipse"){const rot=s.rotation||0;ctx.translate(s.cx,s.cy);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);const ry=Math.abs(s.ry)||1;ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.5;ctx.fill();}}
+  else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
+  else if(s.type==="polygon"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));if(s.preview&&!s.closed)ctx.lineTo(s.preview.x,s.preview.y);if(s.closed)ctx.closePath();ctx.stroke();if(s.closed){ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();}if(!s.closed&&s.points.length>=3&&s.preview){const d=Math.hypot(s.preview.x-s.points[0].x,s.preview.y-s.points[0].y);if(d<20){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(s.points[0].x,s.points[0].y,8,0,Math.PI*2);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=2;ctx.stroke();}}s.points.forEach(p=>{ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
   ctx.restore();
 }
 function shapeCenter(s){
@@ -105,10 +105,10 @@ function hit(s,pos,d=20){
 /* ═══ Modals ═══ */
 function PatientModal({patient,onSave,onClose}){
   const[form,setForm]=useState({...patient});const set=(k,v)=>setForm(f=>({...f,[k]:v}));
-  const inp={background:"#111",border:"1px solid #3A3A3A",borderRadius:5,color:"#E8D5B0",padding:"9px 12px",fontSize:14,width:"100%",fontFamily:"'Crimson Text',Georgia,serif",outline:"none",boxSizing:"border-box"};
+  const inp={background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,width:"100%",fontFamily:"'Crimson Text',Georgia,serif",outline:"none",boxSizing:"border-box"};
   const lbl={color:"#888",fontSize:10,textTransform:"uppercase",letterSpacing:"0.14em",display:"block",marginBottom:5};
-  return(<div style={{position:"fixed",inset:0,background:"#00000090",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}><div style={{background:"#1C1C1C",border:"1px solid #C9A96E55",borderRadius:14,padding:"28px 32px",width:480,maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Crimson Text',Georgia,serif"}} onClick={e=>e.stopPropagation()}>
-    <div style={{color:"#C9A96E",fontSize:20,fontWeight:700,marginBottom:20}}>Identificación del Paciente</div>
+  return(<div style={{position:"fixed",inset:0,background:"#00000090",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}><div style={{background:"#182540",border:"1px solid #5B8DB855",borderRadius:14,padding:"28px 32px",width:480,maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Crimson Text',Georgia,serif"}} onClick={e=>e.stopPropagation()}>
+    <div style={{color:"#5B8DB8",fontSize:20,fontWeight:700,marginBottom:20}}>Identificación del Paciente</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
       <div style={{gridColumn:"1/-1"}}><label style={lbl}>Nombre *</label><input style={inp} value={form.nombre} onChange={e=>set("nombre",e.target.value)} placeholder="Apellidos, Nombre"/></div>
       <div><label style={lbl}>Tipo doc</label><select style={inp} value={form.tipoDoc} onChange={e=>set("tipoDoc",e.target.value)}>{["CC","CE","Pasaporte","TI","Otro"].map(t=><option key={t}>{t}</option>)}</select></div>
@@ -121,23 +121,23 @@ function PatientModal({patient,onSave,onClose}){
     </div>
     <div style={{display:"flex",gap:12,marginTop:22,justifyContent:"flex-end"}}>
       <button onClick={onClose} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>Cancelar</button>
-      <button onClick={()=>{if(!form.nombre.trim()||!form.documento.trim()||!form.edad){alert("Complete campos obligatorios");return;}onSave(form);}} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
+      <button onClick={()=>{if(!form.nombre.trim()||!form.documento.trim()||!form.edad){alert("Complete campos obligatorios");return;}onSave(form);}} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
     </div></div></div>);
 }
 
 function LoginScreen({onLogin}){
   const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState("login");const[error,setError]=useState("");const[loading,setLoading]=useState(false);
   async function handleAuth(){setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data);}catch(e){setError(e.message);}finally{setLoading(false);}}
-  const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#1A1A1A",border:"1px solid #333",borderRadius:7,color:"#E8D5B0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
-  return(<div style={{minHeight:"100vh",background:"#1A1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
+  const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#C8DCF0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
+  return(<div style={{minHeight:"100vh",background:"#152238",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
-    <div style={{background:"#242424",border:"1px solid #C9A96E44",borderRadius:14,padding:"40px 36px",width:340}}>
-      <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:38}}>👃</div><div style={{color:"#C9A96E",fontSize:22,fontWeight:700}}>RhinoPlan</div><div style={{color:"#666",fontSize:12,letterSpacing:"0.15em",textTransform:"uppercase",marginTop:4}}>Planificador Quirúrgico</div></div>
-      <div style={{display:"flex",marginBottom:24,background:"#1A1A1A",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#C9A96E":"transparent",color:mode===m?"#1A1A1A":"#888",fontWeight:mode===m?700:400}}>{m==="login"?"Iniciar sesión":"Registrarse"}</button>))}</div>
+    <div style={{background:"#1C2D42",border:"1px solid #5B8DB844",borderRadius:14,padding:"40px 36px",width:340}}>
+      <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:38}}>👃</div><div style={{color:"#5B8DB8",fontSize:22,fontWeight:700}}>RhinoPlan</div><div style={{color:"#666",fontSize:12,letterSpacing:"0.15em",textTransform:"uppercase",marginTop:4}}>Planificador Quirúrgico</div></div>
+      <div style={{display:"flex",marginBottom:24,background:"#152238",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#5B8DB8":"transparent",color:mode===m?"#152238":"#888",fontWeight:mode===m?700:400}}>{m==="login"?"Iniciar sesión":"Registrarse"}</button>))}</div>
       <div style={{marginBottom:14}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>Email</label><input value={email} onChange={e=>setEmail(e.target.value)} style={inp} placeholder="correo@ejemplo.com" type="email"/></div>
       <div style={{marginBottom:20}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>Contraseña</label><input value={pass} onChange={e=>setPass(e.target.value)} style={inp} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
       {error&&<div style={{color:"#FF6B6B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#FF000015",borderRadius:6}}>{error}</div>}
-      <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#C9A96E",border:"none",borderRadius:8,color:"#1A1A1A",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?"Entrar":"Crear cuenta"}</button>
+      <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?"Entrar":"Crear cuenta"}</button>
     </div></div>);
 }
 
@@ -237,15 +237,15 @@ export default function RhinoPlanner(){
     const usable_w=pw-mg*2,usable_h=ph-mg*2;
 
     // Header
-    pdf.setFillColor(26,26,26);pdf.rect(0,0,pw,28,"F");
-    pdf.setTextColor(201,169,110);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
+    pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,28,"F");
+    pdf.setTextColor(91,141,184);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
     pdf.text("RhinoPlan — "+(planMode==="pre"?"Planeación Prequirúrgica":"Técnica Realizada"),mg,10);
-    pdf.setTextColor(232,213,176);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
+    pdf.setTextColor(200,220,240);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
     if(patient.nombre)pdf.text("Paciente: "+patient.nombre,mg,17);
     pdf.setTextColor(170,170,170);pdf.setFontSize(8);
     const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
     pdf.text(info,mg,23);
-    pdf.setDrawColor(201,169,110);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
+    pdf.setDrawColor(91,141,184);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
 
     // Canvas for each view
     const cols=2,rows=3,vgap=4,hgap=3;
@@ -286,7 +286,7 @@ export default function RhinoPlanner(){
       pdf.text(viewLabels[idx],x,y+3);
       // Image
       pdf.addImage(data,"PNG",x,y+4,vw,vh);
-      pdf.setDrawColor(208,200,188);pdf.setLineWidth(0.3);
+      pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);
       pdf.rect(x,y+4,vw,vh);
     });
 
@@ -346,31 +346,31 @@ export default function RhinoPlanner(){
 
   const btn={background:"transparent",color:"#888",border:"1px solid #555",padding:"7px 13px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"};
   const modalBg={position:"fixed",top:0,left:0,right:0,bottom:0,background:"#00000080",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"};
-  const modalBox={background:"#1E1E1E",border:"1px solid #C9A96E44",borderRadius:12,padding:24,width:420,maxHeight:"80vh",overflowY:"auto"};
-  const tplCard={padding:"12px 14px",background:"#252525",borderRadius:8,marginBottom:8,border:"1px solid #333"};
+  const modalBox={background:"#1E1E1E",border:"1px solid #5B8DB844",borderRadius:12,padding:24,width:420,maxHeight:"80vh",overflowY:"auto"};
+  const tplCard={padding:"12px 14px",background:"#1E2F45",borderRadius:8,marginBottom:8,border:"1px solid #333"};
 
   if(!token)return <LoginScreen onLogin={handleLogin}/>;
 
   return(
-    <div style={{height:"100vh",maxHeight:"100vh",overflow:"hidden",background:"#EDEAE4",fontFamily:"'Crimson Text',Georgia,serif",display:"flex",flexDirection:"column"}}>
+    <div style={{height:"100vh",maxHeight:"100vh",overflow:"hidden",background:"#EEF3F8",fontFamily:"'Crimson Text',Georgia,serif",display:"flex",flexDirection:"column"}}>
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
       {showModal&&<PatientModal patient={patient} onSave={p=>{setPatient(p);setShowModal(false);}} onClose={()=>setShowModal(false)}/>}
 
       {/* ═══ TEMPLATES MODAL ═══ */}
       {showTemplates&&(<div style={modalBg} onClick={()=>setShowTemplates(false)}><div style={modalBox} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{color:"#C9A96E",fontSize:16,fontWeight:700}}>Plantillas Quirúrgicas</div>
-          <button onClick={()=>{setShowSaveTpl(true);setShowTemplates(false);}} style={{background:"#C9A96E22",border:"1px solid #C9A96E",color:"#C9A96E",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Guardar actual</button>
+          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>Plantillas Quirúrgicas</div>
+          <button onClick={()=>{setShowSaveTpl(true);setShowTemplates(false);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Guardar actual</button>
         </div>
         {userTemplates.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:24,fontStyle:"italic"}}>No tienes plantillas aún. Dibuja un plan y guárdalo con "+ Guardar actual"</div>:<>
         {userTemplates.map(t=>(<div key={t.id} style={tplCard}>
           {editTplId===t.id?(
-            <div style={{display:"flex",gap:8,alignItems:"center"}}><input value={editTplName} onChange={e=>setEditTplName(e.target.value)} style={{flex:1,background:"#111",border:"1px solid #C9A96E",borderRadius:4,color:"#E8D5B0",padding:"5px 8px",fontSize:12,outline:"none"}} onKeyDown={e=>e.key==="Enter"&&renameTemplate(t.id)}/><button onClick={()=>renameTemplate(t.id)} style={{color:"#C9A96E",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✓</button><button onClick={()=>setEditTplId(null)} style={{color:"#888",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✕</button></div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}><input value={editTplName} onChange={e=>setEditTplName(e.target.value)} style={{flex:1,background:"#111",border:"1px solid #5B8DB8",borderRadius:4,color:"#C8DCF0",padding:"5px 8px",fontSize:12,outline:"none"}} onKeyDown={e=>e.key==="Enter"&&renameTemplate(t.id)}/><button onClick={()=>renameTemplate(t.id)} style={{color:"#5B8DB8",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✓</button><button onClick={()=>setEditTplId(null)} style={{color:"#888",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✕</button></div>
           ):(
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{color:"#E8D5B0",fontWeight:600,fontSize:13}}>{t.nombre}</div>{t.descripcion&&<div style={{color:"#888",fontSize:10,marginTop:2}}>{t.descripcion}</div>}</div>
+              <div><div style={{color:"#C8DCF0",fontWeight:600,fontSize:13}}>{t.nombre}</div>{t.descripcion&&<div style={{color:"#888",fontSize:10,marginTop:2}}>{t.descripcion}</div>}</div>
               <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>applyTemplate(t.anotaciones)} style={{background:"#C9A96E",border:"none",color:"#1A1A1A",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700}}>Aplicar</button>
+                <button onClick={()=>applyTemplate(t.anotaciones)} style={{background:"#5B8DB8",border:"none",color:"#152238",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700}}>Aplicar</button>
                 <button onClick={()=>updateTemplateAnnotations(t.id)} title="Actualizar con anotaciones actuales" style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>↑</button>
                 <button onClick={()=>{setEditTplId(t.id);setEditTplName(t.nombre);}} title="Renombrar" style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✎</button>
                 <button onClick={()=>deleteTemplate(t.id)} title="Eliminar" style={{background:"#333",border:"none",color:"#CC1111",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✕</button>
@@ -382,89 +382,89 @@ export default function RhinoPlanner(){
 
       {/* ═══ SAVE AS TEMPLATE MODAL ═══ */}
       {showSaveTpl&&(<div style={modalBg} onClick={()=>setShowSaveTpl(false)}><div style={{...modalBox,width:360}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:"#C9A96E",fontSize:16,fontWeight:700,marginBottom:16}}>Guardar como plantilla</div>
-        <div style={{marginBottom:12}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Nombre *</label><input value={saveTplName} onChange={e=>setSaveTplName(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #3A3A3A",borderRadius:5,color:"#E8D5B0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Ej: Mi rinoplastia estándar"/></div>
-        <div style={{marginBottom:16}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Descripción</label><input value={saveTplDesc} onChange={e=>setSaveTplDesc(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #3A3A3A",borderRadius:5,color:"#E8D5B0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Breve descripción..."/></div>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>Guardar como plantilla</div>
+        <div style={{marginBottom:12}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Nombre *</label><input value={saveTplName} onChange={e=>setSaveTplName(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Ej: Mi rinoplastia estándar"/></div>
+        <div style={{marginBottom:16}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Descripción</label><input value={saveTplDesc} onChange={e=>setSaveTplDesc(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Breve descripción..."/></div>
         <div style={{display:"flex",gap:12,justifyContent:"flex-end"}}>
           <button onClick={()=>setShowSaveTpl(false)} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={saveAsTemplate} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
+          <button onClick={saveAsTemplate} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
         </div>
       </div></div>)}
 
       {/* Pacientes modal */}
       {showPacList&&(<div style={modalBg} onClick={()=>setShowPacList(false)}><div style={modalBox} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{color:"#C9A96E",fontSize:16,fontWeight:700}}>Pacientes</div>
-          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setShowModal(true);}} style={{background:"#C9A96E22",border:"1px solid #C9A96E",color:"#C9A96E",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Nuevo</button>
+          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>Pacientes</div>
+          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Nuevo</button>
         </div>
-        {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>No hay pacientes</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#E8D5B0",fontWeight:600,fontSize:14}}>{p.nombre||"Sin nombre"}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
+        {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>No hay pacientes</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||"Sin nombre"}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
       </div></div>)}
 
       {/* ═══ COLOR EDITOR MODAL ═══ */}
       {showColorEditor&&(<div style={modalBg} onClick={()=>setShowColorEditor(false)}><div style={{...modalBox,width:380}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:"#C9A96E",fontSize:16,fontWeight:700,marginBottom:16}}>Editar Tabla de Colores</div>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>Editar Tabla de Colores</div>
         {colors.map((c,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <input type="color" value={c.hex} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],hex:e.target.value};saveColors(nc);}} style={{width:32,height:32,border:"1px solid #444",borderRadius:4,cursor:"pointer",background:"none",padding:0}}/>
-          <input value={c.label} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],label:e.target.value};saveColors(nc);}} style={{flex:1,background:"#111",border:"1px solid #3A3A3A",borderRadius:4,color:"#E8D5B0",padding:"6px 10px",fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+          <input value={c.label} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],label:e.target.value};saveColors(nc);}} style={{flex:1,background:"#111",border:"1px solid #354A62",borderRadius:4,color:"#C8DCF0",padding:"6px 10px",fontSize:12,outline:"none",fontFamily:"inherit"}}/>
           <button onClick={()=>{if(colors.length<=1)return;const nc=colors.filter((_,j)=>j!==i);saveColors(nc);if(color===c.hex&&nc.length)setColor(nc[0].hex);}} style={{background:"none",border:"none",color:"#CC1111",cursor:"pointer",fontSize:14,padding:"2px 6px",opacity:colors.length<=1?0.3:1}} disabled={colors.length<=1}>✕</button>
         </div>))}
         <div style={{display:"flex",gap:8,marginTop:14}}>
-          <button onClick={()=>{saveColors([...colors,{hex:"#888888",label:"Nuevo color"}]);}} style={{flex:1,background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Agregar color</button>
-          <button onClick={()=>{saveColors([...DEFAULT_COLORS]);setColor(DEFAULT_COLORS[0].hex);}} style={{flex:1,background:"#252525",border:"1px solid #44444488",color:"#888",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Restaurar</button>
+          <button onClick={()=>{saveColors([...colors,{hex:"#888888",label:"Nuevo color"}]);}} style={{flex:1,background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Agregar color</button>
+          <button onClick={()=>{saveColors([...DEFAULT_COLORS]);setColor(DEFAULT_COLORS[0].hex);}} style={{flex:1,background:"#1E2F45",border:"1px solid #44444488",color:"#888",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Restaurar</button>
         </div>
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-          <button onClick={()=>setShowColorEditor(false)} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
+          <button onClick={()=>setShowColorEditor(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
         </div>
       </div></div>)}
 
       {/* HEADER */}
-      <div style={{background:"#1A1A1A",borderBottom:"3px solid #C9A96E",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
-        <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#C9A96E",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
-        <div style={{color:"#C9A96E",fontSize:compact?14:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
-        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Pacientes</button>
-        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#252525",border:"1px solid #C9A96E44",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Plantillas</button>
-        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#C9A96E22",border:"1px solid #C9A96E",color:"#C9A96E",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||"Guardar"}</button>}
-        <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#C9A96E44":"#2E2E2E"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
-          <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#C9A96E,#8B7355)":"#252525",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
-          {!compact&&(hasP?(<div><div style={{color:"#E8D5B0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>Paciente</div>))}
+      <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
+        <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
+        <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
+        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Pacientes</button>
+        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Plantillas</button>
+        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||"Guardar"}</button>}
+        <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#5B8DB844":"#2A3D55"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
+          <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
+          {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>Paciente</div>))}
         </div>
-        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#C9A96E,#8B7355)",color:"#0F0B07",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>Exportar</button>
+        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>Exportar</button>
         <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>Salir</button>
       </div>
 
       {/* BODY */}
       <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
         {/* SIDEBAR */}
-        {sideOpen&&<div style={{width:compact?155:175,background:"#1A1A1A",padding:"10px 6px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid #252525",flexShrink:0}}>
-          <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
-            {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#C9A96E":"#2E2E2E"}`,background:tool===t.id?"#C9A96E15":"transparent",color:tool===t.id?"#C9A96E":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
-          <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>Color</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#C9A96E88",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{colors.map((c,i)=><div key={i} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #C9A96E":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
+        {sideOpen&&<div style={{width:compact?155:175,background:"#152238",padding:"10px 6px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid #1E2F45",flexShrink:0}}>
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
+            {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#5B8DB8":"#2A3D55"}`,background:tool===t.id?"#5B8DB815":"transparent",color:tool===t.id?"#5B8DB8":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
+          <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>Color</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#5B8DB888",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{colors.map((c,i)=><div key={i} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #5B8DB8":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
             {colors.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
-          <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Grosor {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
-          <div><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Opacidad {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#C9A96E"}}/></div>
-          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"6px 8px"}}><div style={{color:"#C9A96E88",fontSize:8,textTransform:"uppercase",marginBottom:3}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.4}}>{patient.notas}</div></div>}
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Grosor {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Opacidad {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
+          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"6px 8px"}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",marginBottom:3}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.4}}>{patient.notas}</div></div>}
         </div>}
         {/* MAIN */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 8px",overflowY:"auto",background:"#EDEAE4"}}>
-          {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:4,background:"#fff",border:"1px solid #D4C8B8",borderRadius:7,padding:"4px 10px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11}}>
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 8px",overflowY:"auto",background:"#EEF3F8"}}>
+          {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:4,background:"#fff",border:"1px solid #C0D0E0",borderRadius:7,padding:"4px 10px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11}}>
             <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"3px 8px",fontSize:10}}>Editar</button>
           </div>)}
           {/* PLAN MODE TOGGLE */}
-          <div style={{display:"flex",marginBottom:6,background:"#1A1A1A",borderRadius:8,padding:2,maxWidth:380,width:"100%"}}>
+          <div style={{display:"flex",marginBottom:6,background:"#152238",borderRadius:8,padding:2,maxWidth:380,width:"100%"}}>
             {[{id:"pre",label:"Planeación Prequirúrgica"},{id:"post",label:"Técnica Realizada"}].map(m=>(
-              <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"6px 8px",border:"none",borderRadius:6,cursor:"pointer",fontSize:compact?10:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#C9A96E":"#6A9F6A"):"transparent",color:planMode===m.id?"#1A1A1A":"#888",transition:"all 0.2s"}}>{m.label}</button>
+              <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"6px 8px",border:"none",borderRadius:6,cursor:"pointer",fontSize:compact?10:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#5B8DB8":"#4A9F6A"):"transparent",color:planMode===m.id?"#152238":"#888",transition:"all 0.2s"}}>{m.label}</button>
             ))}
           </div>
           <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap",justifyContent:"center"}}>
-            {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"4px 8px",border:`1.5px solid ${activeView===v.id?"#C9A96E":"#C4BAA8"}`,background:activeView===v.id?"#1A1A1A":"#E0D8CE",color:activeView===v.id?"#C9A96E":"#666",borderRadius:4,cursor:"pointer",fontSize:compact?9:11,fontFamily:"inherit"}}>{v.label}</button>))}
+            {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"4px 8px",border:`1.5px solid ${activeView===v.id?"#5B8DB8":"#A8BCCE"}`,background:activeView===v.id?"#152238":"#DDE8F0",color:activeView===v.id?"#5B8DB8":"#666",borderRadius:4,cursor:"pointer",fontSize:compact?9:11,fontFamily:"inherit"}}>{v.label}</button>))}
           </div>
-          <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:`2px solid ${planMode==="pre"?"#C9A96E":"#6A9F6A"}`,display:"inline-block"}}>
-            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#C9A96E":"#6A9F6A",color:"#1A1A1A",padding:"2px 10px",borderRadius:10,fontSize:8,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
+          <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:`2px solid ${planMode==="pre"?"#5B8DB8":"#4A9F6A"}`,display:"inline-block"}}>
+            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#5B8DB8":"#4A9F6A",color:"#152238",padding:"2px 10px",borderRadius:10,fontSize:8,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
             <canvas ref={canvasRef} width={W} height={H} style={{display:"block",width:scaledW,height:scaledH,cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
-            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x*(scaledW/W),top:textInput.y*(scaledH/H)-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #C9A96E",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
+            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x*(scaledW/W),top:textInput.y*(scaledH/H)-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #5B8DB8",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
           </div>
           <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
             <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title="Deshacer">↩</button>
