@@ -129,6 +129,9 @@ export const translations = {
     settings: "Configuración",
     language: "Idioma",
     confirmDelete: "¿Eliminar esta plantilla?",
+    proDesc: "Pacientes, plantillas y fotos ilimitadas. 7 idiomas.",
+    month: "mes",
+    upgradeToPro: "Actualizar a Pro →",
   },
 
   en: {
@@ -245,6 +248,9 @@ export const translations = {
     settings: "Settings",
     language: "Language",
     confirmDelete: "Delete this template?",
+    proDesc: "Unlimited patients, templates and photos. 7 languages.",
+    month: "month",
+    upgradeToPro: "Upgrade to Pro →",
   },
 
   fr: {
@@ -361,6 +367,9 @@ export const translations = {
     settings: "Paramètres",
     language: "Langue",
     confirmDelete: "Supprimer ce modèle ?",
+    proDesc: "Patients, modèles et photos illimités. 7 langues.",
+    month: "mois",
+    upgradeToPro: "Passer à Pro →",
   },
 
   pt: {
@@ -477,6 +486,9 @@ export const translations = {
     settings: "Configurações",
     language: "Idioma",
     confirmDelete: "Excluir este modelo?",
+    proDesc: "Pacientes, modelos e fotos ilimitados. 7 idiomas.",
+    month: "mês",
+    upgradeToPro: "Atualizar para Pro →",
   },
 
   de: {
@@ -593,6 +605,9 @@ export const translations = {
     settings: "Einstellungen",
     language: "Sprache",
     confirmDelete: "Diese Vorlage löschen?",
+    proDesc: "Unbegrenzte Patienten, Vorlagen und Fotos. 7 Sprachen.",
+    month: "Monat",
+    upgradeToPro: "Auf Pro upgraden →",
   },
 
   it: {
@@ -709,6 +724,9 @@ export const translations = {
     settings: "Impostazioni",
     language: "Lingua",
     confirmDelete: "Eliminare questo modello?",
+    proDesc: "Pazienti, modelli e foto illimitati. 7 lingue.",
+    month: "mese",
+    upgradeToPro: "Passa a Pro →",
   },
 
   tr: {
@@ -825,5 +843,8 @@ export const translations = {
     settings: "Ayarlar",
     language: "Dil",
     confirmDelete: "Bu şablonu silmek istediğinize emin misiniz?",
+    proDesc: "Sınırsız hasta, şablon ve fotoğraf. 7 dil.",
+    month: "ay",
+    upgradeToPro: "Pro'ya yükselt →",
   },
 };

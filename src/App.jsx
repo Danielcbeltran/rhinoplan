@@ -571,6 +571,21 @@ export default function RhinoPlanner(){
           </div>
         </div>
         <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={()=>setShowSettings(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>{t.done}</button></div>
+        {/* Pro upgrade */}
+        <div style={{marginTop:16,padding:"16px",background:"linear-gradient(135deg,#1E2F45,#152238)",border:"1px solid #5B8DB844",borderRadius:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{background:"#F5BE3A",color:"#152238",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Pro</span>
+            <span style={{color:"#C8DCF0",fontSize:13,fontWeight:600}}>RhinoPlan Pro</span>
+          </div>
+          <div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5,marginBottom:12}}>{t.proDesc}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
+            <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$14.99</span>
+            <span style={{color:"#7A8FA6",fontSize:11}}>USD/{t.month}</span>
+          </div>
+          <a href={"https://rhinoplan.lemonsqueezy.com/checkout/buy/070d95b3-9728-4877-8ed6-d2dcc4db9a04?checkout[email]="+encodeURIComponent(authUser?.email||"")} target="_blank" rel="noopener" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,textDecoration:"none",fontFamily:"inherit"}}>
+            {t.upgradeToPro}
+          </a>
+        </div>
       </div></div>)}
 
       {/* HEADER */}
