@@ -561,9 +561,9 @@ export default function RhinoPlanner(){
         <div style={{marginBottom:16}}>
           <div style={{color:"#888",fontSize:10,textTransform:"uppercase",letterSpacing:"0.14em",marginBottom:8}}>{t.language}</div>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {[{code:"es",label:"Español",flag:"🇪🇸"},{code:"en",label:"English",flag:"🇬🇧"},{code:"fr",label:"Français",flag:"🇫🇷"},{code:"pt",label:"Português",flag:"🇧🇷"},{code:"de",label:"Deutsch",flag:"🇩🇪"},{code:"it",label:"Italiano",flag:"🇮🇹"},{code:"tr",label:"Türkçe",flag:"🇹🇷"}].map(l=>(
+            {[{code:"es",label:"Español"},{code:"en",label:"English"},{code:"fr",label:"Français"},{code:"pt",label:"Português"},{code:"de",label:"Deutsch"},{code:"it",label:"Italiano"},{code:"tr",label:"Türkçe"}].map(l=>(
               <button key={l.code} onClick={()=>{setLang(l.code);setShowSettings(false);}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:6,border:lang===l.code?"1.5px solid #5B8DB8":"1px solid #354A62",background:lang===l.code?"#5B8DB815":"transparent",color:lang===l.code?"#5B8DB8":"#AAA",cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
-                <span style={{fontSize:16}}>{l.flag}</span>{l.label}
+                {l.label}
                 {lang===l.code&&<span style={{marginLeft:"auto",fontSize:12}}>✓</span>}
               </button>
             ))}
