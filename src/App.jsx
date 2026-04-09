@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { translations } from "./translations";
+import { useLang } from "./LanguageContext";
 import { jsPDF } from "jspdf";
 
 const SUPA_URL = "https://tzmbybwytfpaqaajwumz.supabase.co";
@@ -25,31 +27,31 @@ async function supaFetch(path, token, method="GET", body=null) {
   return txt ? JSON.parse(txt) : null;
 }
 
-const TOOLS=[
-  {id:"select",label:"Seleccionar",icon:"👆"},
-  {id:"pen",label:"Lápiz",icon:"✏️"},
-  {id:"line",label:"Línea",icon:"📏"},
-  {id:"arrow",label:"Flecha",icon:"➡️"},
-  {id:"rect",label:"Área",icon:"⬜"},
-  {id:"ellipse",label:"Elipse",icon:"⭕"},
-  {id:"text",label:"Texto",icon:"T"},
-  {id:"polygon",label:"Polígono",icon:"⬠"},
-  {id:"eraser",label:"Borrar",icon:"🗑"},
+const getTools=(t)=>[
+  {id:"select",label:t.select,icon:"👆"},
+  {id:"pen",label:t.pen,icon:"✏️"},
+  {id:"line",label:t.line,icon:"📏"},
+  {id:"arrow",label:t.arrow,icon:"➡️"},
+  {id:"rect",label:t.area,icon:"⬜"},
+  {id:"ellipse",label:t.ellipse,icon:"⭕"},
+  {id:"text",label:t.text,icon:"T"},
+  {id:"polygon",label:t.polygon,icon:"⬠"},
+  {id:"eraser",label:t.erase,icon:"🗑"},
 ];
-const DEFAULT_COLORS=[
-  {hex:"#CC1111",label:"Resección / Incisiones"},
-  {hex:"#1B6B1B",label:"Injerto de cartílago"},
-  {hex:"#1565C0",label:"Injerto óseo"},
-  {hex:"#F9A825",label:"Injerto tejido blando"},
-  {hex:"#111111",label:"Suturas / Notas"},
+const getDefaultColors=(t)=>[
+  {hex:"#CC1111",label:t.resection},
+  {hex:"#1B6B1B",label:t.cartilageGraft},
+  {hex:"#1565C0",label:t.boneGraft},
+  {hex:"#F9A825",label:t.softTissueGraft},
+  {hex:"#111111",label:t.suturesNotes},
 ];
-const VIEWS=[
-  {id:"frontal",label:"Vista Frontal"},
-  {id:"externo",label:"Perfil Externo"},
-  {id:"septal",label:"Perfil Septal"},
-  {id:"lateral",label:"Pared Lateral"},
-  {id:"basal",label:"Vista Basal"},
-  {id:"basalExt",label:"Basal Externa"},
+const getViews=(t)=>[
+  {id:"frontal",label:t.frontalView},
+  {id:"externo",label:t.externalProfile},
+  {id:"septal",label:t.septalProfile},
+  {id:"lateral",label:t.lateralWall},
+  {id:"basal",label:t.basalView},
+  {id:"basalExt",label:t.externalBasal},
 ];
 const W=380,H=480;
 const EMPTY_PAT={nombre:"",documento:"",tipoDoc:"CC",edad:"",sexo:"F",fecha:new Date().toISOString().slice(0,10),cirujano:"",notas:""};
@@ -104,45 +106,54 @@ function hit(s,pos,d=20){
 
 /* ═══ Modals ═══ */
 function PatientModal({patient,onSave,onClose}){
+  const{lang}=useLang();
+  const t=translations[lang];
   const[form,setForm]=useState({...patient});const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   const inp={background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,width:"100%",fontFamily:"'Crimson Text',Georgia,serif",outline:"none",boxSizing:"border-box"};
   const lbl={color:"#888",fontSize:10,textTransform:"uppercase",letterSpacing:"0.14em",display:"block",marginBottom:5};
   return(<div style={{position:"fixed",inset:0,background:"#00000090",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}><div style={{background:"#182540",border:"1px solid #5B8DB855",borderRadius:14,padding:"28px 32px",width:480,maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Crimson Text',Georgia,serif"}} onClick={e=>e.stopPropagation()}>
-    <div style={{color:"#5B8DB8",fontSize:20,fontWeight:700,marginBottom:20}}>Identificación del Paciente</div>
+    <div style={{color:"#5B8DB8",fontSize:20,fontWeight:700,marginBottom:20}}>${t.patient}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-      <div style={{gridColumn:"1/-1"}}><label style={lbl}>Nombre *</label><input style={inp} value={form.nombre} onChange={e=>set("nombre",e.target.value)} placeholder="Apellidos, Nombre"/></div>
-      <div><label style={lbl}>Tipo doc</label><select style={inp} value={form.tipoDoc} onChange={e=>set("tipoDoc",e.target.value)}>{["CC","CE","Pasaporte","TI","Otro"].map(t=><option key={t}>{t}</option>)}</select></div>
-      <div><label style={lbl}>Documento *</label><input style={inp} value={form.documento} onChange={e=>set("documento",e.target.value)}/></div>
-      <div><label style={lbl}>Edad *</label><input style={inp} type="number" value={form.edad} onChange={e=>set("edad",e.target.value)}/></div>
-      <div><label style={lbl}>Sexo</label><select style={inp} value={form.sexo} onChange={e=>set("sexo",e.target.value)}><option value="F">F</option><option value="M">M</option></select></div>
-      <div><label style={lbl}>Fecha</label><input style={inp} type="date" value={form.fecha} onChange={e=>set("fecha",e.target.value)}/></div>
-      <div><label style={lbl}>Cirujano</label><input style={inp} value={form.cirujano} onChange={e=>set("cirujano",e.target.value)}/></div>
-      <div style={{gridColumn:"1/-1"}}><label style={lbl}>Notas</label><textarea style={{...inp,height:55,resize:"vertical"}} value={form.notas} onChange={e=>set("notas",e.target.value)}/></div>
+      <div style={{gridColumn:"1/-1"}}><label style={lbl}>{t.name} *</label><input style={inp} value={form.nombre} onChange={e=>set("nombre",e.target.value)} placeholder={t.namePlaceholder}/></div>
+      <div><label style={lbl}>{t.docType}</label><select style={inp} value={form.tipoDoc} onChange={e=>set("tipoDoc",e.target.value)}>{[{v:"CC",l:t.cc},{v:"CE",l:t.ce},{v:"Pasaporte",l:t.passport},{v:"TI",l:t.ti},{v:"Otro",l:t.other}].map(d=><option key={d.v} value={d.v}>{d.l}</option>)}</select></div>
+      <div><label style={lbl}>{t.document} *</label><input style={inp} value={form.documento} onChange={e=>set("documento",e.target.value)}/></div>
+      <div><label style={lbl}>{t.age} *</label><input style={inp} type="number" value={form.edad} onChange={e=>set("edad",e.target.value)}/></div>
+      <div><label style={lbl}>{t.sex}</label><select style={inp} value={form.sexo} onChange={e=>set("sexo",e.target.value)}><option value="F">F</option><option value="M">M</option></select></div>
+      <div><label style={lbl}>{t.date}</label><input style={inp} type="date" value={form.fecha} onChange={e=>set("fecha",e.target.value)}/></div>
+      <div><label style={lbl}>{t.surgeon}</label><input style={inp} value={form.cirujano} onChange={e=>set("cirujano",e.target.value)}/></div>
+      <div style={{gridColumn:"1/-1"}}><label style={lbl}>{t.notes}</label><textarea style={{...inp,height:55,resize:"vertical"}} value={form.notas} onChange={e=>set("notas",e.target.value)}/></div>
     </div>
     <div style={{display:"flex",gap:12,marginTop:22,justifyContent:"flex-end"}}>
-      <button onClick={onClose} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>Cancelar</button>
-      <button onClick={()=>{if(!form.nombre.trim()||!form.documento.trim()||!form.edad){alert("Complete campos obligatorios");return;}onSave(form);}} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
+      <button onClick={onClose} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>{t.cancel}</button>
+      <button onClick={()=>{if(!form.nombre.trim()||!form.documento.trim()||!form.edad){alert(t.requiredFields);return;}onSave(form);}} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>{t.save}</button>
     </div></div></div>);
 }
 
 function LoginScreen({onLogin}){
+  const{lang}=useLang();
+  const t=translations[lang];
   const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState("login");const[error,setError]=useState("");const[loading,setLoading]=useState(false);
   async function handleAuth(){setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data);}catch(e){setError(e.message);}finally{setLoading(false);}}
   const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#C8DCF0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
   return(<div style={{minHeight:"100vh",background:"#152238",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
     <div style={{background:"#1C2D42",border:"1px solid #5B8DB844",borderRadius:14,padding:"40px 36px",width:340}}>
-      <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:38}}>👃</div><div style={{color:"#5B8DB8",fontSize:22,fontWeight:700}}>RhinoPlan</div><div style={{color:"#666",fontSize:12,letterSpacing:"0.15em",textTransform:"uppercase",marginTop:4}}>Planificador Quirúrgico</div></div>
-      <div style={{display:"flex",marginBottom:24,background:"#152238",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#5B8DB8":"transparent",color:mode===m?"#152238":"#888",fontWeight:mode===m?700:400}}>{m==="login"?"Iniciar sesión":"Registrarse"}</button>))}</div>
-      <div style={{marginBottom:14}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>Email</label><input value={email} onChange={e=>setEmail(e.target.value)} style={inp} placeholder="correo@ejemplo.com" type="email"/></div>
-      <div style={{marginBottom:20}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>Contraseña</label><input value={pass} onChange={e=>setPass(e.target.value)} style={inp} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
+      <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:38}}>👃</div><div style={{color:"#5B8DB8",fontSize:22,fontWeight:700}}>RhinoPlan</div><div style={{color:"#666",fontSize:12,letterSpacing:"0.15em",textTransform:"uppercase",marginTop:4}}>{t.surgicalPlanner}</div></div>
+      <div style={{display:"flex",marginBottom:24,background:"#152238",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#5B8DB8":"transparent",color:mode===m?"#152238":"#888",fontWeight:mode===m?700:400}}>{m==="login"?t.login:t.register}</button>))}</div>
+      <div style={{marginBottom:14}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} style={inp} placeholder="correo@ejemplo.com" type="email"/></div>
+      <div style={{marginBottom:20}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.password}</label><input value={pass} onChange={e=>setPass(e.target.value)} style={inp} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
       {error&&<div style={{color:"#FF6B6B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#FF000015",borderRadius:6}}>{error}</div>}
-      <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?"Entrar":"Crear cuenta"}</button>
+      <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?t.enter:t.createAccount}</button>
     </div></div>);
 }
 
 /* ═══ MAIN APP ═══ */
 export default function RhinoPlanner(){
+  const{lang,setLang}=useLang();
+  const t=translations[lang];
+  const TOOLS=getTools(t);
+  const DEFAULT_COLORS=getDefaultColors(t);
+  const VIEWS=getViews(t);
   const[token,setToken]=useState(null);const[authUser,setAuthUser]=useState(null);
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
@@ -163,7 +174,7 @@ export default function RhinoPlanner(){
   const[showTemplates,setShowTemplates]=useState(false);const[userTemplates,setUserTemplates]=useState([]);
   const[saveTplName,setSaveTplName]=useState("");const[saveTplDesc,setSaveTplDesc]=useState("");const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
-  const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");
+  const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");const[showSettings,setShowSettings]=useState(false);
   const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);const[fotoIdx,setFotoIdx]=useState(-1);const[fotoZoom,setFotoZoom]=useState(1);const[fotoPan,setFotoPan]=useState({x:0,y:0});const[fotoDrag,setFotoDrag]=useState(null);
   const allFotosFlat=[...fotos.pre,...fotos.post];
   function openFoto(src){const idx=allFotosFlat.indexOf(src);setFotoIdx(idx>=0?idx:0);setFotoZoom(1);setFotoPan({x:0,y:0});}
@@ -204,16 +215,16 @@ export default function RhinoPlanner(){
   function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});}
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg("Guardado");loadPacientes();}catch(e){setSaveMsg("Error");}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
   function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
   function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});}
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function saveAsTemplate(){if(!saveTplName.trim())return;try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert("Error: "+e.message);}}
-  async function deleteTemplate(id){if(!confirm("¿Eliminar esta plantilla?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"DELETE");loadUserTemplates();}catch(e){alert("Error");}}
-  async function renameTemplate(id){if(!editTplName.trim())return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{nombre:editTplName});setEditTplId(null);setEditTplName("");loadUserTemplates();}catch(e){alert("Error");}}
-  async function updateTemplateAnnotations(id){if(!confirm("¿Actualizar esta plantilla con las anotaciones actuales?"))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(plan)});loadUserTemplates();alert("Plantilla actualizada");}catch(e){alert("Error");}}
+  async function saveAsTemplate(){if(!saveTplName.trim())return;try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert(t.error+": "+e.message);}}
+  async function deleteTemplate(id){if(!confirm(t.confirmDelete))return;try{await supaFetch("plantillas?id=eq."+id,token,"DELETE");loadUserTemplates();}catch(e){alert(t.error);}}
+  async function renameTemplate(id){if(!editTplName.trim())return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{nombre:editTplName});setEditTplId(null);setEditTplName("");loadUserTemplates();}catch(e){alert(t.error);}}
+  async function updateTemplateAnnotations(id){if(!confirm(t.confirmUpdate))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(plan)});loadUserTemplates();alert(t.templateUpdated);}catch(e){alert(t.error);}}
   function applyTemplate(ann){const parsed=typeof ann==="string"?JSON.parse(ann):ann;const merged={...EMPTY_ANN};for(const k of Object.keys(EMPTY_ANN)){merged[k]=[...(parsed[k]||[])];}setPlanRaw(p=>({...p,[planMode]:merged}));const newPl={...plan,[planMode]:merged};resetHistory(newPl);setShowTemplates(false);}
 
   /* ═══ FOTOS ═══ */
@@ -270,9 +281,9 @@ export default function RhinoPlanner(){
     // Header
     pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,28,"F");
     pdf.setTextColor(91,141,184);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
-    pdf.text("RhinoPlan — "+(planMode==="pre"?"Planeación Prequirúrgica":"Técnica Realizada"),mg,10);
+    pdf.text("RhinoPlan — "+(planMode==="pre"?t.preSurgical:t.techniquePerformed),mg,10);
     pdf.setTextColor(200,220,240);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
-    if(patient.nombre)pdf.text("Paciente: "+patient.nombre,mg,17);
+    if(patient.nombre)pdf.text(t.pdfPatient+": "+patient.nombre,mg,17);
     pdf.setTextColor(170,170,170);pdf.setFontSize(8);
     const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
     pdf.text(info,mg,23);
@@ -324,7 +335,7 @@ export default function RhinoPlanner(){
     // Notes
     if(patient.notas){
       pdf.setTextColor(102,102,102);pdf.setFontSize(7);pdf.setFont("helvetica","italic");
-      pdf.text("Notas: "+patient.notas,mg,ph-mg);
+      pdf.text(t.pdfNotes+": "+patient.notas,mg,ph-mg);
     }
 
     // Photos page
@@ -333,14 +344,14 @@ export default function RhinoPlanner(){
       pdf.addPage("letter","portrait");
       pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
       pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
-      pdf.text("Fotos — "+(patient.nombre||"Paciente"),mg,12);
+      pdf.text(t.pdfPhotos+" — "+(patient.nombre||t.patient),mg,12);
 
       let fy=24;
       const fCols=3,fW=(usable_w-fCols*3)/fCols,fCellH=fW*1.35;
       for(const tipo of ["pre","post"]){
         const list=fotos[tipo];if(!list.length)continue;
         pdf.setTextColor(51,51,51);pdf.setFontSize(9);pdf.setFont("helvetica","bold");
-        pdf.text(tipo==="pre"?"Prequirúrgicas":"Postquirúrgicas",mg,fy);fy+=4;
+        pdf.text(tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos,mg,fy);fy+=4;
         // Load each image to get real dimensions, then center within cell
         const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
           const img=new Image();
@@ -433,10 +444,10 @@ export default function RhinoPlanner(){
       {/* ═══ TEMPLATES MODAL ═══ */}
       {showTemplates&&(<div style={modalBg} onClick={()=>setShowTemplates(false)}><div style={modalBox} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>Plantillas Quirúrgicas</div>
-          <button onClick={()=>{setShowSaveTpl(true);setShowTemplates(false);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Guardar actual</button>
+          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>{t.templates}</div>
+          <button onClick={()=>{setShowSaveTpl(true);setShowTemplates(false);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{t.saveCurrentAsTemplate}</button>
         </div>
-        {userTemplates.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:24,fontStyle:"italic"}}>No tienes plantillas aún. Dibuja un plan y guárdalo con "+ Guardar actual"</div>:<>
+        {userTemplates.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:24,fontStyle:"italic"}}></div>:<>
         {userTemplates.map(t=>(<div key={t.id} style={tplCard}>
           {editTplId===t.id?(
             <div style={{display:"flex",gap:8,alignItems:"center"}}><input value={editTplName} onChange={e=>setEditTplName(e.target.value)} style={{flex:1,background:"#111",border:"1px solid #5B8DB8",borderRadius:4,color:"#C8DCF0",padding:"5px 8px",fontSize:12,outline:"none"}} onKeyDown={e=>e.key==="Enter"&&renameTemplate(t.id)}/><button onClick={()=>renameTemplate(t.id)} style={{color:"#5B8DB8",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✓</button><button onClick={()=>setEditTplId(null)} style={{color:"#888",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✕</button></div>
@@ -444,10 +455,10 @@ export default function RhinoPlanner(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div><div style={{color:"#C8DCF0",fontWeight:600,fontSize:13}}>{t.nombre}</div>{t.descripcion&&<div style={{color:"#888",fontSize:10,marginTop:2}}>{t.descripcion}</div>}</div>
               <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>applyTemplate(t.anotaciones)} style={{background:"#5B8DB8",border:"none",color:"#152238",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700}}>Aplicar</button>
-                <button onClick={()=>updateTemplateAnnotations(t.id)} title="Actualizar con anotaciones actuales" style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>↑</button>
-                <button onClick={()=>{setEditTplId(t.id);setEditTplName(t.nombre);}} title="Renombrar" style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✎</button>
-                <button onClick={()=>deleteTemplate(t.id)} title="Eliminar" style={{background:"#333",border:"none",color:"#CC1111",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✕</button>
+                <button onClick={()=>applyTemplate(t.anotaciones)} style={{background:"#5B8DB8",border:"none",color:"#152238",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.apply}</button>
+                <button onClick={()=>updateTemplateAnnotations(t.id)} title={t.updateAnnotations} style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>↑</button>
+                <button onClick={()=>{setEditTplId(t.id);setEditTplName(t.nombre);}} title={t.rename} style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✎</button>
+                <button onClick={()=>deleteTemplate(t.id)} title={t.deleteTemplate} style={{background:"#333",border:"none",color:"#CC1111",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✕</button>
               </div>
             </div>
           )}
@@ -456,34 +467,34 @@ export default function RhinoPlanner(){
 
       {/* ═══ SAVE AS TEMPLATE MODAL ═══ */}
       {showSaveTpl&&(<div style={modalBg} onClick={()=>setShowSaveTpl(false)}><div style={{...modalBox,width:360}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>Guardar como plantilla</div>
-        <div style={{marginBottom:12}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Nombre *</label><input value={saveTplName} onChange={e=>setSaveTplName(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Ej: Mi rinoplastia estándar"/></div>
-        <div style={{marginBottom:16}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Descripción</label><input value={saveTplDesc} onChange={e=>setSaveTplDesc(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder="Breve descripción..."/></div>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>{t.saveAsTemplate}</div>
+        <div style={{marginBottom:12}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Nombre *</label><input value={saveTplName} onChange={e=>setSaveTplName(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder={t.templateNamePlaceholder}/></div>
+        <div style={{marginBottom:16}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Descripción</label><input value={saveTplDesc} onChange={e=>setSaveTplDesc(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder={t.descriptionPlaceholder}/></div>
         <div style={{display:"flex",gap:12,justifyContent:"flex-end"}}>
-          <button onClick={()=>setShowSaveTpl(false)} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={saveAsTemplate} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>Guardar</button>
+          <button onClick={()=>setShowSaveTpl(false)} style={{background:"transparent",color:"#777",border:"1px solid #444",padding:"10px 20px",borderRadius:6,cursor:"pointer"}}>{t.cancel}</button>
+          <button onClick={saveAsTemplate} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"11px 28px",borderRadius:6,cursor:"pointer",fontWeight:700}}>{t.save}</button>
         </div>
       </div></div>)}
 
       {/* Pacientes modal */}
       {showPacList&&(<div style={modalBg} onClick={()=>setShowPacList(false)}><div style={modalBox} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>Pacientes</div>
-          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Nuevo</button>
+          <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>{t.patients}</div>
+          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{`+ ${t.newPatient}`}</button>
         </div>
-        {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>No hay pacientes</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||"Sin nombre"}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
+        {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>{t.noPatients}</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||t.noName}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
       </div></div>)}
 
       {/* ═══ FOTOS MODAL ═══ */}
       {showFotos&&(<div style={modalBg} onClick={()=>setShowFotos(false)}><div style={{...modalBox,width:520,maxWidth:"95vw"}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>Fotos del Paciente</div>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>{t.photos}</div>
         {["pre","post"].map(tipo=>(
           <div key={tipo} style={{marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{color:"#C8DCF0",fontSize:12,fontWeight:600}}>{tipo==="pre"?"Prequirúrgicas":"Postquirúrgicas"}</div>
-              <button onClick={()=>addFoto(tipo)} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:10}}>+ Agregar</button>
+              <div style={{color:"#C8DCF0",fontSize:12,fontWeight:600}}>{tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos}</div>
+              <button onClick={()=>addFoto(tipo)} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:10}}>{`+ ${t.add}`}</button>
             </div>
-            {fotos[tipo].length===0?<div style={{color:"#666",fontSize:11,fontStyle:"italic",padding:"12px 0"}}>Sin fotos</div>:(
+            {fotos[tipo].length===0?<div style={{color:"#666",fontSize:11,fontStyle:"italic",padding:"12px 0"}}>{t.noPhotos}</div>:(
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
                 {fotos[tipo].map((src,i)=>(
                   <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>openFoto(src)}>
@@ -496,7 +507,7 @@ export default function RhinoPlanner(){
           </div>
         ))}
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-          <button onClick={()=>setShowFotos(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
+          <button onClick={()=>setShowFotos(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>{t.done}</button>
         </div>
       </div></div>)}
 
@@ -529,58 +540,76 @@ export default function RhinoPlanner(){
 
       {/* ═══ COLOR EDITOR MODAL ═══ */}
       {showColorEditor&&(<div style={modalBg} onClick={()=>setShowColorEditor(false)}><div style={{...modalBox,width:380}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>Editar Tabla de Colores</div>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>{t.editColors}</div>
         {colors.map((c,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <input type="color" value={c.hex} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],hex:e.target.value};saveColors(nc);}} style={{width:32,height:32,border:"1px solid #444",borderRadius:4,cursor:"pointer",background:"none",padding:0}}/>
           <input value={c.label} onChange={e=>{const nc=[...colors];nc[i]={...nc[i],label:e.target.value};saveColors(nc);}} style={{flex:1,background:"#111",border:"1px solid #354A62",borderRadius:4,color:"#C8DCF0",padding:"6px 10px",fontSize:12,outline:"none",fontFamily:"inherit"}}/>
           <button onClick={()=>{if(colors.length<=1)return;const nc=colors.filter((_,j)=>j!==i);saveColors(nc);if(color===c.hex&&nc.length)setColor(nc[0].hex);}} style={{background:"none",border:"none",color:"#CC1111",cursor:"pointer",fontSize:14,padding:"2px 6px",opacity:colors.length<=1?0.3:1}} disabled={colors.length<=1}>✕</button>
         </div>))}
         <div style={{display:"flex",gap:8,marginTop:14}}>
-          <button onClick={()=>{saveColors([...colors,{hex:"#888888",label:"Nuevo color"}]);}} style={{flex:1,background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>+ Agregar color</button>
-          <button onClick={()=>{saveColors([...DEFAULT_COLORS]);setColor(DEFAULT_COLORS[0].hex);}} style={{flex:1,background:"#1E2F45",border:"1px solid #44444488",color:"#888",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>Restaurar</button>
+          <button onClick={()=>{saveColors([...colors,{hex:"#888888",label:t.newColor}]);}} style={{flex:1,background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>{t.addColor}</button>
+          <button onClick={()=>{saveColors([...DEFAULT_COLORS]);setColor(DEFAULT_COLORS[0].hex);}} style={{flex:1,background:"#1E2F45",border:"1px solid #44444488",color:"#888",padding:"8px",borderRadius:5,cursor:"pointer",fontSize:11}}>{t.restore}</button>
         </div>
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-          <button onClick={()=>setShowColorEditor(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>Listo</button>
+          <button onClick={()=>setShowColorEditor(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>{t.done}</button>
         </div>
+      </div></div>)}
+
+      {/* ═══ SETTINGS MODAL ═══ */}
+      {showSettings&&(<div style={modalBg} onClick={()=>setShowSettings(false)}><div style={{...modalBox,width:360}} onClick={e=>e.stopPropagation()}>
+        <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:20}}>⚙ {t.settings}</div>
+        <div style={{marginBottom:16}}>
+          <div style={{color:"#888",fontSize:10,textTransform:"uppercase",letterSpacing:"0.14em",marginBottom:8}}>{t.language}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {[{code:"es",label:"Español",flag:"🇪🇸"},{code:"en",label:"English",flag:"🇬🇧"},{code:"fr",label:"Français",flag:"🇫🇷"},{code:"pt",label:"Português",flag:"🇧🇷"},{code:"de",label:"Deutsch",flag:"🇩🇪"},{code:"it",label:"Italiano",flag:"🇮🇹"},{code:"tr",label:"Türkçe",flag:"🇹🇷"}].map(l=>(
+              <button key={l.code} onClick={()=>{setLang(l.code);setShowSettings(false);}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:6,border:lang===l.code?"1.5px solid #5B8DB8":"1px solid #354A62",background:lang===l.code?"#5B8DB815":"transparent",color:lang===l.code?"#5B8DB8":"#AAA",cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+                <span style={{fontSize:16}}>{l.flag}</span>{l.label}
+                {lang===l.code&&<span style={{marginLeft:"auto",fontSize:12}}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={()=>setShowSettings(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>{t.done}</button></div>
       </div></div>)}
 
       {/* HEADER */}
       <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
         <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
         <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700}}>👃 RhinoPlan</div><div style={{flex:1}}/>
-        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Pacientes</button>
-        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Plantillas</button>
-        {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>Fotos{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
-        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||"Guardar"}</button>}
+        <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.patients}</button>
+        <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.templates}</button>
+        {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
+        {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||t.save}</button>}
         <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#5B8DB844":"#2A3D55"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
-          {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>Paciente</div>))}
+          {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>{t.patient}</div>))}
         </div>
-        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>Exportar</button>
-        <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>Salir</button>
+        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.export}</button>
+        <button onClick={()=>setShowSettings(true)} style={{background:"none",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:12}}>⚙</button>
+        <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>{t.logout}</button>
       </div>
 
       {/* BODY */}
       <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
         {/* SIDEBAR */}
         {sideOpen&&<div style={{width:compact?155:175,background:"#152238",padding:"10px 6px",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",borderRight:"1px solid #1E2F45",flexShrink:0}}>
-          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>Herramientas</div>
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:5}}>{t.tools}</div>
             {TOOLS.map(t=>(<button key={t.id} onClick={()=>{if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}setTool(t.id);}} style={{width:"100%",padding:"5px 8px",borderRadius:4,border:`1px solid ${tool===t.id?"#5B8DB8":"#2A3D55"}`,background:tool===t.id?"#5B8DB815":"transparent",color:tool===t.id?"#5B8DB8":"#AAA",cursor:"pointer",fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,marginBottom:1,fontFamily:"inherit"}}><span style={{fontSize:12}}>{t.icon}</span>{t.label}</button>))}</div>
-          <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>Color</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#5B8DB888",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
+          <div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em"}}>{t.color}</div><button onClick={()=>setShowColorEditor(true)} style={{background:"none",border:"none",color:"#5B8DB888",cursor:"pointer",fontSize:10,padding:0}}>✎</button></div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>{colors.map((c,i)=><div key={i} title={c.label} style={{width:18,height:18,borderRadius:"50%",background:c.hex,border:`2px solid ${color===c.hex?"#fff":"transparent"}`,boxShadow:color===c.hex?"0 0 0 2px #5B8DB8":"none",cursor:"pointer"}} onClick={()=>setColor(c.hex)}/>)}</div>
             {colors.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><div style={{width:8,height:8,borderRadius:2,background:c.hex}}/><span style={{color:"#777",fontSize:8}}>{c.label}</span></div>)}</div>
-          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Grosor {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
-          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>Opacidad {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
-          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"6px 8px"}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",marginBottom:3}}>Notas</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.4}}>{patient.notas}</div></div>}
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>{t.thickness} {size}px</div><input type="range" min={1} max={14} value={size} onChange={e=>setSize(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
+          <div><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",letterSpacing:"0.22em",marginBottom:4}}>{t.opacity} {Math.round(opacity*100)}%</div><input type="range" min={0.1} max={1} step={0.05} value={opacity} onChange={e=>setOpacity(+e.target.value)} style={{width:"100%",accentColor:"#5B8DB8"}}/></div>
+          {patient.notas&&<div style={{background:"#111",borderRadius:6,padding:"6px 8px"}}><div style={{color:"#5B8DB888",fontSize:8,textTransform:"uppercase",marginBottom:3}}>{t.notes}</div><div style={{color:"#AAA",fontSize:9,lineHeight:1.4}}>{patient.notas}</div></div>}
         </div>}
         {/* MAIN */}
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 8px",overflowY:"auto",background:"#EEF3F8"}}>
           {hasP&&(<div style={{width:"100%",maxWidth:720,marginBottom:4,background:"#fff",border:"1px solid #C0D0E0",borderRadius:7,padding:"4px 10px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11}}>
-            <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"3px 8px",fontSize:10}}>Editar</button>
+            <div style={{fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888"}}>{patient.tipoDoc} {patient.documento}</div><div style={{color:"#888"}}>{patient.edad}a</div><div style={{color:"#888",marginLeft:"auto"}}>{patient.fecha}</div><button onClick={()=>setShowModal(true)} style={{...btn,padding:"3px 8px",fontSize:10}}>{t.edit}</button>
           </div>)}
           {/* PLAN MODE TOGGLE */}
           <div style={{display:"flex",marginBottom:6,background:"#152238",borderRadius:8,padding:2,maxWidth:380,width:"100%"}}>
-            {[{id:"pre",label:"Planeación Prequirúrgica"},{id:"post",label:"Técnica Realizada"}].map(m=>(
+            {[{id:"pre",label:t.preSurgical},{id:"post",label:t.techniquePerformed}].map(m=>(
               <button key={m.id} onClick={()=>setPlanMode(m.id)} style={{flex:1,padding:"6px 8px",border:"none",borderRadius:6,cursor:"pointer",fontSize:compact?10:12,fontFamily:"inherit",fontWeight:planMode===m.id?700:400,background:planMode===m.id?(m.id==="pre"?"#5B8DB8":"#4A9F6A"):"transparent",color:planMode===m.id?"#152238":"#888",transition:"all 0.2s"}}>{m.label}</button>
             ))}
           </div>
@@ -588,18 +617,18 @@ export default function RhinoPlanner(){
             {VIEWS.map(v=>(<button key={v.id} onClick={()=>setActiveView(v.id)} style={{padding:"4px 8px",border:`1.5px solid ${activeView===v.id?"#5B8DB8":"#A8BCCE"}`,background:activeView===v.id?"#152238":"#DDE8F0",color:activeView===v.id?"#5B8DB8":"#666",borderRadius:4,cursor:"pointer",fontSize:compact?9:11,fontFamily:"inherit"}}>{v.label}</button>))}
           </div>
           <div style={{position:"relative",background:"#fff",borderRadius:10,boxShadow:"0 4px 24px #00000018",border:`2px solid ${planMode==="pre"?"#5B8DB8":"#4A9F6A"}`,display:"inline-block"}}>
-            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#5B8DB8":"#4A9F6A",color:"#152238",padding:"2px 10px",borderRadius:10,fontSize:8,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?"PLANEACIÓN PREQUIRÚRGICA":"TÉCNICA REALIZADA"}</div>
+            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:planMode==="pre"?"#5B8DB8":"#4A9F6A",color:"#152238",padding:"2px 10px",borderRadius:10,fontSize:8,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",zIndex:5}}>{planMode==="pre"?t.preSurgicalUpper:t.techniquePerformedUpper}</div>
             <canvas ref={canvasRef} width={W} height={H} style={{display:"block",width:scaledW,height:scaledH,cursor:tool==="select"?"default":tool==="eraser"?"cell":tool==="text"?"text":"crosshair",borderRadius:10,touchAction:"auto"}}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}/>
-            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x*(scaledW/W),top:textInput.y*(scaledH/H)-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #5B8DB8",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder="Etiqueta..."/>)}
+            {textInput.visible&&(<input autoFocus style={{position:"absolute",left:textInput.x*(scaledW/W),top:textInput.y*(scaledH/H)-18,zIndex:10,background:"#ffffffee",border:"1.5px solid #5B8DB8",borderRadius:4,padding:"3px 8px",fontSize:14,fontFamily:"Georgia,serif",color:"#111",outline:"none",minWidth:80}} value={textInput.val} onChange={e=>setTextInput(t=>({...t,val:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter")submitText();if(e.key==="Escape")setTextInput({visible:false,x:0,y:0,val:""});}} onBlur={submitText} placeholder={t.labelPlaceholder}/>)}
           </div>
           <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
-            <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title="Deshacer">↩</button>
-            <button style={{...btn,opacity:canRedo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={redo} disabled={!canRedo} title="Rehacer">↪</button>
-            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>Limpiar</button>
-            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>Todo</button>
-            <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} anot.</span>
+            <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title={t.undo}>↩</button>
+            <button style={{...btn,opacity:canRedo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={redo} disabled={!canRedo} title={t.redo}>↪</button>
+            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>{t.clear}</button>
+            <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
+            <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
           </div>
         </div>
       </div>
