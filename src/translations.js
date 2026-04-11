@@ -133,6 +133,11 @@ export const translations = {
     proDesc: "Pacientes, plantillas y fotos ilimitadas. 7 idiomas.",
     month: "mes",
     upgradeToPro: "Actualizar a Pro →",
+    limitPatients: "Plan gratis: máximo 3 pacientes. Actualiza a Pro para ilimitados.",
+    limitTemplates: "Plan gratis: máximo 1 plantilla. Actualiza a Pro para ilimitadas.",
+    limitPhotos: "Plan gratis: fotos no disponibles. Actualiza a Pro.",
+    proActive: "Activo",
+    proActiveDesc: "Tienes acceso completo a todas las funciones.",
   },
 
   en: {
@@ -253,6 +258,11 @@ export const translations = {
     proDesc: "Unlimited patients, templates and photos. 7 languages.",
     month: "month",
     upgradeToPro: "Upgrade to Pro →",
+    limitPatients: "Free plan: max 3 patients. Upgrade to Pro for unlimited.",
+    limitTemplates: "Free plan: max 1 template. Upgrade to Pro for unlimited.",
+    limitPhotos: "Free plan: photos not available. Upgrade to Pro.",
+    proActive: "Active",
+    proActiveDesc: "You have full access to all features.",
   },
 
   fr: {
@@ -373,6 +383,11 @@ export const translations = {
     proDesc: "Patients, modèles et photos illimités. 7 langues.",
     month: "mois",
     upgradeToPro: "Passer à Pro →",
+    limitPatients: "Plan gratuit : 3 patients maximum. Passez à Pro pour illimité.",
+    limitTemplates: "Plan gratuit : 1 modèle maximum. Passez à Pro pour illimité.",
+    limitPhotos: "Plan gratuit : photos non disponibles. Passez à Pro.",
+    proActive: "Actif",
+    proActiveDesc: "Vous avez accès à toutes les fonctionnalités.",
   },
 
   pt: {
@@ -493,6 +508,11 @@ export const translations = {
     proDesc: "Pacientes, modelos e fotos ilimitados. 7 idiomas.",
     month: "mês",
     upgradeToPro: "Atualizar para Pro →",
+    limitPatients: "Plano grátis: máximo 3 pacientes. Atualize para Pro para ilimitados.",
+    limitTemplates: "Plano grátis: máximo 1 modelo. Atualize para Pro para ilimitados.",
+    limitPhotos: "Plano grátis: fotos não disponíveis. Atualize para Pro.",
+    proActive: "Ativo",
+    proActiveDesc: "Você tem acesso completo a todas as funções.",
   },
 
   de: {
@@ -613,6 +633,11 @@ export const translations = {
     proDesc: "Unbegrenzte Patienten, Vorlagen und Fotos. 7 Sprachen.",
     month: "Monat",
     upgradeToPro: "Auf Pro upgraden →",
+    limitPatients: "Kostenloser Plan: max. 3 Patienten. Upgraden Sie auf Pro für unbegrenzt.",
+    limitTemplates: "Kostenloser Plan: max. 1 Vorlage. Upgraden Sie auf Pro für unbegrenzt.",
+    limitPhotos: "Kostenloser Plan: Fotos nicht verfügbar. Upgraden Sie auf Pro.",
+    proActive: "Aktiv",
+    proActiveDesc: "Sie haben vollen Zugriff auf alle Funktionen.",
   },
 
   it: {
@@ -733,6 +758,11 @@ export const translations = {
     proDesc: "Pazienti, modelli e foto illimitati. 7 lingue.",
     month: "mese",
     upgradeToPro: "Passa a Pro →",
+    limitPatients: "Piano gratuito: max 3 pazienti. Passa a Pro per illimitati.",
+    limitTemplates: "Piano gratuito: max 1 modello. Passa a Pro per illimitati.",
+    limitPhotos: "Piano gratuito: foto non disponibili. Passa a Pro.",
+    proActive: "Attivo",
+    proActiveDesc: "Hai accesso completo a tutte le funzioni.",
   },
 
   tr: {
@@ -853,5 +883,10 @@ export const translations = {
     proDesc: "Sınırsız hasta, şablon ve fotoğraf. 7 dil.",
     month: "ay",
     upgradeToPro: "Pro'ya yükselt →",
+    limitPatients: "Ücretsiz plan: en fazla 3 hasta. Sınırsız için Pro'ya yükseltin.",
+    limitTemplates: "Ücretsiz plan: en fazla 1 şablon. Sınırsız için Pro'ya yükseltin.",
+    limitPhotos: "Ücretsiz plan: fotoğraflar kullanılamaz. Pro'ya yükseltin.",
+    proActive: "Aktif",
+    proActiveDesc: "Tüm özelliklere tam erişiminiz var.",
   },
 };

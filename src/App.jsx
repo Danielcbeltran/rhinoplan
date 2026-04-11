@@ -156,6 +156,8 @@ export default function RhinoPlanner(){
   const VIEWS=getViews(t);
   const[token,setToken]=useState(()=>{try{return localStorage.getItem("rhinoplan_token")||null;}catch(e){return null;}});
   const[authUser,setAuthUser]=useState(()=>{try{const u=localStorage.getItem("rhinoplan_user");return u?JSON.parse(u):null;}catch(e){return null;}});
+  const[isPro,setIsPro]=useState(false);
+  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email)+"&status=eq.active",tk);setIsPro(Array.isArray(d)&&d.length>0);}catch(e){setIsPro(false);}}
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
@@ -211,19 +213,19 @@ export default function RhinoPlanner(){
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
-  function handleLogin(tok,user){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));}catch(e){}loadPacientes(tok);loadUserTemplates(tok);}
+  function handleLogin(tok,user){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
   function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");}catch(e){}}
-  useEffect(()=>{if(token){loadPacientes(token);loadUserTemplates(token);}},[]);
+  useEffect(()=>{if(token&&authUser){loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
   function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
   function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});}
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function saveAsTemplate(){if(!saveTplName.trim())return;try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert(t.error+": "+e.message);}}
+  async function saveAsTemplate(){if(!saveTplName.trim())return;if(!isPro&&userTemplates.length>=1){alert(t.limitTemplates);setShowSettings(true);return;}try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert(t.error+": "+e.message);}}
   async function deleteTemplate(id){if(!confirm(t.confirmDelete))return;try{await supaFetch("plantillas?id=eq."+id,token,"DELETE");loadUserTemplates();}catch(e){alert(t.error);}}
   async function renameTemplate(id){if(!editTplName.trim())return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{nombre:editTplName});setEditTplId(null);setEditTplName("");loadUserTemplates();}catch(e){alert(t.error);}}
   async function updateTemplateAnnotations(id){if(!confirm(t.confirmUpdate))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(plan)});loadUserTemplates();alert(t.templateUpdated);}catch(e){alert(t.error);}}
@@ -245,6 +247,7 @@ export default function RhinoPlanner(){
     });
   }
   async function addFoto(tipo){
+    if(!isPro){alert(t.limitPhotos);setShowSettings(true);return;}
     const input=document.createElement("input");input.type="file";input.accept="image/*";input.multiple=true;
     input.onchange=async()=>{
       const files=Array.from(input.files);
@@ -573,27 +576,28 @@ export default function RhinoPlanner(){
           </div>
         </div>
         <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={()=>setShowSettings(false)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#fff",border:"none",padding:"9px 24px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}>{t.done}</button></div>
-        {/* Pro upgrade */}
-        <div style={{marginTop:16,padding:"16px",background:"linear-gradient(135deg,#1E2F45,#152238)",border:"1px solid #5B8DB844",borderRadius:10}}>
+        {/* Pro */}
+        <div style={{marginTop:16,padding:"16px",background:"linear-gradient(135deg,#1E2F45,#152238)",border:`1px solid ${isPro?"#F5BE3A44":"#5B8DB844"}`,borderRadius:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{background:"#F5BE3A",color:"#152238",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Pro</span>
+            <span style={{background:isPro?"#F5BE3A":"#F5BE3A",color:"#152238",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Pro</span>
             <span style={{color:"#C8DCF0",fontSize:13,fontWeight:600}}>RhinoPlan Pro</span>
+            {isPro&&<span style={{marginLeft:"auto",color:"#4ADE80",fontSize:11,fontWeight:600}}>{t.proActive}</span>}
           </div>
-          <div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5,marginBottom:12}}>{t.proDesc}</div>
+          {isPro?(<div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5}}>{t.proActiveDesc}</div>):(
+          <><div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5,marginBottom:12}}>{t.proDesc}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
             <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$14.99</span>
             <span style={{color:"#7A8FA6",fontSize:11}}>USD/{t.month}</span>
           </div>
-          <a href={"https://rhinoplan.lemonsqueezy.com/checkout/buy/070d95b3-9728-4877-8ed6-d2dcc4db9a04?checkout[email]="+encodeURIComponent(authUser?.email||"")} target="_blank" rel="noopener" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,textDecoration:"none",fontFamily:"inherit"}}>
+          <a href={"https://rhinoplan.lemonsqueezy.com/checkout/buy/070d95b3-9728-4877-8ed6-d2dcc4db9a04?checkout[email]="+encodeURIComponent(authUser?.email||"")+"&checkout[custom][user_id]="+(authUser?.id||"")} target="_blank" rel="noopener" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,textDecoration:"none",fontFamily:"inherit"}}>
             {t.upgradeToPro}
-          </a>
-        </div>
+          </a></>)}</div>
       </div></div>)}
 
       {/* HEADER */}
       <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
         <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
-        <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan</div><div style={{flex:1}}/>
+        <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan{isPro&&<span style={{background:"#F5BE3A",color:"#152238",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,marginLeft:4,textTransform:"uppercase"}}>Pro</span>}</div><div style={{flex:1}}/>
         <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.patients}</button>
         <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.templates}</button>
         {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
