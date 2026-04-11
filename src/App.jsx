@@ -154,7 +154,8 @@ export default function RhinoPlanner(){
   const TOOLS=getTools(t);
   const DEFAULT_COLORS=getDefaultColors(t);
   const VIEWS=getViews(t);
-  const[token,setToken]=useState(null);const[authUser,setAuthUser]=useState(null);
+  const[token,setToken]=useState(()=>{try{return localStorage.getItem("rhinoplan_token")||null;}catch(e){return null;}});
+  const[authUser,setAuthUser]=useState(()=>{try{const u=localStorage.getItem("rhinoplan_user");return u?JSON.parse(u):null;}catch(e){return null;}});
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
@@ -210,9 +211,10 @@ export default function RhinoPlanner(){
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
-  function handleLogin(tok,user){setToken(tok);setAuthUser(user);loadPacientes(tok);loadUserTemplates(tok);}
+  function handleLogin(tok,user){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));}catch(e){}loadPacientes(tok);loadUserTemplates(tok);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
-  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});}
+  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");}catch(e){}}
+  useEffect(()=>{if(token){loadPacientes(token);loadUserTemplates(token);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
   async function savePaciente(){setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
