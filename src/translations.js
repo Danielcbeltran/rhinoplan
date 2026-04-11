@@ -107,6 +107,7 @@ export const translations = {
     templateUpdated: "Plantilla actualizada",
     confirmUpdate: "¿Actualizar esta plantilla con las anotaciones actuales?",
     noPatients: "No hay pacientes",
+    searchPatients: "Buscar paciente...",
 
     // PDF
     pdfTitle: "RhinoPlan",
@@ -227,6 +228,7 @@ export const translations = {
     templateUpdated: "Template updated",
     confirmUpdate: "Update this template with current annotations?",
     noPatients: "No patients",
+    searchPatients: "Search patient...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Patient",
@@ -346,6 +348,7 @@ export const translations = {
     templateUpdated: "Modèle mis à jour",
     confirmUpdate: "Mettre à jour ce modèle avec les annotations actuelles ?",
     noPatients: "Aucun patient",
+    searchPatients: "Rechercher un patient...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Patient",
@@ -465,6 +468,7 @@ export const translations = {
     templateUpdated: "Modelo atualizado",
     confirmUpdate: "Atualizar este modelo com as anotações atuais?",
     noPatients: "Nenhum paciente",
+    searchPatients: "Buscar paciente...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Paciente",
@@ -584,6 +588,7 @@ export const translations = {
     templateUpdated: "Vorlage aktualisiert",
     confirmUpdate: "Diese Vorlage mit aktuellen Anmerkungen aktualisieren?",
     noPatients: "Keine Patienten",
+    searchPatients: "Patient suchen...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Patient",
@@ -703,6 +708,7 @@ export const translations = {
     templateUpdated: "Modello aggiornato",
     confirmUpdate: "Aggiornare questo modello con le annotazioni attuali?",
     noPatients: "Nessun paziente",
+    searchPatients: "Cerca paziente...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Paziente",
@@ -822,6 +828,7 @@ export const translations = {
     templateUpdated: "Şablon güncellendi",
     confirmUpdate: "Bu şablonu mevcut notlarla güncellensin mi?",
     noPatients: "Hasta yok",
+    searchPatients: "Hasta ara...",
 
     pdfTitle: "RhinoPlan",
     pdfPatient: "Hasta",

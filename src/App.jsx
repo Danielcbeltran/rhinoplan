@@ -170,7 +170,7 @@ export default function RhinoPlanner(){
   const[drawing,setDrawing]=useState(false);const[current,setCurrent]=useState(null);
   const[selIdx,setSelIdx]=useState(-1);const[dragMode,setDragMode]=useState(null);const[dragStart,setDragStart]=useState(null);
   const[textInput,setTextInput]=useState({visible:false,x:0,y:0,val:""});
-  const[pacientes,setPacientes]=useState([]);const[showPacList,setShowPacList]=useState(false);
+  const[pacientes,setPacientes]=useState([]);const[showPacList,setShowPacList]=useState(false);const[pacSearch,setPacSearch]=useState("");
   const[showTemplates,setShowTemplates]=useState(false);const[userTemplates,setUserTemplates]=useState([]);
   const[saveTplName,setSaveTplName]=useState("");const[saveTplDesc,setSaveTplDesc]=useState("");const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
@@ -477,12 +477,13 @@ export default function RhinoPlanner(){
       </div></div>)}
 
       {/* Pacientes modal */}
-      {showPacList&&(<div style={modalBg} onClick={()=>setShowPacList(false)}><div style={modalBox} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      {showPacList&&(<div style={modalBg} onClick={()=>{setShowPacList(false);setPacSearch("");}}><div style={modalBox} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700}}>{t.patients}</div>
-          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{`+ ${t.newPatient}`}</button>
+          <button onClick={()=>{nuevoPaciente();setShowPacList(false);setPacSearch("");setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{`+ ${t.newPatient}`}</button>
         </div>
-        {pacientes.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>{t.noPatients}</div>:pacientes.map(p=>(<div key={p.id} onClick={()=>loadPacienteData(p)} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||t.noName}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>))}
+        <input value={pacSearch} onChange={e=>setPacSearch(e.target.value)} placeholder={t.searchPatients} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:6,color:"#C8DCF0",padding:"9px 12px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:12,fontFamily:"inherit"}}/>
+        {(()=>{const q=pacSearch.toLowerCase();const filtered=pacientes.filter(p=>(p.nombre||"").toLowerCase().includes(q)||(p.documento||"").toLowerCase().includes(q));return filtered.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>{t.noPatients}</div>:filtered.map(p=>(<div key={p.id} onClick={()=>{loadPacienteData(p);setPacSearch("");}} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||t.noName}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>));})()}
       </div></div>)}
 
       {/* ═══ FOTOS MODAL ═══ */}
