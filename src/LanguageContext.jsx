@@ -4,7 +4,11 @@ const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(
-    () => localStorage.getItem("rhinoplan-lang") || "es"
+    () => {
+      const url = new URLSearchParams(window.location.search).get("lang");
+      if (url) { localStorage.setItem("rhinoplan-lang", url); return url; }
+      return localStorage.getItem("rhinoplan-lang") || "es";
+    }
   );
 
   const changeLang = (code) => {
