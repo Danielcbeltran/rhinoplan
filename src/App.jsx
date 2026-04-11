@@ -113,10 +113,9 @@ function PatientModal({patient,onSave,onClose}){
   const inp={background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,width:"100%",fontFamily:"'Crimson Text',Georgia,serif",outline:"none",boxSizing:"border-box"};
   const lbl={color:"#888",fontSize:10,textTransform:"uppercase",letterSpacing:"0.14em",display:"block",marginBottom:5};
   return(<div style={{position:"fixed",inset:0,background:"#00000090",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}><div style={{background:"#182540",border:"1px solid #5B8DB855",borderRadius:14,padding:"28px 32px",width:480,maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto",fontFamily:"'Crimson Text',Georgia,serif"}} onClick={e=>e.stopPropagation()}>
-    <div style={{color:"#5B8DB8",fontSize:20,fontWeight:700,marginBottom:20}}>${t.patient}</div>
+    <div style={{color:"#5B8DB8",fontSize:20,fontWeight:700,marginBottom:20}}>{t.patient}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
       <div style={{gridColumn:"1/-1"}}><label style={lbl}>{t.name} *</label><input style={inp} value={form.nombre} onChange={e=>set("nombre",e.target.value)} placeholder={t.namePlaceholder}/></div>
-      <div><label style={lbl}>{t.docType}</label><select style={inp} value={form.tipoDoc} onChange={e=>set("tipoDoc",e.target.value)}>{[{v:"CC",l:t.cc},{v:"CE",l:t.ce},{v:"Pasaporte",l:t.passport},{v:"TI",l:t.ti},{v:"Otro",l:t.other}].map(d=><option key={d.v} value={d.v}>{d.l}</option>)}</select></div>
       <div><label style={lbl}>{t.document} *</label><input style={inp} value={form.documento} onChange={e=>set("documento",e.target.value)}/></div>
       <div><label style={lbl}>{t.age} *</label><input style={inp} type="number" value={form.edad} onChange={e=>set("edad",e.target.value)}/></div>
       <div><label style={lbl}>{t.sex}</label><select style={inp} value={form.sexo} onChange={e=>set("sexo",e.target.value)}><option value="F">F</option><option value="M">M</option></select></div>
