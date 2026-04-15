@@ -133,7 +133,7 @@ function LoginScreen({onLogin}){
   const{lang}=useLang();
   const t=translations[lang];
   const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState("login");const[error,setError]=useState("");const[loading,setLoading]=useState(false);
-  async function handleAuth(){setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data);}catch(e){setError(e.message);}finally{setLoading(false);}}
+  async function handleAuth(){if(mode==="register"&&pass.length<6){setError(t.passwordMin);return;}setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data);}catch(e){setError(e.message);}finally{setLoading(false);}}
   const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#C8DCF0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
   return(<div style={{minHeight:"100vh",background:"#152238",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
@@ -215,8 +215,9 @@ export default function RhinoPlanner(){
 
   function handleLogin(tok,user){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
-  function logout(){setToken(null);setAuthUser(null);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");}catch(e){}}
-  useEffect(()=>{if(token&&authUser){loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
+  function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");}catch(e){}}
+  async function deleteAccount(){if(!confirm(t.confirmDeleteAccount))return;try{const d=await supaFetch("pacientes?user_id=eq."+authUser.id,token,"DELETE");const p=await supaFetch("plantillas?user_id=eq."+authUser.id,token,"DELETE");const s=await supaFetch("subscriptions?user_id=eq."+authUser.id,token,"DELETE");logout();alert(t.accountDeleted);}catch(e){alert(t.error);}}
+  useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){logout();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
   async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
@@ -592,6 +593,12 @@ export default function RhinoPlanner(){
           <a href={"https://rhinoplan.lemonsqueezy.com/checkout/buy/070d95b3-9728-4877-8ed6-d2dcc4db9a04?checkout[email]="+encodeURIComponent(authUser?.email||"")+"&checkout[custom][user_id]="+(authUser?.id||"")} target="_blank" rel="noopener" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,textDecoration:"none",fontFamily:"inherit"}}>
             {t.upgradeToPro}
           </a></>)}</div>
+        {/* Privacy & Account */}
+        <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>
+          <a href="https://rhinoplan.app/privacy.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.privacyPolicy}</a>
+          <a href="https://rhinoplan.app/terms.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.termsConditions}</a>
+          <button onClick={deleteAccount} style={{background:"none",border:"none",color:"#CC1111",fontSize:12,cursor:"pointer",textAlign:"left",padding:0,fontFamily:"inherit",marginTop:8}}>{t.deleteAccount}</button>
+        </div>
       </div></div>)}
 
       {/* HEADER */}
