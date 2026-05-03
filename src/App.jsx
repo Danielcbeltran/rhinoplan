@@ -3,24 +3,20 @@ import { translations } from "./translations";
 import { useLang } from "./LanguageContext";
 import { jsPDF } from "jspdf";
 
-const SUPA_URL = "https://tzmbybwytfpaqaajwumz.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6bWJ5Ynd5dGZwYXFhYWp3dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTM2NDAsImV4cCI6MjA4ODI4OTY0MH0.6FqJRT7VaWp-k_tCV1a3PFiRmwXBUokXkvyBTZOVpcM";
-
 async function supaAuth(email, password, isLogin) {
-  const endpoint = isLogin ? "/auth/v1/token?grant_type=password" : "/auth/v1/signup";
-  const r = await fetch(SUPA_URL + endpoint, {
+  const r = await fetch("/api/auth", {
     method: "POST",
-    headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, mode: isLogin ? "login" : "register" }),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error_description || data.msg || "Error");
+  if (!r.ok) throw new Error(data.error_description || data.msg || data.error || "Error");
   return data;
 }
 async function supaFetch(path, token, method="GET", body=null) {
-  const r = await fetch(SUPA_URL + "/rest/v1/" + path, {
+  const r = await fetch("/api/db?path=" + encodeURIComponent(path), {
     method,
-    headers: { apikey: SUPA_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json", Prefer: method==="POST"?"return=representation":"return=representation" },
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
   const txt = await r.text();
