@@ -14,7 +14,7 @@ async function supaAuth(email, password, isLogin) {
   return data;
 }
 async function supaFetch(path, token, method="GET", body=null) {
-  const r = await fetch("/api/db?path=" + encodeURIComponent(path), {
+  const r = await fetch("/api/db?endpoint=" + encodeURIComponent(path), {
     method,
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -660,3 +660,4 @@ export default function RhinoPlanner(){
     </div>
   );
 }
+
