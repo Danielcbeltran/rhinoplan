@@ -2,16 +2,14 @@ export default async function handler(req, res) {
   const SUPA_URL = process.env.SUPABASE_URL;
   const SUPA_KEY = process.env.SUPABASE_ANON_KEY;
 
-  // Get path from query param
-  const { path } = req.query;
-  if (!path) return res.status(400).json({ error: 'Missing path' });
+  const endpoint = req.query.endpoint;
+  if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
 
-  // Forward the user's JWT token for RLS
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const r = await fetch(SUPA_URL + '/rest/v1/' + path, {
+    const r = await fetch(SUPA_URL + '/rest/v1/' + endpoint, {
       method: req.method,
       headers: {
         apikey: SUPA_KEY,
