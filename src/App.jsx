@@ -3,20 +3,24 @@ import { translations } from "./translations";
 import { useLang } from "./LanguageContext";
 import { jsPDF } from "jspdf";
 
+const SUPA_URL = "https://tzmbybwytfpaqaajwumz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6bWJ5Ynd5dGZwYXFhYWp3dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTM2NDAsImV4cCI6MjA4ODI4OTY0MH0.6FqJRT7VaWp-k_tCV1a3PFiRmwXBUokXkvyBTZOVpcM";
+
 async function supaAuth(email, password, isLogin) {
-  const r = await fetch("/api/auth", {
+  const endpoint = isLogin ? "/auth/v1/token?grant_type=password" : "/auth/v1/signup";
+  const r = await fetch(SUPA_URL + endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, mode: isLogin ? "login" : "register" }),
+    headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error_description || data.msg || data.error || "Error");
+  if (!r.ok) throw new Error(data.error_description || data.msg || "Error");
   return data;
 }
 async function supaFetch(path, token, method="GET", body=null) {
-  const r = await fetch("/api/db?endpoint=" + encodeURIComponent(path), {
+  const r = await fetch(SUPA_URL + "/rest/v1/" + path, {
     method,
-    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    headers: { apikey: SUPA_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json", Prefer: "return=representation" },
     body: body ? JSON.stringify(body) : undefined,
   });
   const txt = await r.text();
@@ -660,4 +664,3 @@ export default function RhinoPlanner(){
     </div>
   );
 }
-
