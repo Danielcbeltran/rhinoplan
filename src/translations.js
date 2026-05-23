@@ -148,7 +148,7 @@ export const translations = {
     limitPatients: "Plan gratis: máximo 3 pacientes. Actualiza a Pro para ilimitados.",
     limitTemplates: "Plan gratis: máximo 1 plantilla. Actualiza a Pro para ilimitadas.",
     limitPhotos: "Plan gratis: fotos no disponibles. Actualiza a Pro.",
-    proActive: "Activo", trialRemaining: "Prueba gratuita", trialDesc: "Tu prueba Pro de 30 días está activa. Disfruta todas las funciones.", days: "días",
+    proActive: "Activo", startTrial: "Activar prueba gratuita de 30 días", trialRemaining: "Prueba gratuita", trialDesc: "Tu prueba Pro de 30 días está activa. Disfruta todas las funciones.", days: "días",
     proActiveDesc: "Tienes acceso completo a todas las funciones.",
   },
 
@@ -279,7 +279,7 @@ export const translations = {
     limitPatients: "Free plan: max 3 patients. Upgrade to Pro for unlimited.",
     limitTemplates: "Free plan: max 1 template. Upgrade to Pro for unlimited.",
     limitPhotos: "Free plan: photos not available. Upgrade to Pro.",
-    proActive: "Active", trialRemaining: "Free trial", trialDesc: "Your 30-day Pro trial is active. Enjoy all features.", days: "days",
+    proActive: "Active", startTrial: "Start 30-day free trial", trialRemaining: "Free trial", trialDesc: "Your 30-day Pro trial is active. Enjoy all features.", days: "days",
     proActiveDesc: "You have full access to all features.",
   },
 
@@ -410,7 +410,7 @@ export const translations = {
     limitPatients: "Plan gratuit : 3 patients maximum. Passez à Pro pour illimité.",
     limitTemplates: "Plan gratuit : 1 modèle maximum. Passez à Pro pour illimité.",
     limitPhotos: "Plan gratuit : photos non disponibles. Passez à Pro.",
-    proActive: "Actif", trialRemaining: "Essai gratuit", trialDesc: "Votre essai Pro de 30 jours est actif. Profitez de toutes les fonctionnalités.", days: "jours",
+    proActive: "Actif", startTrial: "Commencer l'essai gratuit de 30 jours", trialRemaining: "Essai gratuit", trialDesc: "Votre essai Pro de 30 jours est actif. Profitez de toutes les fonctionnalités.", days: "jours",
     proActiveDesc: "Vous avez accès à toutes les fonctionnalités.",
   },
 
@@ -547,7 +547,7 @@ export const translations = {
     limitPatients: "Plano grátis: máximo 3 pacientes. Atualize para Pro para ilimitados.",
     limitTemplates: "Plano grátis: máximo 1 modelo. Atualize para Pro para ilimitados.",
     limitPhotos: "Plano grátis: fotos não disponíveis. Atualize para Pro.",
-    proActive: "Ativo", trialRemaining: "Teste gratuito", trialDesc: "Seu teste Pro de 30 dias está ativo. Aproveite todos os recursos.", days: "dias",
+    proActive: "Ativo", startTrial: "Iniciar teste gratuito de 30 dias", trialRemaining: "Teste gratuito", trialDesc: "Seu teste Pro de 30 dias está ativo. Aproveite todos os recursos.", days: "dias",
     proActiveDesc: "Você tem acesso completo a todas as funções.",
   },
 
@@ -678,7 +678,7 @@ export const translations = {
     limitPatients: "Kostenloser Plan: max. 3 Patienten. Upgraden Sie auf Pro für unbegrenzt.",
     limitTemplates: "Kostenloser Plan: max. 1 Vorlage. Upgraden Sie auf Pro für unbegrenzt.",
     limitPhotos: "Kostenloser Plan: Fotos nicht verfügbar. Upgraden Sie auf Pro.",
-    proActive: "Aktiv", trialRemaining: "Kostenlose Testversion", trialDesc: "Ihre 30-tägige Pro-Testversion ist aktiv. Genießen Sie alle Funktionen.", days: "Tage",
+    proActive: "Aktiv", startTrial: "30-tägige kostenlose Testversion starten", trialRemaining: "Kostenlose Testversion", trialDesc: "Ihre 30-tägige Pro-Testversion ist aktiv. Genießen Sie alle Funktionen.", days: "Tage",
     proActiveDesc: "Sie haben vollen Zugriff auf alle Funktionen.",
   },
 
@@ -809,7 +809,7 @@ export const translations = {
     limitPatients: "Piano gratuito: max 3 pazienti. Passa a Pro per illimitati.",
     limitTemplates: "Piano gratuito: max 1 modello. Passa a Pro per illimitati.",
     limitPhotos: "Piano gratuito: foto non disponibili. Passa a Pro.",
-    proActive: "Attivo", trialRemaining: "Prova gratuita", trialDesc: "La tua prova Pro di 30 giorni è attiva. Goditi tutte le funzionalità.", days: "giorni",
+    proActive: "Attivo", startTrial: "Inizia la prova gratuita di 30 giorni", trialRemaining: "Prova gratuita", trialDesc: "La tua prova Pro di 30 giorni è attiva. Goditi tutte le funzionalità.", days: "giorni",
     proActiveDesc: "Hai accesso completo a tutte le funzioni.",
   },
 
@@ -940,7 +940,7 @@ export const translations = {
     limitPatients: "Ücretsiz plan: en fazla 3 hasta. Sınırsız için Pro'ya yükseltin.",
     limitTemplates: "Ücretsiz plan: en fazla 1 şablon. Sınırsız için Pro'ya yükseltin.",
     limitPhotos: "Ücretsiz plan: fotoğraflar kullanılamaz. Pro'ya yükseltin.",
-    proActive: "Aktif", trialRemaining: "Ücretsiz deneme", trialDesc: "30 günlük Pro denemeniz aktif. Tüm özelliklerden yararlanın.", days: "gün",
+    proActive: "Aktif", startTrial: "30 günlük ücretsiz denemeyi başlat", trialRemaining: "Ücretsiz deneme", trialDesc: "30 günlük Pro denemeniz aktif. Tüm özelliklerden yararlanın.", days: "gün",
     proActiveDesc: "Tüm özelliklere tam erişiminiz var.",
   },
 };
