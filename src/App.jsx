@@ -133,7 +133,7 @@ function LoginScreen({onLogin}){
   const{lang}=useLang();
   const t=translations[lang];
   const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState("login");const[error,setError]=useState("");const[loading,setLoading]=useState(false);
-  async function handleAuth(){if(mode==="register"&&pass.length<6){setError(t.passwordMin);return;}setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data,data.refresh_token);}catch(e){setError(e.message);}finally{setLoading(false);}}
+  async function handleAuth(){if(mode==="register"&&pass.length<6){setError(t.passwordMin);return;}setLoading(true);setError("");try{const data=await supaAuth(email,pass,mode==="login");onLogin(data.access_token,data.user||data,data.refresh_token,mode==="register");}catch(e){setError(e.message);}finally{setLoading(false);}}
   const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#C8DCF0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
   return(<div style={{minHeight:"100vh",background:"#152238",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
@@ -156,8 +156,8 @@ export default function RhinoPlanner(){
   const VIEWS=getViews(t);
   const[token,setToken]=useState(()=>{try{return localStorage.getItem("rhinoplan_token")||null;}catch(e){return null;}});
   const[authUser,setAuthUser]=useState(()=>{try{const u=localStorage.getItem("rhinoplan_user");return u?JSON.parse(u):null;}catch(e){return null;}});
-  const[isPro,setIsPro]=useState(false);
-  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email)+"&status=eq.active",tk);setIsPro(Array.isArray(d)&&d.length>0);}catch(e){setIsPro(false);}}
+  const[isPro,setIsPro]=useState(false);const[trialDays,setTrialDays]=useState(0);
+  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email),tk);if(Array.isArray(d)&&d.length>0){const sub=d[0];if(sub.status==="active"){setIsPro(true);setTrialDays(0);return;}if(sub.status==="trial"&&sub.trial_ends_at){const remaining=Math.ceil((new Date(sub.trial_ends_at)-Date.now())/(1000*60*60*24));if(remaining>0){setIsPro(true);setTrialDays(remaining);return;}}}setIsPro(false);setTrialDays(0);}catch(e){setIsPro(false);setTrialDays(0);}}
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
@@ -213,7 +213,8 @@ export default function RhinoPlanner(){
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
-  function handleLogin(tok,user,refreshTok){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
+  async function createTrial(tok,user){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",tok,"POST",{email:user.email,user_id:user.id,status:"trial",trial_ends_at:trialEnd,lemon_customer_id:"",lemon_subscription_id:""});}catch(e){console.log("Trial creation:",e.message);}}
+  function handleLogin(tok,user,refreshTok,isRegister){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}if(isRegister){createTrial(tok,user).then(()=>{loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);});}else{loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
   function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
   async function deleteAccount(){if(!confirm(t.confirmDeleteAccount))return;try{const d=await supaFetch("pacientes?user_id=eq."+authUser.id,token,"DELETE");const p=await supaFetch("plantillas?user_id=eq."+authUser.id,token,"DELETE");const s=await supaFetch("subscriptions?user_id=eq."+authUser.id,token,"DELETE");logout();alert(t.accountDeleted);}catch(e){alert(t.error);}}
@@ -599,9 +600,9 @@ export default function RhinoPlanner(){
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{background:isPro?"#F5BE3A":"#F5BE3A",color:"#152238",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Pro</span>
             <span style={{color:"#C8DCF0",fontSize:13,fontWeight:600}}>RhinoPlan Pro</span>
-            {isPro&&<span style={{marginLeft:"auto",color:"#4ADE80",fontSize:11,fontWeight:600}}>{t.proActive}</span>}
+            {isPro&&<span style={{marginLeft:"auto",color:trialDays>0?"#F5BE3A":"#4ADE80",fontSize:11,fontWeight:600}}>{trialDays>0?(t.trialRemaining||"Trial")+": "+trialDays+" "+(t.days||"days"):t.proActive}</span>}
           </div>
-          {isPro?(<div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5}}>{t.proActiveDesc}</div>):(
+          {isPro?(<div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5}}>{trialDays>0?(t.trialDesc||"Free trial active"):t.proActiveDesc}</div>):(
           <><div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5,marginBottom:12}}>{t.proDesc}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
             <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$14.99</span>
