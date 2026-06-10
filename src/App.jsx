@@ -611,9 +611,9 @@ export default function RhinoPlanner(){
             <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$14.99</span>
             <span style={{color:"#7A8FA6",fontSize:11}}>USD/{t.month}</span>
           </div>
-          <a href={"https://www.creem.io/payment/prod_77Edh860PtALnRskMGpnP"} target="_blank" rel="noopener" style={{display:"block",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,textDecoration:"none",fontFamily:"inherit"}}>
+          <button onClick={async()=>{try{const tk=localStorage.getItem("rhinoplan_token");const r=await fetch("https://rhinoplan.app/api/checkout",{method:"POST",headers:{Authorization:"Bearer "+tk}});const d=await r.json();if(d.url){window.location.href=d.url;}else{alert("Error: could not start checkout. Please try again.");}}catch(e){alert("Error: could not start checkout. Please try again.");}}} style={{display:"block",width:"100%",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
             {t.upgradeToPro}
-          </a></>)}</div>
+          </button></>)}</div>
         {/* Privacy & Account */}
         <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>
           <a href="https://rhinoplan.app/privacy.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.privacyPolicy}</a>
