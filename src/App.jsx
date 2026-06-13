@@ -144,6 +144,7 @@ function LoginScreen({onLogin}){
       <div style={{marginBottom:20}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.password}</label><input value={pass} onChange={e=>setPass(e.target.value)} style={inp} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
       {info&&<div style={{color:"#7BC97B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#00C85315",borderRadius:6}}>{info}</div>}{error&&<div style={{color:"#FF6B6B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#FF000015",borderRadius:6}}>{error}</div>}
       <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?t.enter:t.createAccount}</button>
+      <div style={{marginTop:20,fontSize:10,lineHeight:1.5,color:"#555",textAlign:"center"}}>{t.medicalDisclaimer}</div>
     </div></div>);
 }
 
