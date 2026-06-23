@@ -245,7 +245,7 @@ export default function RhinoPlanner(){
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function saveAsTemplate(){if(!saveTplName.trim())return;if(!isPro&&userTemplates.length>=1){alert(t.limitTemplates);setShowSettings(true);return;}try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert(t.error+": "+e.message);}}
+  async function saveAsTemplate(){if(!saveTplName.trim())return;if(!isPro&&userTemplates.length>=0){alert(t.limitTemplates);setShowSettings(true);return;}try{await supaFetch("plantillas",token,"POST",{nombre:saveTplName,descripcion:saveTplDesc,anotaciones:JSON.stringify(plan),user_id:authUser?.id});setShowSaveTpl(false);setSaveTplName("");setSaveTplDesc("");loadUserTemplates();}catch(e){alert(t.error+": "+e.message);}}
   async function deleteTemplate(id){if(!confirm(t.confirmDelete))return;try{await supaFetch("plantillas?id=eq."+id,token,"DELETE");loadUserTemplates();}catch(e){alert(t.error);}}
   async function renameTemplate(id){if(!editTplName.trim())return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{nombre:editTplName});setEditTplId(null);setEditTplName("");loadUserTemplates();}catch(e){alert(t.error);}}
   async function updateTemplateAnnotations(id){if(!confirm(t.confirmUpdate))return;try{await supaFetch("plantillas?id=eq."+id,token,"PATCH",{anotaciones:JSON.stringify(plan)});loadUserTemplates();alert(t.templateUpdated);}catch(e){alert(t.error);}}
@@ -609,7 +609,7 @@ export default function RhinoPlanner(){
             {t.startTrial||"Start 30-day free trial"}
           </button>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
-            <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$14.99</span>
+            <span style={{color:"#F5BE3A",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$29</span>
             <span style={{color:"#7A8FA6",fontSize:11}}>USD/{t.month}</span>
           </div>
           <button onClick={async()=>{try{const tk=localStorage.getItem("rhinoplan_token");const r=await fetch("https://www.rhinoplan.app/api/checkout",{method:"POST",headers:{Authorization:"Bearer "+tk}});const d=await r.json();if(d.url){window.location.href=d.url;}else{alert("Error: could not start checkout. Please try again.");}}catch(e){alert("Error: could not start checkout. Please try again.");}}} style={{display:"block",width:"100%",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
