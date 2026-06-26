@@ -251,6 +251,20 @@ export default function RhinoPlanner(){
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
   function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
   async function deleteAccount(){if(!confirm(t.confirmDeleteAccount))return;try{const d=await supaFetch("pacientes?user_id=eq."+authUser.id,token,"DELETE");const p=await supaFetch("plantillas?user_id=eq."+authUser.id,token,"DELETE");const s=await supaFetch("subscriptions?user_id=eq."+authUser.id,token,"DELETE");logout();alert(t.accountDeleted);}catch(e){alert(t.error);}}
+  async function changePassword(){
+    const np=prompt(t.enterNewPassword);
+    if(np===null)return;
+    if(np.length<6){alert(t.passwordMin);return;}
+    try{
+      const r=await fetch(SUPA_URL+"/auth/v1/user",{
+        method:"PUT",
+        headers:{apikey:SUPA_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"},
+        body:JSON.stringify({password:np})
+      });
+      if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.msg||d.error_description||"Error");}
+      alert(t.passwordUpdated);
+    }catch(e){alert(t.error+": "+e.message);}
+  }
   async function refreshSession(){
     try{
       const rt=localStorage.getItem("rhinoplan_refresh");
@@ -278,7 +292,7 @@ export default function RhinoPlanner(){
     if(!at) return;
     // Si es recovery, NO iniciamos sesión directo: guardamos el token y mostramos
     // el formulario de "nueva contraseña" (lo maneja LoginScreen vía recoveryToken).
-    if(typ==="recovery"){
+    if(typ==="recovery"||hp.get("type")==="recovery"){
       try{sessionStorage.setItem("rhinoplan_recovery", at);}catch(e){}
       // limpiar el hash para que no quede el token en la URL
       history.replaceState(null,"",window.location.pathname);
@@ -680,6 +694,7 @@ export default function RhinoPlanner(){
         <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>
           <a href="https://rhinoplan.app/privacy.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.privacyPolicy}</a>
           <a href="https://rhinoplan.app/terms.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.termsConditions}</a>
+          <button onClick={changePassword} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:12,cursor:"pointer",textAlign:"left",padding:0,fontFamily:"inherit"}}>{t.changePassword}</button>
           <button onClick={deleteAccount} style={{background:"none",border:"none",color:"#CC1111",fontSize:12,cursor:"pointer",textAlign:"left",padding:0,fontFamily:"inherit",marginTop:8}}>{t.deleteAccount}</button>
         </div>
       </div></div>)}
