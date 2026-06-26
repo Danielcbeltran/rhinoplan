@@ -129,21 +129,52 @@ function PatientModal({patient,onSave,onClose}){
     </div></div></div>);
 }
 
-function LoginScreen({onLogin}){
+function LoginScreen({onLogin,recoveryToken}){
   const{lang}=useLang();
   const t=translations[lang];
-  const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState("login");const[error,setError]=useState("");const[info,setInfo]=useState("");const[loading,setLoading]=useState(false);
+  const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[mode,setMode]=useState(recoveryToken?"newpass":"login");const[error,setError]=useState("");const[info,setInfo]=useState("");const[loading,setLoading]=useState(false);
   async function handleAuth(){if(mode==="register"&&pass.length<6){setError(t.passwordMin);return;}setLoading(true);setError("");setInfo("");try{const data=await supaAuth(email,pass,mode==="login");if(mode==="register"&&!data.access_token){setInfo(t.confirmEmailSent);setMode("login");return;}onLogin(data.access_token,data.user||data,data.refresh_token);}catch(e){if(/email not confirmed/i.test(e.message)){setError(t.emailNotConfirmed);}else{setError(e.message);}}finally{setLoading(false);}}
+  // Enviar correo de recuperación de contraseña
+  async function handleForgot(){
+    if(!email){setError(t.enterEmailFirst);return;}
+    setLoading(true);setError("");setInfo("");
+    try{
+      const r=await fetch(SUPA_URL+"/auth/v1/recover",{
+        method:"POST",
+        headers:{apikey:SUPA_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({email})
+      });
+      if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.msg||d.error_description||"Error");}
+      setInfo(t.recoverySent);
+    }catch(e){setError(e.message);}finally{setLoading(false);}
+  }
+  // Establecer nueva contraseña usando el token de recovery
+  async function handleNewPassword(){
+    if(pass.length<6){setError(t.passwordMin);return;}
+    setLoading(true);setError("");setInfo("");
+    try{
+      const r=await fetch(SUPA_URL+"/auth/v1/user",{
+        method:"PUT",
+        headers:{apikey:SUPA_KEY,Authorization:"Bearer "+recoveryToken,"Content-Type":"application/json"},
+        body:JSON.stringify({password:pass})
+      });
+      if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.msg||d.error_description||"Error");}
+      try{sessionStorage.removeItem("rhinoplan_recovery");}catch(e){}
+      setInfo(t.passwordUpdated);setMode("login");setPass("");
+    }catch(e){setError(e.message);}finally{setLoading(false);}
+  }
   const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#C8DCF0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
   return(<div style={{minHeight:"100vh",background:"#152238",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Crimson Text',Georgia,serif"}}>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
     <div style={{background:"#1C2D42",border:"1px solid #5B8DB844",borderRadius:14,padding:"40px 36px",width:340}}>
       <div style={{textAlign:"center",marginBottom:28}}><div style={{display:"flex",justifyContent:"center"}}><svg viewBox="-28 -42 56 72" width="44" height="56"><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg></div><div style={{color:"#5B8DB8",fontSize:22,fontWeight:700}}>RhinoPlan</div><div style={{color:"#666",fontSize:12,letterSpacing:"0.15em",textTransform:"uppercase",marginTop:4}}>{t.surgicalPlanner}</div></div>
-      <div style={{display:"flex",marginBottom:24,background:"#152238",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>{setMode(m);setError("");setInfo("");}} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#5B8DB8":"transparent",color:mode===m?"#152238":"#888",fontWeight:mode===m?700:400}}>{m==="login"?t.login:t.register}</button>))}</div>
-      <div style={{marginBottom:14}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} style={inp} placeholder="correo@ejemplo.com" type="email"/></div>
+      {mode!=="newpass"&&<div style={{display:"flex",marginBottom:24,background:"#152238",borderRadius:8,padding:3}}>{["login","register"].map(m=>(<button key={m} onClick={()=>{setMode(m);setError("");setInfo("");}} style={{flex:1,padding:8,border:"none",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit",background:mode===m?"#5B8DB8":"transparent",color:mode===m?"#152238":"#888",fontWeight:mode===m?700:400}}>{m==="login"?t.login:t.register}</button>))}</div>}
+      {mode==="newpass"&&<div style={{marginBottom:20,fontSize:13,color:"#5B8DB8",textAlign:"center",fontWeight:600}}>{t.setNewPassword}</div>}
+      {mode!=="newpass"&&<div style={{marginBottom:14}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.email}</label><input value={email} onChange={e=>setEmail(e.target.value)} style={inp} placeholder="correo@ejemplo.com" type="email"/></div>}
       <div style={{marginBottom:20}}><label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.password}</label><input value={pass} onChange={e=>setPass(e.target.value)} style={inp} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&handleAuth()}/></div>
       {info&&<div style={{color:"#7BC97B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#00C85315",borderRadius:6}}>{info}</div>}{error&&<div style={{color:"#FF6B6B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#FF000015",borderRadius:6}}>{error}</div>}
-      <button onClick={handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="login"?t.enter:t.createAccount}</button>
+      <button onClick={mode==="newpass"?handleNewPassword:handleAuth} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":mode==="newpass"?t.savePassword:mode==="login"?t.enter:t.createAccount}</button>
+      {mode==="login"&&<button onClick={handleForgot} disabled={loading} style={{display:"block",width:"100%",marginTop:12,background:"none",border:"none",color:"#5B8DB8",fontSize:12,fontFamily:"inherit",cursor:"pointer",textDecoration:"underline"}}>{t.forgotPassword}</button>}
       <div style={{marginTop:20,fontSize:10,lineHeight:1.5,color:"#555",textAlign:"center"}}>{t.medicalDisclaimer}</div>
     </div></div>);
 }
@@ -151,6 +182,7 @@ function LoginScreen({onLogin}){
 /* ═══ MAIN APP ═══ */
 export default function RhinoPlanner(){
   const{lang,setLang}=useLang();
+  const[recoveryMode,setRecoveryMode]=useState(null);
   const t=translations[lang];
   const TOOLS=getTools(t);
   const DEFAULT_COLORS=getDefaultColors(t);
@@ -236,6 +268,35 @@ export default function RhinoPlanner(){
       loadPacientes(data.access_token);loadUserTemplates(data.access_token);checkPro(data.access_token,data.user||authUser);
     }catch(e){logout();}
   }
+  // Procesar tokens que llegan en el #hash de la URL (magic link, recovery,
+  // confirmación de email). Supabase redirige con #access_token=...&refresh_token=...
+  // &type=recovery|magiclink|signup. Sin esto, esos enlaces no inician sesión.
+  useEffect(()=>{
+    if(!window.location.hash || window.location.hash.length<2) return;
+    const hp=new URLSearchParams(window.location.hash.slice(1));
+    const at=hp.get("access_token"); const rt=hp.get("refresh_token"); const typ=hp.get("type");
+    if(!at) return;
+    // Si es recovery, NO iniciamos sesión directo: guardamos el token y mostramos
+    // el formulario de "nueva contraseña" (lo maneja LoginScreen vía recoveryToken).
+    if(typ==="recovery"){
+      try{sessionStorage.setItem("rhinoplan_recovery", at);}catch(e){}
+      // limpiar el hash para que no quede el token en la URL
+      history.replaceState(null,"",window.location.pathname);
+      setRecoveryMode(at);
+      return;
+    }
+    // magic link / signup / cualquier otro: iniciar sesión normal
+    try{
+      const payload=JSON.parse(atob(at.split(".")[1]));
+      const user={id:payload.sub,email:payload.email};
+      localStorage.setItem("rhinoplan_token",at);
+      if(rt)localStorage.setItem("rhinoplan_refresh",rt);
+      localStorage.setItem("rhinoplan_user",JSON.stringify(user));
+    }catch(e){}
+    history.replaceState(null,"",window.location.pathname);
+    window.location.reload();
+  },[]);
+
   useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
@@ -459,7 +520,7 @@ export default function RhinoPlanner(){
   const modalBox={background:"#1E1E1E",border:"1px solid #5B8DB844",borderRadius:12,padding:24,width:420,maxHeight:"80vh",overflowY:"auto"};
   const tplCard={padding:"12px 14px",background:"#1E2F45",borderRadius:8,marginBottom:8,border:"1px solid #333"};
 
-  if(!token)return <LoginScreen onLogin={handleLogin}/>;
+  if(!token)return <LoginScreen onLogin={handleLogin} recoveryToken={recoveryMode}/>;
 
   return(
     <div style={{height:"100vh",maxHeight:"100vh",overflow:"hidden",background:"#EEF3F8",fontFamily:"'Crimson Text',Georgia,serif",display:"flex",flexDirection:"column"}}>
