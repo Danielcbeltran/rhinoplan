@@ -180,7 +180,48 @@ function LoginScreen({onLogin,recoveryToken}){
 }
 
 /* ═══ MAIN APP ═══ */
-export default function RhinoPlanner(){
+// Pantalla AISLADA para cambiar contraseña tras enlace de recovery.
+// No monta el canvas ni nada que asuma sesión — evita el render en blanco.
+function RecoveryScreen({recoveryToken,onDone}){
+  const{lang}=useLang();
+  const t=translations[lang];
+  const[pass,setPass]=useState("");
+  const[err,setErr]=useState("");
+  const[msg,setMsg]=useState("");
+  const[loading,setLoading]=useState(false);
+  async function save(){
+    if(pass.length<6){setErr(t.passwordMin);return;}
+    setLoading(true);setErr("");setMsg("");
+    try{
+      const r=await fetch(SUPA_URL+"/auth/v1/user",{
+        method:"PUT",
+        headers:{apikey:SUPA_KEY,Authorization:"Bearer "+recoveryToken,"Content-Type":"application/json"},
+        body:JSON.stringify({password:pass})
+      });
+      if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.msg||d.error_description||"Error");}
+      setMsg(t.passwordUpdated);
+      setTimeout(()=>{onDone();},1500);
+    }catch(e){setErr(e.message);}finally{setLoading(false);}
+  }
+  const inp={width:"100%",marginTop:6,padding:"10px 14px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#fff",fontSize:14,fontFamily:"inherit",boxSizing:"border-box"};
+  return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0D1626",fontFamily:"'Playfair Display',Georgia,serif"}}>
+    <div style={{background:"#1A2942",padding:40,borderRadius:16,width:380,maxWidth:"90vw"}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{color:"#5B8DB8",fontSize:22,fontWeight:700}}>RhinoPlan</div>
+        <div style={{color:"#5B8DB8",fontSize:13,marginTop:12,fontWeight:600}}>{t.setNewPassword}</div>
+      </div>
+      <div style={{marginBottom:18}}>
+        <label style={{color:"#888",fontSize:12,textTransform:"uppercase"}}>{t.password}</label>
+        <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")save();}} placeholder="••••••••" style={inp}/>
+      </div>
+      {msg&&<div style={{color:"#7BC97B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#00C85315",borderRadius:6}}>{msg}</div>}
+      {err&&<div style={{color:"#FF6B6B",fontSize:12,marginBottom:14,padding:"8px 12px",background:"#FF000015",borderRadius:6}}>{err}</div>}
+      <button onClick={save} disabled={loading} style={{width:"100%",padding:12,background:"#5B8DB8",border:"none",borderRadius:8,color:"#152238",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:loading?"wait":"pointer",opacity:loading?0.7:1}}>{loading?"...":t.savePassword}</button>
+    </div>
+  </div>);
+}
+
+function RhinoPlannerMain(){
   const{lang,setLang}=useLang();
   const[recoveryMode,setRecoveryMode]=useState(null);
   const t=translations[lang];
@@ -290,15 +331,8 @@ export default function RhinoPlanner(){
     const hp=new URLSearchParams(window.location.hash.slice(1));
     const at=hp.get("access_token"); const rt=hp.get("refresh_token"); const typ=hp.get("type");
     if(!at) return;
-    // Si es recovery, NO iniciamos sesión directo: guardamos el token y mostramos
-    // el formulario de "nueva contraseña" (lo maneja LoginScreen vía recoveryToken).
-    if(typ==="recovery"||hp.get("type")==="recovery"){
-      try{sessionStorage.setItem("rhinoplan_recovery", at);}catch(e){}
-      // limpiar el hash para que no quede el token en la URL
-      history.replaceState(null,"",window.location.pathname);
-      setRecoveryMode(at);
-      return;
-    }
+    // Recovery ya se detecta de forma síncrona arriba (recoveryMode inicial).
+    if(typ==="recovery"||hp.get("type")==="recovery"){ return; }
     // magic link / signup / cualquier otro: iniciar sesión normal
     try{
       const payload=JSON.parse(atob(at.split(".")[1]));
@@ -534,6 +568,7 @@ export default function RhinoPlanner(){
   const modalBox={background:"#1E1E1E",border:"1px solid #5B8DB844",borderRadius:12,padding:24,width:420,maxHeight:"80vh",overflowY:"auto"};
   const tplCard={padding:"12px 14px",background:"#1E2F45",borderRadius:8,marginBottom:8,border:"1px solid #333"};
 
+  if(recoveryMode)return <RecoveryScreen recoveryToken={recoveryMode} onDone={()=>{setRecoveryMode(null);try{history.replaceState(null,"",window.location.pathname);}catch(e){}}}/>;
   if(!token)return <LoginScreen onLogin={handleLogin} recoveryToken={recoveryMode}/>;
 
   return(
@@ -761,4 +796,29 @@ export default function RhinoPlanner(){
       </div>
     </div>
   );
+}
+
+
+// Wrapper de arranque: intercepta el enlace de recovery ANTES de montar la app
+// pesada (canvas, sesión, etc.), evitando el render en blanco.
+export default function RhinoPlanner(){
+  const recoveryToken=(()=>{
+    try{
+      if(window.location.hash&&window.location.hash.length>2){
+        const hp=new URLSearchParams(window.location.hash.slice(1));
+        if(hp.get("type")==="recovery"&&hp.get("access_token")){
+          return hp.get("access_token");
+        }
+      }
+    }catch(e){}
+    return null;
+  })();
+  const[recovering,setRecovering]=useState(!!recoveryToken);
+  if(recovering&&recoveryToken){
+    return <RecoveryScreen recoveryToken={recoveryToken} onDone={()=>{
+      try{history.replaceState(null,"",window.location.pathname);}catch(e){}
+      setRecovering(false);
+    }}/>;
+  }
+  return <RhinoPlannerMain/>;
 }
