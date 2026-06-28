@@ -240,6 +240,8 @@ function RhinoPlannerMain(){
   function saveColors(c){setColors(c);try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}}
   const[planMode,setPlanMode]=useState("pre");
   const[planNotes,setPlanNotes]=useState({pre:"",post:""});
+  const[showExport,setShowExport]=useState(false);
+  const[exportOpts,setExportOpts]=useState({tplPre:true,fotoPre:true,tplPost:true,fotoPost:true});
   const[plan,setPlanRaw]=useState({...EMPTY_PLAN});
   const initHist=()=>{const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[]];hi[m+"_"+v]=0;}));return{h,hi};};
   const[history,setHistory]=useState(()=>initHist().h);
@@ -411,105 +413,97 @@ function RhinoPlannerMain(){
   },[activeView,token]);
   const redrawAll=useCallback(()=>{const cv=canvasRef.current;if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);if(bgRef.current)ctx.drawImage(bgRef.current,0,0,W,H);(plan[planMode][activeView]||[]).forEach((s,i)=>drawShape(ctx,s,tool==="select"&&i===selIdx));if(current)drawShape(ctx,current);},[plan,planMode,activeView,current,selIdx,tool]);
   useEffect(()=>{redrawAll();},[redrawAll]);
-  async function handleExport(){
+  async function handleExport(opts){
+    const o=opts||{tplPre:true,fotoPre:true,tplPost:true,fotoPost:true};
     const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
     const pw=215.9,ph=279.4,mg=8;
     const usable_w=pw-mg*2,usable_h=ph-mg*2;
-
-    // Header
-    pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,28,"F");
-    pdf.setTextColor(91,141,184);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
-    pdf.text("RhinoPlan — "+(planMode==="pre"?t.preSurgical:t.techniquePerformed),mg,10);
-    pdf.setTextColor(200,220,240);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
-    if(patient.nombre)pdf.text(t.pdfPatient+": "+patient.nombre,mg,17);
-    pdf.setTextColor(170,170,170);pdf.setFontSize(8);
-    const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
-    pdf.text(info,mg,23);
-    pdf.setDrawColor(91,141,184);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
-
-    // Nota descriptiva del modo (pre/post): lo que el dibujo no muestra
-    let noteBottom=27;
-    const modeNote=(planNotes[planMode]||"").trim();
-    if(modeNote){
-      pdf.setTextColor(91,141,184);pdf.setFontSize(8);pdf.setFont("helvetica","bold");
-      pdf.text((planMode==="pre"?t.notesPre:t.notesPost)+":",mg,31.5);
-      pdf.setTextColor(70,70,70);pdf.setFontSize(8);pdf.setFont("helvetica","normal");
-      const wrapped=pdf.splitTextToSize(modeNote,usable_w);
-      pdf.text(wrapped,mg,35);
-      noteBottom=35+wrapped.length*3.4;
-    }
-
-    // Canvas for each view
-    const cols=2,rows=3,vgap=4,hgap=3;
-    const startY=modeNote?(noteBottom+3):31;
-    const availH=ph-startY-mg-(patient.notas?10:0);
-    const maxVw=(usable_w-hgap*(cols-1))/cols;
-    const maxVh=(availH-vgap*(rows-1)-rows*5)/rows;
-    const ratio=W/H; // 380/480 = 0.79
-    let vw=maxVw,vh=vw/ratio;
-    if(vh>maxVh){vh=maxVh;vw=vh*ratio;}
-
     const viewIds=VIEWS.map(v=>v.id);
     const viewLabels=VIEWS.map(v=>v.label);
+    let firstPage=true;
 
-    // Render all 6 views to image data
-    const promises=viewIds.map((vid,idx)=>new Promise((resolve)=>{
-      const cv=document.createElement("canvas");
-      cv.width=W;cv.height=H;
-      const c=cv.getContext("2d");
-      const img=new Image();img.src=VIEW_IMAGES[vid];
-      img.onload=()=>{
-        c.fillStyle="#fff";c.fillRect(0,0,W,H);
-        c.drawImage(img,0,0,W,H);
-        (plan[planMode][vid]||[]).forEach(s=>drawShape(c,s,false));
-        resolve({idx,data:cv.toDataURL("image/png")});
-      };
-    }));
+    // Dibuja una página de plantillas para un modo dado (pre/post)
+    async function renderPlantillasPage(modo){
+      if(!firstPage) pdf.addPage("letter","portrait");
+      firstPage=false;
+      // Header
+      pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,28,"F");
+      pdf.setTextColor(91,141,184);pdf.setFontSize(16);pdf.setFont("helvetica","bold");
+      pdf.text("RhinoPlan — "+(modo==="pre"?t.preSurgical:t.techniquePerformed),mg,10);
+      pdf.setTextColor(200,220,240);pdf.setFontSize(11);pdf.setFont("helvetica","normal");
+      if(patient.nombre)pdf.text(t.pdfPatient+": "+patient.nombre,mg,17);
+      pdf.setTextColor(170,170,170);pdf.setFontSize(8);
+      const info=[(patient.tipoDoc||"")+" "+(patient.documento||""),patient.edad?patient.edad+"a":"",patient.sexo||"",patient.fecha||"",patient.cirujano?"Dr. "+patient.cirujano:""].filter(Boolean).join("  ·  ");
+      pdf.text(info,mg,23);
+      pdf.setDrawColor(91,141,184);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
 
-    const results=await Promise.all(promises);
-    const gridW=cols*vw+(cols-1)*hgap;
-    const offsetX=(pw-gridW)/2;
-    results.forEach(({idx,data})=>{
-      const col=idx%cols,row=Math.floor(idx/cols);
-      const x=offsetX+col*(vw+hgap);
-      const y=startY+row*(vh+vgap+5);
-      // Label
-      pdf.setTextColor(51,51,51);pdf.setFontSize(7);pdf.setFont("helvetica","bold");
-      pdf.text(viewLabels[idx],x,y+3);
-      // Image
-      pdf.addImage(data,"PNG",x,y+4,vw,vh);
-      pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);
-      pdf.rect(x,y+4,vw,vh);
-    });
+      // Nota descriptiva del modo
+      let noteBottom=27;
+      const modeNote=(planNotes[modo]||"").trim();
+      if(modeNote){
+        pdf.setTextColor(91,141,184);pdf.setFontSize(8);pdf.setFont("helvetica","bold");
+        pdf.text((modo==="pre"?t.notesPre:t.notesPost)+":",mg,31.5);
+        pdf.setTextColor(70,70,70);pdf.setFontSize(8);pdf.setFont("helvetica","normal");
+        const wrapped=pdf.splitTextToSize(modeNote,usable_w);
+        pdf.text(wrapped,mg,35);
+        noteBottom=35+wrapped.length*3.4;
+      }
 
-    // Notes
-    if(patient.notas){
-      pdf.setTextColor(102,102,102);pdf.setFontSize(7);pdf.setFont("helvetica","italic");
-      pdf.text(t.pdfNotes+": "+patient.notas,mg,ph-mg);
+      const cols=2,rows=3,vgap=4,hgap=3;
+      const startY=modeNote?(noteBottom+3):31;
+      const availH=ph-startY-mg;
+      const maxVw=(usable_w-hgap*(cols-1))/cols;
+      const maxVh=(availH-vgap*(rows-1)-rows*5)/rows;
+      const ratio=W/H;
+      let vw=maxVw,vh=vw/ratio;
+      if(vh>maxVh){vh=maxVh;vw=vh*ratio;}
+
+      const promises=viewIds.map((vid,idx)=>new Promise((resolve)=>{
+        const cv=document.createElement("canvas");
+        cv.width=W;cv.height=H;
+        const c=cv.getContext("2d");
+        const img=new Image();img.src=VIEW_IMAGES[vid];
+        img.onload=()=>{
+          c.fillStyle="#fff";c.fillRect(0,0,W,H);
+          c.drawImage(img,0,0,W,H);
+          (plan[modo][vid]||[]).forEach(s=>drawShape(c,s,false));
+          resolve({idx,data:cv.toDataURL("image/png")});
+        };
+        img.onerror=()=>resolve({idx,data:null});
+      }));
+      const results=await Promise.all(promises);
+      const gridW=cols*vw+(cols-1)*hgap;
+      const offsetX=(pw-gridW)/2;
+      results.forEach(({idx,data})=>{
+        if(!data)return;
+        const col=idx%cols,row=Math.floor(idx/cols);
+        const x=offsetX+col*(vw+hgap);
+        const y=startY+row*(vh+vgap+5);
+        pdf.setTextColor(51,51,51);pdf.setFontSize(7);pdf.setFont("helvetica","bold");
+        pdf.text(viewLabels[idx],x,y+3);
+        pdf.addImage(data,"PNG",x,y+4,vw,vh);
+        pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);
+        pdf.rect(x,y+4,vw,vh);
+      });
     }
 
-    // Fotos: pre y post en páginas independientes; cada grupo ajustado a UNA página.
+    // Dibuja una página de fotos para un modo dado, ajustada a una sola página
     const fCols=3, fGap=3;
-    const fW=(usable_w-fGap*(fCols-1))/fCols;        // ancho de celda (3 columnas)
-
+    const fW=(usable_w-fGap*(fCols-1))/fCols;
     async function renderFotoPage(tipo){
       const list=fotos[tipo]||[];
       if(!list.length) return;
-      pdf.addPage("letter","portrait");
+      if(!firstPage) pdf.addPage("letter","portrait");
+      firstPage=false;
       pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
       pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
       pdf.text((tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos)+" — "+(patient.nombre||t.patient),mg,12);
-
       const topY=24;
-      const availH=ph-topY-mg;                         // alto disponible bajo el header
+      const availH=ph-topY-mg;
       const nRows=Math.ceil(list.length/fCols);
-      // Alto de celda para que TODAS las filas quepan en la página
       let fCellH=(availH-fGap*(nRows-1))/nRows;
-      // Tope para no estirar de más cuando hay pocas fotos
       const maxCellH=fW*1.35;
       if(fCellH>maxCellH)fCellH=maxCellH;
-
-      // Pre-cargar imágenes con dimensiones reales
       const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
         const img=new Image();
         img.onload=()=>{
@@ -524,7 +518,6 @@ function RhinoPlannerMain(){
         img.onerror=()=>resolve(null);
         img.src=src;
       })));
-
       for(let i=0;i<rendered.length;i++){
         const r=rendered[i];if(!r)continue;
         const col=i%fCols, row=Math.floor(i/fCols);
@@ -536,10 +529,16 @@ function RhinoPlannerMain(){
       }
     }
 
-    await renderFotoPage("pre");
-    await renderFotoPage("post");
+    // Orden lógico: PRE (plantillas, fotos) luego POST (plantillas, fotos)
+    if(o.tplPre) await renderPlantillasPage("pre");
+    if(o.fotoPre) await renderFotoPage("pre");
+    if(o.tplPost) await renderPlantillasPage("post");
+    if(o.fotoPost) await renderFotoPage("post");
 
-    pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
+    // Si no se seleccionó nada, no generar
+    if(firstPage){ return; }
+
+    pdf.save(`rhinoplan_${patient.documento||"plan"}.pdf`);
   }
 
   useEffect(()=>{const cv=canvasRef.current;if(!cv)return;const onT=e=>{if(e.touches.length===1)e.preventDefault();};cv.addEventListener("touchstart",onT,{passive:false});cv.addEventListener("touchmove",onT,{passive:false});return()=>{cv.removeEventListener("touchstart",onT);cv.removeEventListener("touchmove",onT);};});
@@ -625,6 +624,25 @@ function RhinoPlannerMain(){
       </div></div>)}
 
       {/* ═══ SAVE AS TEMPLATE MODAL ═══ */}
+      {showExport&&(<div style={modalBg} onClick={()=>setShowExport(false)}><div style={{...modalBox,width:360}} onClick={e=>e.stopPropagation()}>
+        <h3 style={{color:"#5B8DB8",marginTop:0,fontSize:18}}>{t.exportTitle}</h3>
+        <p style={{color:"#888",fontSize:12,marginTop:-6,marginBottom:16}}>{t.exportSubtitle}</p>
+        {[
+          {k:"tplPre",label:t.exportTplPre},
+          {k:"fotoPre",label:t.exportFotoPre},
+          {k:"tplPost",label:t.exportTplPost},
+          {k:"fotoPost",label:t.exportFotoPost},
+        ].map(opt=>(
+          <label key={opt.k} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",cursor:"pointer",color:"#ddd",fontSize:14}}>
+            <input type="checkbox" checked={exportOpts[opt.k]} onChange={e=>setExportOpts(o=>({...o,[opt.k]:e.target.checked}))} style={{width:16,height:16,accentColor:"#5B8DB8",cursor:"pointer"}}/>
+            {opt.label}
+          </label>
+        ))}
+        <div style={{display:"flex",gap:8,marginTop:18}}>
+          <button onClick={()=>setShowExport(false)} style={{flex:1,padding:10,background:"transparent",border:"1px solid #444",borderRadius:7,color:"#888",fontSize:13,fontFamily:"inherit",cursor:"pointer"}}>{t.cancel}</button>
+          <button onClick={()=>{const any=exportOpts.tplPre||exportOpts.fotoPre||exportOpts.tplPost||exportOpts.fotoPost;if(!any){alert(t.exportNothing);return;}setShowExport(false);handleExport(exportOpts);}} style={{flex:2,padding:10,background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",border:"none",borderRadius:7,color:"#fff",fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>{t.exportDo}</button>
+        </div>
+      </div></div>)}
       {showSaveTpl&&(<div style={modalBg} onClick={()=>setShowSaveTpl(false)}><div style={{...modalBox,width:360}} onClick={e=>e.stopPropagation()}>
         <div style={{color:"#5B8DB8",fontSize:16,fontWeight:700,marginBottom:16}}>{t.saveAsTemplate}</div>
         <div style={{marginBottom:12}}><label style={{color:"#888",fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Nombre *</label><input value={saveTplName} onChange={e=>setSaveTplName(e.target.value)} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:5,color:"#C8DCF0",padding:"9px 12px",fontSize:14,outline:"none",boxSizing:"border-box"}} placeholder={t.templateNamePlaceholder}/></div>
@@ -770,7 +788,7 @@ function RhinoPlannerMain(){
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
           {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>{t.patient}</div>))}
         </div>
-        <button onClick={handleExport} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.export}</button>
+        <button onClick={()=>setShowExport(true)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.export}</button>
         <button onClick={()=>setShowSettings(true)} style={{background:"none",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:12}}>⚙</button>
         <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>{t.logout}</button>
       </div>
