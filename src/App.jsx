@@ -488,22 +488,28 @@ function RhinoPlannerMain(){
       pdf.text(t.pdfNotes+": "+patient.notas,mg,ph-mg);
     }
 
-    // Fotos: pre y post en páginas independientes y organizadas
-    const fCols=2, fGap=5;
-    const fW=(usable_w-fGap*(fCols-1))/fCols;       // ancho de celda
-    const fCellH=fW*1.3;                             // alto de celda (proporción retrato)
+    // Fotos: pre y post en páginas independientes; cada grupo ajustado a UNA página.
+    const fCols=3, fGap=3;
+    const fW=(usable_w-fGap*(fCols-1))/fCols;        // ancho de celda (3 columnas)
 
-    async function renderFotoPages(tipo){
+    async function renderFotoPage(tipo){
       const list=fotos[tipo]||[];
       if(!list.length) return;
-      // Nueva página por cada tipo (pre / post)
       pdf.addPage("letter","portrait");
       pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
       pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
-      const titulo=(tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos)+" — "+(patient.nombre||t.patient);
-      pdf.text(titulo,mg,12);
+      pdf.text((tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos)+" — "+(patient.nombre||t.patient),mg,12);
 
-      // Pre-cargar imágenes con sus dimensiones reales
+      const topY=24;
+      const availH=ph-topY-mg;                         // alto disponible bajo el header
+      const nRows=Math.ceil(list.length/fCols);
+      // Alto de celda para que TODAS las filas quepan en la página
+      let fCellH=(availH-fGap*(nRows-1))/nRows;
+      // Tope para no estirar de más cuando hay pocas fotos
+      const maxCellH=fW*1.35;
+      if(fCellH>maxCellH)fCellH=maxCellH;
+
+      // Pre-cargar imágenes con dimensiones reales
       const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
         const img=new Image();
         img.onload=()=>{
@@ -519,32 +525,19 @@ function RhinoPlannerMain(){
         img.src=src;
       })));
 
-      let fy=26;
       for(let i=0;i<rendered.length;i++){
         const r=rendered[i];if(!r)continue;
-        const col=i%fCols;
-        // Salto de página cuando una nueva fila no cabe
-        if(col===0 && i>0){
-          fy+=fCellH+fGap;
-          if(fy+fCellH>ph-mg){
-            pdf.addPage("letter","portrait");
-            pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
-            pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
-            pdf.text(titulo+" (cont.)",mg,12);
-            fy=26;
-          }
-        }
-        const fx=mg+col*(fW+fGap);
-        // Centrar imagen dentro de la celda
-        const cx=fx+(fW-r.dw)/2, cy=fy+(fCellH-r.dh)/2;
-        pdf.setFillColor(247,249,251);pdf.rect(fx,fy,fW,fCellH,"F");
+        const col=i%fCols, row=Math.floor(i/fCols);
+        const fx=mg+col*(fW+fGap), fYpos=topY+row*(fCellH+fGap);
+        const cx=fx+(fW-r.dw)/2, cy=fYpos+(fCellH-r.dh)/2;
+        pdf.setFillColor(247,249,251);pdf.rect(fx,fYpos,fW,fCellH,"F");
         try{pdf.addImage(r.data,"JPEG",cx,cy,r.dw,r.dh);}catch(e){}
-        pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fy,fW,fCellH);
+        pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fYpos,fW,fCellH);
       }
     }
 
-    await renderFotoPages("pre");
-    await renderFotoPages("post");
+    await renderFotoPage("pre");
+    await renderFotoPage("post");
 
     pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
   }
