@@ -488,48 +488,63 @@ function RhinoPlannerMain(){
       pdf.text(t.pdfNotes+": "+patient.notas,mg,ph-mg);
     }
 
-    // Photos page
-    const allFotos=[...fotos.pre.map(s=>({src:s,tipo:"pre"})),...fotos.post.map(s=>({src:s,tipo:"post"}))];
-    if(allFotos.length>0){
+    // Fotos: pre y post en páginas independientes y organizadas
+    const fCols=2, fGap=5;
+    const fW=(usable_w-fGap*(fCols-1))/fCols;       // ancho de celda
+    const fCellH=fW*1.3;                             // alto de celda (proporción retrato)
+
+    async function renderFotoPages(tipo){
+      const list=fotos[tipo]||[];
+      if(!list.length) return;
+      // Nueva página por cada tipo (pre / post)
       pdf.addPage("letter","portrait");
       pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
       pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
-      pdf.text(t.pdfPhotos+" — "+(patient.nombre||t.patient),mg,12);
+      const titulo=(tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos)+" — "+(patient.nombre||t.patient);
+      pdf.text(titulo,mg,12);
 
-      let fy=24;
-      const fCols=3,fW=(usable_w-fCols*3)/fCols,fCellH=fW*1.35;
-      for(const tipo of ["pre","post"]){
-        const list=fotos[tipo];if(!list.length)continue;
-        pdf.setTextColor(51,51,51);pdf.setFontSize(9);pdf.setFont("helvetica","bold");
-        pdf.text(tipo==="pre"?t.preSurgicalPhotos:t.postSurgicalPhotos,mg,fy);fy+=4;
-        // Load each image to get real dimensions, then center within cell
-        const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
-          const img=new Image();
-          img.onload=()=>{
-            const iRatio=img.naturalWidth/img.naturalHeight;
-            let dw=fW,dh=fW/iRatio;
-            if(dh>fCellH){dh=fCellH;dw=fCellH*iRatio;}
-            const cv2=document.createElement("canvas");
-            cv2.width=img.naturalWidth;cv2.height=img.naturalHeight;
-            cv2.getContext("2d").drawImage(img,0,0);
-            resolve({data:cv2.toDataURL("image/jpeg",0.85),dw,dh});
-          };
-          img.onerror=()=>resolve(null);
-          img.src=src;
-        })));
-        for(let i=0;i<rendered.length;i++){
-          const r=rendered[i];if(!r)continue;
-          const col=i%fCols,row=Math.floor(i/fCols);
-          const fx=mg+col*(fW+3),fYpos=fy+row*(fCellH+3);
-          if(fYpos+fCellH>ph-mg){pdf.addPage("letter","portrait");fy=mg;}
-          // Center image within cell
-          const cx=fx+(fW-r.dw)/2,cy=fYpos+(fCellH-r.dh)/2;
-          try{pdf.addImage(r.data,"JPEG",cx,cy,r.dw,r.dh);}catch(e){}
-          pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fYpos,fW,fCellH);
+      // Pre-cargar imágenes con sus dimensiones reales
+      const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
+        const img=new Image();
+        img.onload=()=>{
+          const iRatio=img.naturalWidth/img.naturalHeight;
+          let dw=fW,dh=fW/iRatio;
+          if(dh>fCellH){dh=fCellH;dw=fCellH*iRatio;}
+          const cv2=document.createElement("canvas");
+          cv2.width=img.naturalWidth;cv2.height=img.naturalHeight;
+          cv2.getContext("2d").drawImage(img,0,0);
+          resolve({data:cv2.toDataURL("image/jpeg",0.85),dw,dh});
+        };
+        img.onerror=()=>resolve(null);
+        img.src=src;
+      })));
+
+      let fy=26;
+      for(let i=0;i<rendered.length;i++){
+        const r=rendered[i];if(!r)continue;
+        const col=i%fCols;
+        // Salto de página cuando una nueva fila no cabe
+        if(col===0 && i>0){
+          fy+=fCellH+fGap;
+          if(fy+fCellH>ph-mg){
+            pdf.addPage("letter","portrait");
+            pdf.setFillColor(21,34,56);pdf.rect(0,0,pw,18,"F");
+            pdf.setTextColor(91,141,184);pdf.setFontSize(12);pdf.setFont("helvetica","bold");
+            pdf.text(titulo+" (cont.)",mg,12);
+            fy=26;
+          }
         }
-        fy+=Math.ceil(rendered.length/fCols)*(fCellH+3)+8;
+        const fx=mg+col*(fW+fGap);
+        // Centrar imagen dentro de la celda
+        const cx=fx+(fW-r.dw)/2, cy=fy+(fCellH-r.dh)/2;
+        pdf.setFillColor(247,249,251);pdf.rect(fx,fy,fW,fCellH,"F");
+        try{pdf.addImage(r.data,"JPEG",cx,cy,r.dw,r.dh);}catch(e){}
+        pdf.setDrawColor(184,203,224);pdf.setLineWidth(0.3);pdf.rect(fx,fy,fW,fCellH);
       }
     }
+
+    await renderFotoPages("pre");
+    await renderFotoPages("post");
 
     pdf.save(`rhinoplan_${patient.documento||"plan"}_${planMode}.pdf`);
   }
