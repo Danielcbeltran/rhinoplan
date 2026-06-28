@@ -239,6 +239,7 @@ function RhinoPlannerMain(){
   const[showColorEditor,setShowColorEditor]=useState(false);
   function saveColors(c){setColors(c);try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}}
   const[planMode,setPlanMode]=useState("pre");
+  const[planNotes,setPlanNotes]=useState({pre:"",post:""});
   const[plan,setPlanRaw]=useState({...EMPTY_PLAN});
   const initHist=()=>{const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[]];hi[m+"_"+v]=0;}));return{h,hi};};
   const[history,setHistory]=useState(()=>initHist().h);
@@ -290,7 +291,7 @@ function RhinoPlannerMain(){
   async function createTrial(){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",trial_ends_at:trialEnd,provider_customer_id:"",provider_subscription_id:""});checkPro(token,authUser);}catch(e){console.log("Trial creation:",e.message);}}
   function handleLogin(tok,user,refreshTok){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
-  function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
+  function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
   async function deleteAccount(){if(!confirm(t.confirmDeleteAccount))return;try{const d=await supaFetch("pacientes?user_id=eq."+authUser.id,token,"DELETE");const p=await supaFetch("plantillas?user_id=eq."+authUser.id,token,"DELETE");const s=await supaFetch("subscriptions?user_id=eq."+authUser.id,token,"DELETE");logout();alert(t.accountDeleted);}catch(e){alert(t.error);}}
   async function changePassword(){
     const np=prompt(t.enterNewPassword);
@@ -348,9 +349,12 @@ function RhinoPlannerMain(){
   useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify(plan),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
-  function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
-  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});}
+  async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}
+    try{const pn=pl._notes;setPlanNotes({pre:pn?.pre||"",post:pn?.post||""});}catch(e){setPlanNotes({pre:"",post:""});}
+    if(pl._notes)delete pl._notes;
+    setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
+  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});}
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
@@ -423,9 +427,21 @@ function RhinoPlannerMain(){
     pdf.text(info,mg,23);
     pdf.setDrawColor(91,141,184);pdf.setLineWidth(0.5);pdf.line(mg,27,pw-mg,27);
 
+    // Nota descriptiva del modo (pre/post): lo que el dibujo no muestra
+    let noteBottom=27;
+    const modeNote=(planNotes[planMode]||"").trim();
+    if(modeNote){
+      pdf.setTextColor(91,141,184);pdf.setFontSize(8);pdf.setFont("helvetica","bold");
+      pdf.text((planMode==="pre"?t.notesPre:t.notesPost)+":",mg,31.5);
+      pdf.setTextColor(70,70,70);pdf.setFontSize(8);pdf.setFont("helvetica","normal");
+      const wrapped=pdf.splitTextToSize(modeNote,usable_w);
+      pdf.text(wrapped,mg,35);
+      noteBottom=35+wrapped.length*3.4;
+    }
+
     // Canvas for each view
     const cols=2,rows=3,vgap=4,hgap=3;
-    const startY=31;
+    const startY=modeNote?(noteBottom+3):31;
     const availH=ph-startY-mg-(patient.notas?10:0);
     const maxVw=(usable_w-hgap*(cols-1))/cols;
     const maxVh=(availH-vgap*(rows-1)-rows*5)/rows;
@@ -791,6 +807,10 @@ function RhinoPlannerMain(){
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>{t.clear}</button>
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
+          </div>
+          <div style={{marginTop:10}}>
+            <label style={{color:"#5B8DB8",fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:4}}>{planMode==="pre"?t.notesPre:t.notesPost}</label>
+            <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{width:"100%",minHeight:60,padding:"8px 12px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#fff",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.4}}/>
           </div>
         </div>
       </div>
