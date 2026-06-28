@@ -834,7 +834,7 @@ function RhinoPlannerMain(){
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
           </div>
-          <div style={{marginTop:10}}>
+          <div style={{marginTop:14,width:"100%",maxWidth:680,alignSelf:"center"}}>
             <label style={{color:"#5B8DB8",fontSize:12,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6,fontWeight:600}}>{planMode==="pre"?t.notesPre:t.notesPost}</label>
             <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{width:"100%",minHeight:110,padding:"12px 14px",background:"#152238",border:"1px solid #3A4A63",borderRadius:8,color:"#fff",fontSize:16,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.5}}/>
           </div>
