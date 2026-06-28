@@ -835,8 +835,8 @@ function RhinoPlannerMain(){
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
           </div>
           <div style={{marginTop:10}}>
-            <label style={{color:"#5B8DB8",fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:4}}>{planMode==="pre"?t.notesPre:t.notesPost}</label>
-            <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{width:"100%",minHeight:60,padding:"8px 12px",background:"#152238",border:"1px solid #333",borderRadius:7,color:"#fff",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.4}}/>
+            <label style={{color:"#5B8DB8",fontSize:12,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6,fontWeight:600}}>{planMode==="pre"?t.notesPre:t.notesPost}</label>
+            <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{width:"100%",minHeight:110,padding:"12px 14px",background:"#152238",border:"1px solid #3A4A63",borderRadius:8,color:"#fff",fontSize:16,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.5}}/>
           </div>
         </div>
       </div>
