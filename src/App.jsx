@@ -237,7 +237,18 @@ function RhinoPlannerMain(){
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
   const[colors,setColors]=useState(()=>{try{const s=window.localStorage.getItem("rhinoplan_colors");return s?JSON.parse(s):[...DEFAULT_COLORS];}catch(e){return[...DEFAULT_COLORS];}});
   const[showColorEditor,setShowColorEditor]=useState(false);
-  function saveColors(c){setColors(c);try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}}
+  function saveColors(c){
+    setColors(c);
+    try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(c));}catch(e){}
+    // Sincronizar en la nube (upsert sobre user_id) si hay sesión
+    if(token&&authUser?.id){
+      fetch(SUPA_URL+"/rest/v1/user_settings?on_conflict=user_id",{
+        method:"POST",
+        headers:{apikey:SUPA_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},
+        body:JSON.stringify({user_id:authUser.id,colores:c,updated_at:new Date().toISOString()})
+      }).catch(()=>{});
+    }
+  }
   const[planMode,setPlanMode]=useState("pre");
   const[planNotes,setPlanNotes]=useState({pre:"",post:""});
   const[showExport,setShowExport]=useState(false);
@@ -348,7 +359,16 @@ function RhinoPlannerMain(){
     window.location.reload();
   },[]);
 
-  useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);}},[]);
+  async function loadColors(tk,usr){
+    try{
+      const rows=await supaFetch("user_settings?user_id=eq."+usr.id+"&select=colores",tk);
+      if(rows&&rows.length&&Array.isArray(rows[0].colores)&&rows[0].colores.length){
+        setColors(rows[0].colores);
+        try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(rows[0].colores));}catch(e){}
+      }
+    }catch(e){}
+  }
+  useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);loadColors(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
   async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
