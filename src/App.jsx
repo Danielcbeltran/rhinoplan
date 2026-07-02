@@ -810,6 +810,7 @@ function RhinoPlannerMain(){
         </div>
         <button onClick={()=>setShowExport(true)} style={{background:"linear-gradient(135deg,#5B8DB8,#3A6B8E)",color:"#FFFFFF",border:"none",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.export}</button>
         <button onClick={()=>setShowSettings(true)} style={{background:"none",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:12}}>⚙</button>
+        <span title={authUser?.email||""} style={{color:"#8AA5C0",fontSize:11,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"inline-block",verticalAlign:"middle"}}>{authUser?.email||""}</span>
         <button onClick={logout} style={{background:"transparent",border:"1px solid #444",color:"#666",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,fontFamily:"inherit"}}>{t.logout}</button>
       </div>
 
