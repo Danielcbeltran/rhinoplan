@@ -86,19 +86,19 @@ function drawShape(ctx,s,selected){
   else if(s.type==="knot"){const rot=s.rotation||0;const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;ctx.translate(s.cx,s.cy);ctx.rotate(rot);
     // elipse: SOLO borde, sin relleno
     ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.stroke();
-    // dos cabos de hilo saliendo del borde superior, con leve curvatura (nudo de sutura)
+    // dos cabos de hilo cortos con curvatura, saliendo del borde superior (nudo de sutura)
     const ox=0,oy=-ry;                       // punto de salida (borde superior)
-    const len=Math.max(ry*0.9,10);           // largo de los cabos
-    const spread=Math.max(rx*0.35,5);        // apertura entre cabos
+    const len=Math.max(ry*0.5,6);            // largo de los cabos (más cortos)
+    const spread=Math.max(rx*0.3,4);         // apertura entre cabos
     ctx.beginPath();
-    // cabo izquierdo: sale del borde y se curva hacia afuera-arriba
+    // cabo izquierdo: curva pronunciada hacia afuera
     ctx.moveTo(ox,oy);
-    ctx.quadraticCurveTo(ox-spread*0.5,oy-len*0.55,ox-spread,oy-len);
+    ctx.quadraticCurveTo(ox-spread*1.3,oy-len*0.3,ox-spread*0.7,oy-len);
     // cabo derecho
     ctx.moveTo(ox,oy);
-    ctx.quadraticCurveTo(ox+spread*0.5,oy-len*0.55,ox+spread,oy-len);
+    ctx.quadraticCurveTo(ox+spread*1.3,oy-len*0.3,ox+spread*0.7,oy-len);
     ctx.stroke();
-    if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,rx+5,ry+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(rx+5,0);ctx.lineTo(rx+30,0);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(rx+30,0,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();}}
+    if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,rx+5,ry+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-34);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-34,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();}}
   else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
   else if(s.type==="polygon"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));if(s.preview&&!s.closed)ctx.lineTo(s.preview.x,s.preview.y);if(s.closed)ctx.closePath();ctx.stroke();if(s.closed){ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();}if(!s.closed&&s.points.length>=3&&s.preview){const d=Math.hypot(s.preview.x-s.points[0].x,s.preview.y-s.points[0].y);if(d<20){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(s.points[0].x,s.points[0].y,8,0,Math.PI*2);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=2;ctx.stroke();}}s.points.forEach(p=>{ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
   ctx.restore();
