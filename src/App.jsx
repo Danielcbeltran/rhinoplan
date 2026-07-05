@@ -35,6 +35,7 @@ const getTools=(t)=>[
   {id:"arrow",label:t.arrow,icon:"➡️"},
   {id:"rect",label:t.area,icon:"⬜"},
   {id:"ellipse",label:t.ellipse,icon:"⭕"},
+  {id:"knot",label:t.knot,icon:"🎀"},
   {id:"text",label:t.text,icon:"T"},
   {id:"polygon",label:t.polygon,icon:"⬠"},
   {id:"eraser",label:t.erase,icon:"🗑"},
@@ -82,13 +83,29 @@ function drawShape(ctx,s,selected){
   else if(s.type==="arrow"){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),l=14+s.size*1.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(s.x2,s.y2);ctx.lineTo(s.x2-l*Math.cos(a-0.4),s.y2-l*Math.sin(a-0.4));ctx.lineTo(s.x2-l*Math.cos(a+0.4),s.y2-l*Math.sin(a+0.4));ctx.closePath();ctx.fill();if(selected){ctx.globalAlpha=1;ctx.strokeStyle="#5B8DB8";ctx.fillStyle="#5B8DB8";ctx.beginPath();ctx.arc(s.x1,s.y1,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x2,s.y2,5,0,Math.PI*2);ctx.fill();}}
   else if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=s.rotation||0;ctx.translate(cx,cy);ctx.rotate(rot);ctx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fillRect(-s.w/2,-s.h/2,s.w,s.h);if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(-s.w/2-4,-s.h/2-4,s.w+8,s.h+8);ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-Math.abs(s.h)/2-4);ctx.lineTo(0,-Math.abs(s.h)/2-28);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-Math.abs(s.h)/2-28,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.5;ctx.fill();}}
   else if(s.type==="ellipse"){const rot=s.rotation||0;ctx.translate(s.cx,s.cy);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,Math.abs(s.rx)||1,Math.abs(s.ry)||1,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,(Math.abs(s.rx)||1)+5,(Math.abs(s.ry)||1)+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);const ry=Math.abs(s.ry)||1;ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-30);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-30,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.5;ctx.fill();}}
+  else if(s.type==="knot"){const rot=s.rotation||0;const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;ctx.translate(s.cx,s.cy);ctx.rotate(rot);
+    // óvalo
+    ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();ctx.globalAlpha=(s.opacity??1);
+    // moño en la parte superior del óvalo
+    const bx=0,by=-ry;const bw=Math.max(rx*0.55,7),bh=Math.max(ry*0.45,5);
+    ctx.beginPath();
+    // lazo izquierdo
+    ctx.moveTo(bx,by);ctx.bezierCurveTo(bx-bw*1.4,by-bh,bx-bw*1.4,by+bh,bx,by);
+    // lazo derecho
+    ctx.moveTo(bx,by);ctx.bezierCurveTo(bx+bw*1.4,by-bh,bx+bw*1.4,by+bh,bx,by);
+    ctx.stroke();
+    // colas del moño
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-bw*0.7,by+bh*1.6);ctx.moveTo(bx,by);ctx.lineTo(bx+bw*0.7,by+bh*1.6);ctx.stroke();
+    // nudo central del moño
+    ctx.beginPath();ctx.arc(bx,by,Math.max(bw*0.28,2),0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();
+    if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,rx+5,ry+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-34);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-34,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();}}
   else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
   else if(s.type==="polygon"){if(!s.points?.length){ctx.restore();return;}ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);s.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));if(s.preview&&!s.closed)ctx.lineTo(s.preview.x,s.preview.y);if(s.closed)ctx.closePath();ctx.stroke();if(s.closed){ctx.globalAlpha=(s.opacity??1)*0.80;ctx.fill();}if(!s.closed&&s.points.length>=3&&s.preview){const d=Math.hypot(s.preview.x-s.points[0].x,s.preview.y-s.points[0].y);if(d<20){ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(s.points[0].x,s.points[0].y,8,0,Math.PI*2);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=2;ctx.stroke();}}s.points.forEach(p=>{ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});if(selected){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);const bx=Math.min(...xs)-6,by=Math.min(...ys)-6,bw=Math.max(...xs)-bx+6,bh=Math.max(...ys)-by+6;ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(bx,by,bw,bh);ctx.setLineDash([]);}}
   ctx.restore();
 }
 function shapeCenter(s){
   if(s.type==="rect")return{x:s.x+s.w/2,y:s.y+s.h/2};
-  if(s.type==="ellipse")return{x:s.cx,y:s.cy};
+  if(s.type==="ellipse"||s.type==="knot")return{x:s.cx,y:s.cy};
   if(s.type==="line"||s.type==="dashed"||s.type==="arrow")return{x:(s.x1+s.x2)/2,y:(s.y1+s.y2)/2};
   if(s.type==="pen"&&s.points?.length){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);return{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};}
   if(s.type==="polygon"&&s.points?.length){const xs=s.points.map(p=>p.x),ys=s.points.map(p=>p.y);return{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};}
@@ -101,7 +118,7 @@ function hit(s,pos,d=20){
   if(s.type==="polygon"){if(!s.points?.length)return false;for(let i=0;i<s.points.length;i++){const a=s.points[i],b=s.points[(i+1)%s.points.length];if(ptSeg(pos,a,b)<d)return true;}return false;}
   if(s.type==="line"||s.type==="dashed"||s.type==="arrow")return ptSeg(pos,{x:s.x1,y:s.y1},{x:s.x2,y:s.y2})<d;
   if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=-(s.rotation||0);const dx=pos.x-cx,dy=pos.y-cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);return lx>-Math.abs(s.w)/2-d&&lx<Math.abs(s.w)/2+d&&ly>-Math.abs(s.h)/2-d&&ly<Math.abs(s.h)/2+d;}
-  if(s.type==="ellipse"){const rot=-(s.rotation||0);const dx=pos.x-s.cx,dy=pos.y-s.cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;return(lx*lx)/((rx+d)*(rx+d))+(ly*ly)/((ry+d)*(ry+d))<=1;}
+  if(s.type==="ellipse"||s.type==="knot"){const rot=-(s.rotation||0);const dx=pos.x-s.cx,dy=pos.y-s.cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;return(lx*lx)/((rx+d)*(rx+d))+(ly*ly)/((ry+d)*(ry+d))<=1;}
   if(s.type==="text")return Math.hypot(pos.x-s.x,pos.y-s.y)<30;return false;
 }
 
@@ -563,7 +580,7 @@ function RhinoPlannerMain(){
 
   useEffect(()=>{const cv=canvasRef.current;if(!cv)return;const onT=e=>{if(e.touches.length===1)e.preventDefault();};cv.addEventListener("touchstart",onT,{passive:false});cv.addEventListener("touchmove",onT,{passive:false});return()=>{cv.removeEventListener("touchstart",onT);cv.removeEventListener("touchmove",onT);};});
 
-  function nearRotHandle(s,pos){if(s.type!=="rect"&&s.type!=="ellipse")return false;const c=shapeCenter(s);const rot=s.rotation||0;let dist;if(s.type==="rect")dist=Math.abs(s.h)/2+28;else dist=(Math.abs(s.ry)||1)+30;const hx=c.x+dist*Math.sin(rot),hy=c.y-dist*Math.cos(rot);return Math.hypot(pos.x-hx,pos.y-hy)<18;}
+  function nearRotHandle(s,pos){if(s.type!=="rect"&&s.type!=="ellipse"&&s.type!=="knot")return false;const c=shapeCenter(s);const rot=s.rotation||0;let dist;if(s.type==="rect")dist=Math.abs(s.h)/2+28;else dist=(Math.abs(s.ry)||1)+34;const hx=c.x+dist*Math.sin(rot),hy=c.y-dist*Math.cos(rot);return Math.hypot(pos.x-hx,pos.y-hy)<18;}
   function getPos(e){const cv=canvasRef.current,r=cv.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(cv.width/r.width),y:(s.clientY-r.top)*(cv.height/r.height)};}
 
   function onDown(e){
@@ -586,22 +603,22 @@ function RhinoPlannerMain(){
       return;
     }
     setDrawing(true);const b={type:tool,color,size,opacity};
-    if(tool==="pen")setCurrent({...b,points:[p]});else if(tool==="line"||tool==="dashed"||tool==="arrow")setCurrent({...b,x1:p.x,y1:p.y,x2:p.x,y2:p.y});else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0,rotation:0});else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0,rotation:0});
+    if(tool==="pen")setCurrent({...b,points:[p]});else if(tool==="line"||tool==="dashed"||tool==="arrow")setCurrent({...b,x1:p.x,y1:p.y,x2:p.x,y2:p.y});else if(tool==="rect")setCurrent({...b,x:p.x,y:p.y,w:0,h:0,rotation:0});else if(tool==="ellipse")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0,rotation:0});else if(tool==="knot")setCurrent({...b,cx:p.x,cy:p.y,rx:0,ry:0,rotation:0});
   }
   function onMove(e){
     if(e.touches&&e.touches.length>1){setCurrent(null);setDrawing(false);setDragMode(null);return;}const p=getPos(e);
     if(tool==="select"&&dragMode&&dragStart&&selIdx>=0){const shapes=plan[planMode][activeView]||[];const s=shapes[selIdx];if(!s)return;
       if(dragMode==="move"){const dx=p.x-dragStart.x,dy=p.y-dragStart.y;const u={...s};
         if(s.type==="rect"){u.x=s.x+dx;u.y=s.y+dy;}
-        else if(s.type==="ellipse"){u.cx=s.cx+dx;u.cy=s.cy+dy;}
+        else if(s.type==="ellipse"||s.type==="knot"){u.cx=s.cx+dx;u.cy=s.cy+dy;}
         else if(s.type==="line"||s.type==="dashed"||s.type==="arrow"){u.x1=s.x1+dx;u.y1=s.y1+dy;u.x2=s.x2+dx;u.y2=s.y2+dy;}
         else if(s.type==="pen"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
         else if(s.type==="polygon"&&s.points){u.points=s.points.map(pt=>({x:pt.x+dx,y:pt.y+dy}));}
         else if(s.type==="text"){u.x=s.x+dx;u.y=s.y+dy;}
         const ns=[...shapes];ns[selIdx]=u;setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:ns}}));setDragStart(p);}
-      else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:ns}}));}return;}
+      else if(dragMode==="rotate"&&(s.type==="rect"||s.type==="ellipse"||s.type==="knot")){const c=shapeCenter(s);const angle=Math.atan2(p.x-c.x,-(p.y-c.y));const ns=[...shapes];ns[selIdx]={...s,rotation:angle};setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:ns}}));}return;}
     if(!drawing||!current)return;
-    if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="polygon")setCurrent(c=>({...c,preview:p}));else if(tool==="line"||tool==="dashed"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
+    if(tool==="pen")setCurrent(c=>({...c,points:[...(c.points||[]),p]}));else if(tool==="polygon")setCurrent(c=>({...c,preview:p}));else if(tool==="line"||tool==="dashed"||tool==="arrow")setCurrent(c=>({...c,x2:p.x,y2:p.y}));else if(tool==="rect")setCurrent(c=>({...c,w:p.x-c.x,h:p.y-c.y}));else if(tool==="ellipse")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));else if(tool==="knot")setCurrent(c=>({...c,rx:p.x-c.cx,ry:p.y-c.cy}));
   }
   function onUp(){if(tool==="select"&&dragMode&&selIdx>=0){const shapes=[...(plan[planMode][activeView]||[])];setAnnotations(a=>({...a,[activeView]:shapes}));setDragMode(null);setDragStart(null);return;}if(tool==="polygon")return;if(!drawing||!current)return;setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),current]}));setCurrent(null);setDrawing(false);}
   function submitText(){if(textInput.val.trim())setAnnotations(a=>({...a,[activeView]:[...(a[activeView]||[]),{type:"text",color,size,opacity,x:textInput.x,y:textInput.y,text:textInput.val}]}));setTextInput({visible:false,x:0,y:0,val:""});}
