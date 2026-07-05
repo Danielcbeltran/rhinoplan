@@ -91,12 +91,12 @@ function drawShape(ctx,s,selected){
     const len=Math.max(ry*0.5,6);            // largo de los cabos (más cortos)
     const spread=Math.max(rx*0.3,4);         // apertura entre cabos
     ctx.beginPath();
-    // cabo izquierdo: curva pronunciada hacia afuera
+    // cabo izquierdo: se abre hacia afuera (punto final más lejos que el de control)
     ctx.moveTo(ox,oy);
-    ctx.quadraticCurveTo(ox-spread*1.3,oy-len*0.3,ox-spread*0.7,oy-len);
+    ctx.quadraticCurveTo(ox-spread*0.4,oy-len*0.7,ox-spread*1.6,oy-len*0.85);
     // cabo derecho
     ctx.moveTo(ox,oy);
-    ctx.quadraticCurveTo(ox+spread*1.3,oy-len*0.3,ox+spread*0.7,oy-len);
+    ctx.quadraticCurveTo(ox+spread*0.4,oy-len*0.7,ox+spread*1.6,oy-len*0.85);
     ctx.stroke();
     if(selected){ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,rx+5,ry+5,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(0,-ry-5);ctx.lineTo(0,-ry-34);ctx.strokeStyle="#5B8DB8";ctx.stroke();ctx.beginPath();ctx.arc(0,-ry-34,6,0,Math.PI*2);ctx.fillStyle="#5B8DB8";ctx.globalAlpha=0.9;ctx.fill();}}
   else if(s.type==="text"){ctx.font=`${s.size*4+11}px Georgia,serif`;ctx.fillText(s.text,s.x,s.y);if(selected){const m=ctx.measureText(s.text);ctx.globalAlpha=1;ctx.setLineDash([4,4]);ctx.strokeStyle="#5B8DB8";ctx.lineWidth=1.5;ctx.strokeRect(s.x-3,s.y-s.size*4-12,m.width+6,s.size*4+16);ctx.setLineDash([]);}}
@@ -314,6 +314,22 @@ function RhinoPlannerMain(){
     });
   }
   function undo(){const k=hk;setHistIdx(hi=>{const ni=Math.max(0,(hi[k]||0)-1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
+  function duplicateSelected(){
+    const shapes=plan[planMode][activeView]||[];
+    if(selIdx<0||selIdx>=shapes.length)return;
+    const orig=shapes[selIdx];
+    // Copia profunda con desplazamiento de 15px para que se note
+    const off=15;
+    const copy=JSON.parse(JSON.stringify(orig));
+    if(copy.points)copy.points=copy.points.map(pt=>({x:pt.x+off,y:pt.y+off}));
+    if(copy.cx!=null){copy.cx+=off;copy.cy+=off;}
+    if(copy.x!=null&&copy.w!=null){copy.x+=off;copy.y+=off;}
+    if(copy.x1!=null){copy.x1+=off;copy.y1+=off;copy.x2+=off;copy.y2+=off;}
+    if(copy.x!=null&&copy.text!=null){copy.x+=off;copy.y+=off;}
+    const next=[...shapes,copy];
+    setAnnotations(a=>({...a,[activeView]:next}));
+    setSelIdx(next.length-1);
+  }
   function redo(){const k=hk;setHistIdx(hi=>{const mx=(history[k]||[[]]).length-1;const ni=Math.min(mx,(hi[k]||0)+1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
@@ -868,6 +884,7 @@ function RhinoPlannerMain(){
           <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
             <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title={t.undo}>↩</button>
             <button style={{...btn,opacity:canRedo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={redo} disabled={!canRedo} title={t.redo}>↪</button>
+            {tool==="select"&&selIdx>=0&&<button style={{...btn,fontSize:10,padding:"4px 8px",borderColor:"#5B8DB8",color:"#5B8DB8"}} onClick={duplicateSelected}>⧉ {t.duplicate}</button>}
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>{t.clear}</button>
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
