@@ -140,6 +140,30 @@
 
 **Competidor directo identificado: Rhinoplanner.com** — producto maduro, mismo nicho (planificación/documentación quirúrgica de rinoplastia, no simulación estética). €499/año (oferta lanzamiento, desde €599), 7 días free trial, un solo tier. Multiplataforma (web/iPad/iPhone), plantillas nariz+costilla+oreja+fascia, compartir planes, YA tiene español y testimonios de cirujanos de LatAm/España (incl. Paul Nassif). Ventajas de RhinoPlan: precio mensual accesible ($29/mes vs $540/año), free tier, transparencia de precio. NO competir por funciones; buscar nicho específico vía conversación con cirujanos.
 
+## 7c. Sesión 27 jun – 5 jul: mejoras guiadas por feedback de cirujanos
+
+**Feedback recibido (2 cirujanos):**
+1. Cirujano A: valora fotos de paciente en tier de pago; pidió **notas al pie de cada dibujo** (ej. "resección de giba con piezoeléctrico que la plantilla no muestra"); dijo "no sé si la usaría pero me parece buena idea" (interés sin compromiso — pendiente seguimiento).
+2. Cirujano B: "solía planificar con imágenes así" (validación del flujo); quejas: no podía cambiar color (era descubribilidad), no podía escribir sobre el dibujo (bug de texto en PC, resuelto), poca precisión del trazo (resuelto con suavizado).
+
+**Implementado en App.jsx/translations.js (todo desplegado y verificado):**
+- **Fix herramienta Texto en PC**: el input se cerraba por onBlur inmediato; solución: foco diferido (ref + setTimeout 30ms) + onBlur con delay 150ms. En iPad funcionaba; era solo desktop.
+- **Notas pre/post por paciente**: textarea bajo el canvas que cambia según planMode; se guarda dentro de `anotaciones` como `{...plan,_notes:{pre,post}}` (sin tocar BD); sale en el PDF bajo el header con splitTextToSize; placeholders con ejemplo clínico del cirujano; 7 idiomas. Campo ampliado: minHeight 110, fontSize 16 (evita zoom iOS), maxWidth 680.
+- **PDF fotos**: pre y post en **páginas independientes**, grilla 3 columnas, **cada grupo ajustado a una sola página** (alto de celda calculado según nº de fotos, tope fW*1.35).
+- **Exportación selectiva**: modal con 4 checkboxes (plantillas pre / fotos pre / plantillas post / fotos post) → un solo PDF con lo elegido. handleExport(opts) refactorizado con renderPlantillasPage(modo) y renderFotoPage(tipo); ahora puede incluir AMBOS modos de dibujos (antes solo el activo). Valida selección vacía.
+- **Trazo del lápiz suavizado**: quadraticCurveTo por puntos medios en drawShape (type==="pen"); aplica en vivo y al soltar (current usa el mismo drawShape). Respondió a la queja de precisión.
+- **Editor de colores VISIBLE**: la función completa ya existía (agregar/editar/renombrar/eliminar/restaurar, showColorEditor) pero el acceso era un ✎ diminuto casi invisible; ahora botón "✎ Editar colores" con borde junto al título COLOR.
+- **Colores sincronizados en la nube**: tabla `user_settings` creada (user_id PK, colores jsonb, updated_at; RLS "Users manage own settings" auth.uid()=user_id). saveColors hace upsert (on_conflict=user_id, merge-duplicates) + localStorage como caché; loadColors al login. Verificado iPad↔PC.
+- **Email del usuario en el header**: span junto al botón Salir con authUser.email (ellipsis + tooltip). Nota: usar `authUser?.email||""` directo, NO `{cond&&<span>}` suelto en ese punto del JSX (da error de compilación).
+- **Herramienta Nudo (knot)**: tipo "knot" que hereda TODO de ellipse (crear arrastrando, mover, redimensionar, rotar, hit-test). Dibujo: elipse SOLO borde (sin fill) + dos cabos cortos de hilo con curvatura HACIA AFUERA saliendo del borde superior (quadraticCurveTo, len=ry*0.5, spread=rx*0.3, control interior y punto final abierto *1.6). Icono ∞ (el 🎀 se descartó por poco profesional). Handle de rotación ARRIBA (debe coincidir con nearRotHandle que calcula hy=c.y-dist*cos(rot) — si el handle visual se dibuja en otro lado, la rotación "no funciona"). Iterado 3 veces con feedback del usuario (es cirujano).
+- **Herramienta Duplicar**: botón "⧉ Duplicar" en la barra de acciones, visible solo con tool==="select" && selIdx>=0; copia profunda con offset 15px de cualquier forma (points/cx,cy/x,w/x1..y2/text) y deja seleccionada la copia.
+
+**Lecciones de esta fase:**
+- Patrón repetido: 3 "funciones que faltan" eran funciones escondidas (texto PC, selector color, editor de colores). El producto tiene un problema de DESCUBRIBILIDAD más que de funcionalidad — pendiente una revisión de UI con ojos de usuario nuevo.
+- El feedback de cirujanos reales reorienta el trabajo mejor que cualquier suposición; el placeholder de notas post usa literalmente el ejemplo del cirujano.
+- Demo interactiva antes de construir (herramienta nudo) evitó construir 2 versiones equivocadas; aún así el usuario (cirujano) definió el diseño final por iteración.
+- localStorage no sincroniza entre dispositivos; todo lo que el usuario personalice debe ir a Supabase ligado a user_id.
+
 ## 8. Pendientes (en orden)
 
 **✅ Cerrados en esta fase:** Creem aprobado y payouts habilitados · prueba de pago real de punta a punta (activación + revocación + reembolso) · Google Workspace · dominio propio app.rhinoplan.app · disclaimers médicos.
@@ -178,4 +202,4 @@
 
 ---
 
-*Última actualización: 26 de junio de 2026*
+*Última actualización: 5 de julio de 2026*
