@@ -658,17 +658,17 @@ function RhinoPlannerMain(){
           <button onClick={()=>{setShowSaveTpl(true);setShowTemplates(false);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{t.saveCurrentAsTemplate}</button>
         </div>
         {userTemplates.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:24,fontStyle:"italic"}}></div>:<>
-        {userTemplates.map(t=>(<div key={t.id} style={tplCard}>
-          {editTplId===t.id?(
-            <div style={{display:"flex",gap:8,alignItems:"center"}}><input value={editTplName} onChange={e=>setEditTplName(e.target.value)} style={{flex:1,background:"#111",border:"1px solid #5B8DB8",borderRadius:4,color:"#C8DCF0",padding:"5px 8px",fontSize:12,outline:"none"}} onKeyDown={e=>e.key==="Enter"&&renameTemplate(t.id)}/><button onClick={()=>renameTemplate(t.id)} style={{color:"#5B8DB8",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✓</button><button onClick={()=>setEditTplId(null)} style={{color:"#888",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✕</button></div>
+        {userTemplates.map(tpl=>(<div key={tpl.id} style={tplCard}>
+          {editTplId===tpl.id?(
+            <div style={{display:"flex",gap:8,alignItems:"center"}}><input value={editTplName} onChange={e=>setEditTplName(e.target.value)} style={{flex:1,background:"#111",border:"1px solid #5B8DB8",borderRadius:4,color:"#C8DCF0",padding:"5px 8px",fontSize:12,outline:"none"}} onKeyDown={e=>e.key==="Enter"&&renameTemplate(tpl.id)}/><button onClick={()=>renameTemplate(tpl.id)} style={{color:"#5B8DB8",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✓</button><button onClick={()=>setEditTplId(null)} style={{color:"#888",background:"none",border:"none",cursor:"pointer",fontSize:12}}>✕</button></div>
           ):(
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{color:"#C8DCF0",fontWeight:600,fontSize:13}}>{t.nombre}</div>{t.descripcion&&<div style={{color:"#888",fontSize:10,marginTop:2}}>{t.descripcion}</div>}</div>
-              <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>applyTemplate(t.anotaciones)} style={{background:"#5B8DB8",border:"none",color:"#152238",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700}}>{t.apply}</button>
-                <button onClick={()=>updateTemplateAnnotations(t.id)} title={t.updateAnnotations} style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>↑</button>
-                <button onClick={()=>{setEditTplId(t.id);setEditTplName(t.nombre);}} title={t.rename} style={{background:"#333",border:"none",color:"#AAA",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✎</button>
-                <button onClick={()=>deleteTemplate(t.id)} title={t.deleteTemplate} style={{background:"#333",border:"none",color:"#CC1111",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>✕</button>
+              <div><div style={{color:"#C8DCF0",fontWeight:600,fontSize:13}}>{tpl.nombre}</div>{tpl.descripcion&&<div style={{color:"#888",fontSize:10,marginTop:2}}>{tpl.descripcion}</div>}</div>
+              <div style={{display:"flex",gap:4,flexShrink:0,alignItems:"center"}}>
+                <button onClick={()=>applyTemplate(tpl.anotaciones)} title={t.apply} style={{background:"#5B8DB8",border:"none",color:"#152238",padding:"5px 12px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>⤓ {t.apply}</button>
+                <button onClick={()=>updateTemplateAnnotations(tpl.id)} title={t.updateAnnotations} style={{background:"#2A3B52",border:"1px solid #5B8DB855",color:"#9FC0DD",padding:"5px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>↑ {t.updateTemplate}</button>
+                <button onClick={()=>{setEditTplId(tpl.id);setEditTplName(tpl.nombre);}} title={t.rename} style={{background:"#333",border:"none",color:"#AAA",padding:"5px 9px",borderRadius:4,cursor:"pointer",fontSize:11}}>✎</button>
+                <button onClick={()=>deleteTemplate(tpl.id)} title={t.deleteTemplate} style={{background:"#331516",border:"none",color:"#E5484D",padding:"5px 9px",borderRadius:4,cursor:"pointer",fontSize:11,marginLeft:4}}>✕</button>
               </div>
             </div>
           )}
