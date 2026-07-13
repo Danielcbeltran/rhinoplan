@@ -315,8 +315,24 @@ function RhinoPlannerMain(){
   }
   function undo(){const k=hk;setHistIdx(hi=>{const ni=Math.max(0,(hi[k]||0)-1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
   function redo(){const k=hk;setHistIdx(hi=>{const mx=(history[k]||[[]]).length-1;const ni=Math.min(mx,(hi[k]||0)+1);const s=(history[k]||[[]])[ni]||[];setPlanRaw(p=>({...p,[planMode]:{...p[planMode],[activeView]:[...s]}}));return{...hi,[k]:ni};});}
+  function duplicateShape(){
+    if(tool!=="select"||selIdx<0)return;
+    const shapes=plan[planMode][activeView]||[];
+    const s=shapes[selIdx];if(!s)return;
+    const D=14; // desplazamiento de la copia
+    const c={...s};
+    // Desplaza según el tipo de figura
+    if(c.points)c.points=c.points.map(p=>({x:p.x+D,y:p.y+D}));
+    if(c.x1!=null){c.x1+=D;c.y1+=D;c.x2+=D;c.y2+=D;}
+    if(c.x!=null&&c.points==null)c.x+=D;
+    if(c.y!=null&&c.points==null&&c.x1==null)c.y+=D;
+    if(c.cx!=null){c.cx+=D;c.cy+=D;}
+    const ns=[...shapes,c];
+    setAnnotations(a=>({...a,[activeView]:ns}));
+    setSelIdx(ns.length-1); // selecciona la copia recién creada
+  }
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
-  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
+  useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.ctrlKey&&(e.key==="d"||e.key==="D")){e.preventDefault();duplicateShape();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
   async function createTrial(){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",trial_ends_at:trialEnd,provider_customer_id:"",provider_subscription_id:""});checkPro(token,authUser);}catch(e){console.log("Trial creation:",e.message);}}
   function handleLogin(tok,user,refreshTok){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
@@ -884,6 +900,7 @@ function RhinoPlannerMain(){
           <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap",justifyContent:"center"}}>
             <button style={{...btn,opacity:canUndo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={undo} disabled={!canUndo} title={t.undo}>↩</button>
             <button style={{...btn,opacity:canRedo?1:0.35,fontSize:14,padding:"4px 10px"}} onClick={redo} disabled={!canRedo} title={t.redo}>↪</button>
+            <button style={{...btn,opacity:(tool==="select"&&selIdx>=0)?1:0.35,fontSize:12,padding:"4px 10px"}} onClick={duplicateShape} disabled={!(tool==="select"&&selIdx>=0)} title={t.duplicate}>⧉</button>
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setAnnotations(a=>({...a,[activeView]:[]}));}}>{t.clear}</button>
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
