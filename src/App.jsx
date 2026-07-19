@@ -913,9 +913,9 @@ function RhinoPlannerMain(){
         {/* PANEL DERECHO DE NOTAS (colapsable) */}
         <div style={{width:notesW,flexShrink:0,background:"#152238",borderLeft:"1px solid #1E2F45",position:"relative",transition:"width 0.2s"}}>
           {!notesOpen&&(
-            <button onClick={()=>setNotesOpen(true)} title={planMode==="pre"?t.notesPre:t.notesPost} style={{width:"100%",height:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:10,paddingTop:12,fontFamily:"inherit"}}>
-              <span style={{color:planMode==="pre"?"#5B8DB8":"#4A9F6A",fontSize:15}}>◀</span>
-              <span style={{writingMode:"vertical-rl",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:"#5B8DB8AA",fontWeight:600}}>{t.notes}</span>
+            <button onClick={()=>setNotesOpen(true)} title={planMode==="pre"?t.notesPre:t.notesPost} style={{width:"100%",height:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:9,paddingTop:12,fontFamily:"inherit"}}>
+              <span style={{color:planMode==="pre"?"#5B8DB8":"#4A9F6A",fontSize:14}}>◀</span>
+              <span style={{color:"#8AA5C0",fontSize:17,lineHeight:1}}>☰</span>
               {(planNotes[planMode]||"").trim().length>0&&<span style={{width:6,height:6,borderRadius:"50%",background:planMode==="pre"?"#5B8DB8":"#4A9F6A"}}/>}
             </button>
           )}
