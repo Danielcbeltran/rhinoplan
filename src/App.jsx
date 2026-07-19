@@ -291,13 +291,17 @@ function RhinoPlannerMain(){
   function prevFoto(){if(fotoIdx>0){setFotoIdx(fotoIdx-1);setFotoZoom(1);setFotoPan({x:0,y:0});}}
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
   const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
+  const[notesOpen,setNotesOpen]=useState(window.innerWidth>1100);
   const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
   useEffect(()=>{const onR=()=>{setWinSize({w:window.innerWidth,h:window.innerHeight});};window.addEventListener("resize",onR);return()=>window.removeEventListener("resize",onR);},[]);
   const compact=winSize.w<900;
+  // Ancho que ocupa el panel derecho de notas en el layout.
+  // En pantallas pequenas el panel abierto se superpone, por eso solo cuenta el riel.
+  const notesW=(notesOpen&&!compact)?300:40;
   // Scale canvas to fit available space
   const usedH=46+(hasP?34:0)+38+32+38+24;
   const availH=Math.max(200,winSize.h-usedH);
-  const availW=Math.max(200,(compact||!sideOpen?winSize.w-32:winSize.w-195));
+  const availW=Math.max(200,(compact||!sideOpen?winSize.w-32:winSize.w-195)-notesW);
   const canvasScale=Math.min(1,availH/H,availW/W);
   const scaledW=Math.round(W*canvasScale);
   const scaledH=Math.round(H*canvasScale);
@@ -905,10 +909,25 @@ function RhinoPlannerMain(){
             <button style={{...btn,fontSize:10,padding:"4px 8px"}} onClick={()=>setAnnotations({...EMPTY_ANN})}>{t.clearAll}</button>
             <span style={{color:"#AAA",fontSize:9}}>{(plan[planMode][activeView]||[]).length} {t.annotations}</span>
           </div>
-          <div style={{marginTop:14,width:"100%",maxWidth:680,alignSelf:"center"}}>
-            <label style={{color:"#5B8DB8",fontSize:12,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6,fontWeight:600}}>{planMode==="pre"?t.notesPre:t.notesPost}</label>
-            <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{width:"100%",minHeight:110,padding:"12px 14px",background:"#152238",border:"1px solid #3A4A63",borderRadius:8,color:"#fff",fontSize:16,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",lineHeight:1.5}}/>
-          </div>
+        </div>
+        {/* PANEL DERECHO DE NOTAS (colapsable) */}
+        <div style={{width:notesW,flexShrink:0,background:"#152238",borderLeft:"1px solid #1E2F45",position:"relative",transition:"width 0.2s"}}>
+          {!notesOpen&&(
+            <button onClick={()=>setNotesOpen(true)} title={planMode==="pre"?t.notesPre:t.notesPost} style={{width:"100%",height:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:10,paddingTop:12,fontFamily:"inherit"}}>
+              <span style={{color:planMode==="pre"?"#5B8DB8":"#4A9F6A",fontSize:15}}>◀</span>
+              <span style={{writingMode:"vertical-rl",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:"#5B8DB8AA",fontWeight:600}}>{t.notes}</span>
+              {(planNotes[planMode]||"").trim().length>0&&<span style={{width:6,height:6,borderRadius:"50%",background:planMode==="pre"?"#5B8DB8":"#4A9F6A"}}/>}
+            </button>
+          )}
+          {notesOpen&&(
+            <div style={{position:compact?"absolute":"static",right:0,top:0,bottom:0,width:compact?270:"100%",height:"100%",background:"#152238",zIndex:60,boxShadow:compact?"-6px 0 24px #00000077":"none",display:"flex",flexDirection:"column",padding:"10px 10px 12px",boxSizing:"border-box"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexShrink:0}}>
+                <span style={{color:planMode==="pre"?"#5B8DB8":"#4A9F6A",fontSize:10,textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:700,lineHeight:1.3}}>{planMode==="pre"?t.notesPre:t.notesPost}</span>
+                <button onClick={()=>setNotesOpen(false)} title={t.notes} style={{background:"none",border:"none",color:"#8AA5C0",fontSize:15,cursor:"pointer",padding:"0 2px",flexShrink:0,fontFamily:"inherit"}}>✕</button>
+              </div>
+              <textarea value={planNotes[planMode]} onChange={e=>setPlanNotes(n=>({...n,[planMode]:e.target.value}))} placeholder={planMode==="pre"?t.notesPrePlaceholder:t.notesPostPlaceholder} style={{flex:1,width:"100%",minHeight:120,padding:"10px 12px",background:"#0F1A2C",border:`1px solid ${planMode==="pre"?"#5B8DB855":"#4A9F6A55"}`,borderRadius:8,color:"#fff",fontSize:15,fontFamily:"inherit",resize:"none",boxSizing:"border-box",lineHeight:1.5,outline:"none"}}/>
+            </div>
+          )}
         </div>
       </div>
     </div>
