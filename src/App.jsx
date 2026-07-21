@@ -60,6 +60,19 @@ const EMPTY_PAT={nombre:"",documento:"",tipoDoc:"CC",edad:"",sexo:"F",fecha:new 
 const EMPTY_ANN={externo:[],septal:[],frontal:[],lateral:[],basal:[],basalExt:[]};
 const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 
+// ---- Niveles de suscripcion -------------------------------------------------
+// free = gratis | pro = $29 | plus = $49 (incluye modulo de cefalometria)
+// El orden numerico permite comparar niveles: TIERS[tier] >= TIERS.pro
+const TIERS={free:0,pro:1,plus:2};
+// Nivel que otorga la prueba gratuita de 30 dias.
+// "plus" deja probar cefalometria durante el trial (mas conversion);
+// cambiar a "pro" si se prefiere reservar el modulo solo a quien paga $49.
+const TRIAL_TIER="plus";
+// Normaliza lo que venga de la base de datos a un nivel valido.
+// Las filas antiguas no tienen columna `plan`: se asumen "pro" para no
+// quitarle acceso a nadie que ya este pagando.
+function normalizeTier(v){return v==="plus"||v==="pro"||v==="free"?v:"pro";}
+
 /* ═══ DEFAULT PLAN TEMPLATES ═══ */
 
 
@@ -247,8 +260,11 @@ function RhinoPlannerMain(){
   const VIEWS=getViews(t);
   const[token,setToken]=useState(()=>{try{return localStorage.getItem("rhinoplan_token")||null;}catch(e){return null;}});
   const[authUser,setAuthUser]=useState(()=>{try{const u=localStorage.getItem("rhinoplan_user");return u?JSON.parse(u):null;}catch(e){return null;}});
-  const[isPro,setIsPro]=useState(false);const[trialDays,setTrialDays]=useState(0);
-  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email),tk);if(Array.isArray(d)&&d.length>0){const sub=d[0];if(sub.status==="active"){setIsPro(true);setTrialDays(0);return;}if(sub.status==="trial"&&sub.trial_ends_at){const remaining=Math.ceil((new Date(sub.trial_ends_at)-Date.now())/(1000*60*60*24));if(remaining>0){setIsPro(true);setTrialDays(remaining);return;}}}setIsPro(false);setTrialDays(0);}catch(e){setIsPro(false);setTrialDays(0);}}
+  const[tier,setTier]=useState("free");const[trialDays,setTrialDays]=useState(0);
+  // Derivados: todo el gating existente sigue usando isPro sin cambios.
+  const isPro=TIERS[tier]>=TIERS.pro;
+  const isPlus=TIERS[tier]>=TIERS.plus;
+  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email),tk);if(Array.isArray(d)&&d.length>0){const sub=d[0];if(sub.status==="active"){setTier(normalizeTier(sub.plan));setTrialDays(0);return;}if(sub.status==="trial"&&sub.trial_ends_at){const remaining=Math.ceil((new Date(sub.trial_ends_at)-Date.now())/(1000*60*60*24));if(remaining>0){setTier(sub.plan?normalizeTier(sub.plan):TRIAL_TIER);setTrialDays(remaining);return;}}}setTier("free");setTrialDays(0);}catch(e){setTier("free");setTrialDays(0);}}
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
@@ -338,7 +354,7 @@ function RhinoPlannerMain(){
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.ctrlKey&&(e.key==="d"||e.key==="D")){e.preventDefault();duplicateShape();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
-  async function createTrial(){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",trial_ends_at:trialEnd,provider_customer_id:"",provider_subscription_id:""});checkPro(token,authUser);}catch(e){console.log("Trial creation:",e.message);}}
+  async function createTrial(){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",plan:TRIAL_TIER,trial_ends_at:trialEnd,provider_customer_id:"",provider_subscription_id:""});checkPro(token,authUser);}catch(e){console.log("Trial creation:",e.message);}}
   function handleLogin(tok,user,refreshTok){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
   function copyPlanMode(){
@@ -356,7 +372,7 @@ function RhinoPlannerMain(){
     setPlanNotes(n=>({...n,[to]:planNotes[from]||""}));
     setPlanMode(to);
   }
-  function logout(){setToken(null);setAuthUser(null);setIsPro(false);setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
+  function logout(){setToken(null);setAuthUser(null);setTier("free");setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});setPacientes([]);resetHistory(EMPTY_PLAN);setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});try{localStorage.removeItem("rhinoplan_token");localStorage.removeItem("rhinoplan_user");localStorage.removeItem("rhinoplan_refresh");}catch(e){}}
   async function deleteAccount(){if(!confirm(t.confirmDeleteAccount))return;try{const d=await supaFetch("pacientes?user_id=eq."+authUser.id,token,"DELETE");const p=await supaFetch("plantillas?user_id=eq."+authUser.id,token,"DELETE");const s=await supaFetch("subscriptions?user_id=eq."+authUser.id,token,"DELETE");logout();alert(t.accountDeleted);}catch(e){alert(t.error);}}
   async function changePassword(){
     const np=prompt(t.enterNewPassword);
