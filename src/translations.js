@@ -186,6 +186,8 @@ export const translations = {
     startTrial: "Iniciar prueba gratis de 30 días",
     trialDesc: "Prueba gratuita activa",
     trialRemaining: "Prueba",
+    closePatient: "Cerrar paciente",
+    confirmClosePatient: "¿Cerrar el paciente actual? Los cambios sin guardar se perderán.",
   },
 
   en: {
@@ -353,6 +355,8 @@ export const translations = {
     startTrial: "Start 30-day free trial",
     trialDesc: "Free trial active",
     trialRemaining: "Trial",
+    closePatient: "Close patient",
+    confirmClosePatient: "Close the current patient? Unsaved changes will be lost.",
   },
 
   fr: {
@@ -520,6 +524,8 @@ export const translations = {
     startTrial: "Démarrer l'essai gratuit de 30 jours",
     trialDesc: "Essai gratuit actif",
     trialRemaining: "Essai",
+    closePatient: "Fermer le patient",
+    confirmClosePatient: "Fermer le patient actuel ? Les modifications non enregistrées seront perdues.",
   },
 
   pt: {
@@ -693,6 +699,8 @@ export const translations = {
     startTrial: "Iniciar avaliação gratuita de 30 dias",
     trialDesc: "Avaliação gratuita ativa",
     trialRemaining: "Avaliação",
+    closePatient: "Fechar paciente",
+    confirmClosePatient: "Fechar o paciente atual? As alterações não salvas serão perdidas.",
   },
 
   de: {
@@ -860,6 +868,8 @@ export const translations = {
     startTrial: "30-tägige kostenlose Testversion starten",
     trialDesc: "Kostenlose Testversion aktiv",
     trialRemaining: "Testversion",
+    closePatient: "Patient schließen",
+    confirmClosePatient: "Aktuellen Patienten schließen? Nicht gespeicherte Änderungen gehen verloren.",
   },
 
   it: {
@@ -1027,6 +1037,8 @@ export const translations = {
     startTrial: "Inizia la prova gratuita di 30 giorni",
     trialDesc: "Prova gratuita attiva",
     trialRemaining: "Prova",
+    closePatient: "Chiudi paziente",
+    confirmClosePatient: "Chiudere il paziente corrente? Le modifiche non salvate andranno perse.",
   },
 
   tr: {
@@ -1194,5 +1206,7 @@ export const translations = {
     startTrial: "30 günlük ücretsiz denemeyi başlat",
     trialDesc: "Ücretsiz deneme etkin",
     trialRemaining: "Deneme",
+    closePatient: "Hastayı kapat",
+    confirmClosePatient: "Mevcut hastayı kapatmak istiyor musunuz? Kaydedilmemiş değişiklikler kaybolacak.",
   },
 };

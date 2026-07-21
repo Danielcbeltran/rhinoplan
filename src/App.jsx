@@ -445,6 +445,9 @@ function RhinoPlannerMain(){
     if(pl._notes)delete pl._notes;
     setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
   function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});}
+  // Cierra el paciente activo y deja el area de trabajo en blanco.
+  // Pide confirmacion porque los cambios sin guardar se pierden.
+  function cerrarPaciente(){if(!confirm(t.confirmClosePatient))return;nuevoPaciente();setSaveMsg("");}
 
   /* ═══ TEMPLATES ═══ */
   async function loadUserTemplates(tk){try{const d=await supaFetch("plantillas?order=created_at.desc",tk||token);setUserTemplates(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
@@ -872,6 +875,7 @@ function RhinoPlannerMain(){
         <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.templates}</button>
         {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
         {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||t.save}</button>}
+        {hasP&&<button onClick={cerrarPaciente} title={t.closePatient} style={{background:"#1E2F45",border:"1px solid #3A4A63",color:"#8AA5C0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>✕{compact?"":" "+t.closePatient}</button>}
         <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#5B8DB844":"#2A3D55"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
           {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>{t.patient}</div>))}
