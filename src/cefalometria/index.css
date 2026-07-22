@@ -20,8 +20,8 @@
      que se adapte al tema: claro en oscuro, oscuro-legible en claro. */
   --ok-strong: #86efac;
   --shadow: 0 10px 30px rgba(0,0,0,.35);
-  /* La fuente NO se declara aqui: :root es <html> y se aplicaria a toda la
-     app principal. Se define abajo, dentro de .ceph-app. */
+  /* La fuente NO se aplica aqui: :root es <html> y afectaria a toda la app
+     principal. Se declara como variable y se usa dentro de .ceph-app. */
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   /* Fuente MONOESPACIADA para datos numéricos (ángulos, mm, ratios, escalas).
@@ -34,22 +34,13 @@
 }
 
 /* ============ Datos numéricos en monoespaciada ============ */
-table.ceph td.num,
-.rhino-slider .rs-value,
-.rhino-changes .rc-value,
-.progress-chip,
-.zoom-controls .zoom-level,
-.zoom-controls .zoom-level-btn,
-.side-group > summary .sg-count,
-.rotate-controls input[type="number"],
-.ann-cases .ac-pts,
-.badge {
+.ceph-app table.ceph td.num, .ceph-app .rhino-slider .rs-value, .ceph-app .rhino-changes .rc-value, .ceph-app .progress-chip, .ceph-app .zoom-controls .zoom-level, .ceph-app .zoom-controls .zoom-level-btn, .ceph-app .side-group > summary .sg-count, .ceph-app .rotate-controls input[type="number"], .ceph-app .ann-cases .ac-pts, .ceph-app .badge {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 /* La mono renderiza más ancha: se compensa un punto para no forzar el layout */
-table.ceph td.num { font-size: 11.5px; }
-.badge { font-size: 10.5px; letter-spacing: -0.2px; }
+.ceph-app table.ceph td.num { font-size: 11.5px; }
+.ceph-app .badge { font-size: 10.5px; letter-spacing: -0.2px; }
 
 /* ============ TEMA CLARO ============
    Solo cambia la paleta de la INTERFAZ (variables + los pocos textos con color
@@ -76,31 +67,31 @@ table.ceph td.num { font-size: 11.5px; }
 }
 /* Overrides puntuales donde el color de TEXTO estaba fijado claro (ilegible
    sobre superficies blancas del tema claro). */
-:root[data-theme="light"] button.primary { color: #ffffff; }
-:root[data-theme="light"] button.danger { color: var(--error); }
-:root[data-theme="light"] button.tool.active {
+:root[data-theme="light"] .ceph-app button.primary { color: #ffffff; }
+:root[data-theme="light"] .ceph-app button.danger { color: var(--error); }
+:root[data-theme="light"] .ceph-app button.tool.active {
   background: rgba(37,99,235,.10);
   color: var(--accent-2);
 }
-:root[data-theme="light"] button.tool.active kbd { color: var(--accent-2); }
-:root[data-theme="light"] .mode-switch button.active { background: rgba(37,99,235,.12); color: var(--accent-2); }
-:root[data-theme="light"] .detection-banner.detecting { color: var(--accent-2); }
-:root[data-theme="light"] .detection-banner.done { color: var(--ok-strong); }
-:root[data-theme="light"] .detection-banner.failed { color: var(--error); }
-:root[data-theme="light"] .detection-banner .ok-tag { color: var(--ok-strong); }
-:root[data-theme="light"] .badge.ok { color: var(--ok-strong); }
-:root[data-theme="light"] .badge.warn { color: #b45309; }
-:root[data-theme="light"] .badge.error { color: var(--error); }
-:root[data-theme="light"] .calibration-status.ok { color: var(--ok-strong); }
-:root[data-theme="light"] .pending-note { color: #b45309; }
-:root[data-theme="light"] .ann-ok { color: var(--ok-strong); }
-:root[data-theme="light"] .ann-error { color: var(--error); }
-:root[data-theme="light"] .ann-cases .ac-pts { color: var(--ok-strong); }
-:root[data-theme="light"] .rhino-changes .rc-value { color: var(--ok-strong); }
-:root[data-theme="light"] .rhino-slider .rs-value { color: var(--ok-strong); }
-:root[data-theme="light"] .sg-count.complete { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app button.tool.active kbd { color: var(--accent-2); }
+:root[data-theme="light"] .ceph-app .mode-switch button.active { background: rgba(37,99,235,.12); color: var(--accent-2); }
+:root[data-theme="light"] .ceph-app .detection-banner.detecting { color: var(--accent-2); }
+:root[data-theme="light"] .ceph-app .detection-banner.done { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .detection-banner.failed { color: var(--error); }
+:root[data-theme="light"] .ceph-app .detection-banner .ok-tag { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .badge.ok { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .badge.warn { color: #b45309; }
+:root[data-theme="light"] .ceph-app .badge.error { color: var(--error); }
+:root[data-theme="light"] .ceph-app .calibration-status.ok { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .pending-note { color: #b45309; }
+:root[data-theme="light"] .ceph-app .ann-ok { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .ann-error { color: var(--error); }
+:root[data-theme="light"] .ceph-app .ann-cases .ac-pts { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .rhino-changes .rc-value { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .rhino-slider .rs-value { color: var(--ok-strong); }
+:root[data-theme="light"] .ceph-app .sg-count.complete { color: var(--ok-strong); }
 /* Fondo del área de la foto: vignette claro (no el navy oscuro del tema oscuro) */
-:root[data-theme="light"] .canvas-wrap {
+:root[data-theme="light"] .ceph-app .canvas-wrap {
   background:
     radial-gradient(1100px 640px at 50% 20%, #ffffff, transparent 72%),
     var(--bg);
@@ -108,8 +99,6 @@ table.ceph td.num { font-size: 11.5px; }
 
 .ceph-app, .ceph-app * { box-sizing: border-box; }
 
-/* Aislado bajo .ceph-app: el modulo vive dentro de la app principal y no
-   debe reestilizar html/body/#root de RhinoPlan. */
 .ceph-app {
   font-family: var(--font-ui);
   height: 100%;
@@ -141,27 +130,27 @@ table.ceph td.num { font-size: 11.5px; }
   cursor: pointer;
   transition: background .15s, border-color .15s;
 }
-button:hover:not(:disabled) {
+.ceph-app button:hover:not(:disabled) {
   background: var(--panel-2);
   border-color: var(--border-strong);
 }
-button:disabled {
+.ceph-app button:disabled {
   opacity: .45;
   cursor: not-allowed;
 }
-button.primary {
+.ceph-app button.primary {
   background: var(--accent-2);
   border-color: var(--accent-2);
   color: #0a1226;
   font-weight: 600;
 }
-button.primary:hover { filter: brightness(1.08); }
-button.danger {
+.ceph-app button.primary:hover { filter: brightness(1.08); }
+.ceph-app button.danger {
   border-color: rgba(239,68,68,.4);
   color: #fca5a5;
 }
-button.danger:hover { background: rgba(239,68,68,.12); }
-button.tool {
+.ceph-app button.danger:hover { background: rgba(239,68,68,.12); }
+.ceph-app button.tool {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -170,13 +159,13 @@ button.tool {
   padding: 8px 10px;
   border-radius: 8px;
 }
-button.tool.active {
+.ceph-app button.tool.active {
   background: rgba(96,165,250,.14);
   border-color: var(--accent-2);
   color: #cfe1ff;
 }
 /* Chip de atajo de teclado dentro de un botón de herramienta */
-button.tool kbd {
+.ceph-app button.tool kbd {
   margin-left: auto;
   font: 600 10px ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--muted);
@@ -186,21 +175,16 @@ button.tool kbd {
   padding: 1px 5px;
   line-height: 1.4;
 }
-button.tool.active kbd { color: #cfe1ff; border-color: rgba(96,165,250,.4); }
+.ceph-app button.tool.active kbd { color: #cfe1ff; border-color: rgba(96,165,250,.4); }
 
 /* Anillo de FOCO VISIBLE (navegación por teclado — accesibilidad).
    Solo con :focus-visible: el click con ratón/dedo no lo muestra. */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-summary:focus-visible,
-a:focus-visible,
-[tabindex]:focus-visible {
+.ceph-app button:focus-visible, .ceph-app input:focus-visible, .ceph-app select:focus-visible, .ceph-app summary:focus-visible, .ceph-app a:focus-visible, .ceph-app [tabindex]:focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 2px;
 }
 
-input[type="number"], input[type="text"], select {
+.ceph-app input[type="number"], .ceph-app input[type="text"], .ceph-app select {
   background: var(--bg-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -209,9 +193,9 @@ input[type="number"], input[type="text"], select {
   font: inherit;
   outline: none;
 }
-input:focus, select:focus { border-color: var(--accent-2); }
+.ceph-app input:focus, .ceph-app select:focus { border-color: var(--accent-2); }
 
-label.field {
+.ceph-app label.field {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -220,7 +204,7 @@ label.field {
 }
 
 /* Layout */
-.app {
+.ceph-app .app {
   display: grid;
   /* header en `auto`: en iPad la topbar puede ocupar 2 líneas (flex-wrap)
      y no debe recortarse a 56px fijos */
@@ -234,9 +218,9 @@ label.field {
   height: 100vh;
   height: 100dvh;
 }
-.app > .main { grid-row: 4; }
+.ceph-app .app > .main { grid-row: 4; }
 
-.topbar {
+.ceph-app .topbar {
   display: flex;
   align-items: center;
   /* Si no caben todas las acciones a lo ancho (iPad), la barra hace WRAP a
@@ -254,12 +238,12 @@ label.field {
   border-bottom: 1px solid var(--border);
   z-index: 5;
 }
-.topbar .brand {
+.ceph-app .topbar .brand {
   display: flex; align-items: center; gap: 10px;
   font-weight: 700;
   letter-spacing: .3px;
 }
-.topbar .brand .logo {
+.ceph-app .topbar .brand .logo {
   width: 28px; height: 28px;
   display: grid; place-items: center;
   background: var(--accent-2);
@@ -267,14 +251,14 @@ label.field {
   border-radius: 8px;
   font-weight: 900;
 }
-.topbar .brand .sub {
+.ceph-app .topbar .brand .sub {
   color: var(--text-dim);
   font-weight: 400;
   font-size: 12px;
   margin-left: 4px;
 }
-.topbar .spacer { flex: 1; }
-.topbar .actions {
+.ceph-app .topbar .spacer { flex: 1; }
+.ceph-app .topbar .actions {
   display: flex;
   gap: 6px 8px;
   align-items: center;
@@ -288,10 +272,10 @@ label.field {
 /* En ancho de iPad vertical el subtítulo de la marca solo quita sitio a la
    primera fila de botones. El nombre completo queda. */
 @media (max-width: 900px) {
-  .topbar .brand .sub { display: none; }
+  .ceph-app .topbar .brand .sub { display: none; }
 }
 /* Botón de tema claro/oscuro (icono sol/luna) */
-.theme-toggle {
+.ceph-app .theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -301,25 +285,22 @@ label.field {
   color: var(--text-dim);
   flex-shrink: 0;
 }
-.theme-toggle:hover { color: var(--text); }
+.ceph-app .theme-toggle:hover { color: var(--text); }
 /* Botones con icono SVG: alinear icono + texto */
-.topbar .actions button,
-.canvas-empty button,
-button.tool {
+.ceph-app .topbar .actions button, .ceph-app .canvas-empty button, .ceph-app button.tool {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-button.tool { display: flex; }
+.ceph-app button.tool { display: flex; }
 /* Botones/summary con icono SVG + texto: alinear y separar */
-.layers-panel .global-actions button,
-.layers-section .section-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
-.layers-panel > summary { align-items: center; }
-.rhino-toggle { align-items: center; }
-.rhino-toggle svg { flex-shrink: 0; }
+.ceph-app .layers-panel .global-actions button, .ceph-app .layers-section .section-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.ceph-app .layers-panel > summary { align-items: center; }
+.ceph-app .rhino-toggle { align-items: center; }
+.ceph-app .rhino-toggle svg { flex-shrink: 0; }
 
 /* Stepper del flujo (bajo la cabecera) */
-.flow-stepper {
+.ceph-app .flow-stepper {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -329,14 +310,14 @@ button.tool { display: flex; }
   font-size: 11.5px;
   overflow-x: auto;
 }
-.fs-step {
+.ceph-app .fs-step {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--muted);
   white-space: nowrap;
 }
-.fs-dot {
+.ceph-app .fs-dot {
   width: 18px; height: 18px;
   border-radius: 50%;
   display: grid; place-items: center;
@@ -346,24 +327,24 @@ button.tool { display: flex; }
   background: var(--bg);
   flex-shrink: 0;
 }
-.fs-step.done .fs-dot {
+.ceph-app .fs-step.done .fs-dot {
   background: rgba(74,222,128,.15);
   border-color: rgba(74,222,128,.5);
   color: #86efac;
 }
-.fs-step.current { color: var(--text); font-weight: 600; }
-.fs-step.current .fs-dot {
+.ceph-app .fs-step.current { color: var(--text); font-weight: 600; }
+.ceph-app .fs-step.current .fs-dot {
   border-color: var(--accent-2);
   color: #cfe1ff;
   background: rgba(96,165,250,.15);
 }
-.fs-line {
+.ceph-app .fs-line {
   flex: 0 0 22px;
   height: 1px;
   background: var(--border);
 }
 /* Separador vertical entre grupos de acciones (captura | análisis | export) */
-.topbar .tb-sep {
+.ceph-app .topbar .tb-sep {
   width: 1px;
   height: 22px;
   background: var(--border);
@@ -372,7 +353,7 @@ button.tool { display: flex; }
 }
 
 /* Chip de progreso de puntos colocados (antes: texto gris plano) */
-.progress-chip {
+.ceph-app .progress-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -386,14 +367,14 @@ button.tool { display: flex; }
   padding: 4px 10px;
   white-space: nowrap;
 }
-.progress-chip .pc-bar {
+.ceph-app .progress-chip .pc-bar {
   width: 52px;
   height: 6px;
   background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
 }
-.progress-chip .pc-fill {
+.ceph-app .progress-chip .pc-fill {
   display: block;
   height: 100%;
   background: var(--accent-2);
@@ -401,11 +382,11 @@ button.tool { display: flex; }
   transition: width .25s ease;
 }
 /* Al completar, el relleno pasa a verde (semántica de éxito) */
-.progress-chip.complete { border-color: rgba(74,222,128,.45); color: #86efac; }
-.progress-chip.complete .pc-fill { background: var(--accent); }
+.ceph-app .progress-chip.complete { border-color: rgba(74,222,128,.45); color: #86efac; }
+.ceph-app .progress-chip.complete .pc-fill { background: var(--accent); }
 
 /* Toast de confirmación (export, confirmar puntos) — discreto, no bloquea */
-.toast {
+.ceph-app .toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
@@ -427,7 +408,7 @@ button.tool { display: flex; }
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-.mode-switch {
+.ceph-app .mode-switch {
   display: flex;
   gap: 0;
   border: 1px solid var(--border);
@@ -436,7 +417,7 @@ button.tool { display: flex; }
   background: var(--bg-2);
   margin-left: 18px;
 }
-.mode-switch button {
+.ceph-app .mode-switch button {
   border: none;
   border-radius: 0;
   padding: 7px 16px;
@@ -446,22 +427,22 @@ button.tool { display: flex; }
   background: transparent;
   letter-spacing: .4px;
 }
-.mode-switch button:hover {
+.ceph-app .mode-switch button:hover {
   background: rgba(96,165,250,.08);
   color: var(--text);
 }
-.mode-switch button.active {
+.ceph-app .mode-switch button.active {
   background: rgba(96,165,250,.16);
   color: #e0f2fe;
   box-shadow: inset 0 -2px 0 var(--accent-2);
 }
-.mode-switch button + button {
+.ceph-app .mode-switch button + button {
   border-left: 1px solid var(--border);
 }
 
 /* Detection banner — tinte plano + barra de acento a la izquierda (patrón de
    aviso limpio, sin degradados) */
-.detection-banner {
+.ceph-app .detection-banner {
   padding: 8px 16px;
   font-size: 13px;
   display: flex; align-items: center; gap: 8px;
@@ -469,23 +450,23 @@ button.tool { display: flex; }
   border-left: 3px solid var(--border-strong);
   background: var(--bg-2);
 }
-.detection-banner.detecting {
+.ceph-app .detection-banner.detecting {
   background: rgba(96,165,250,.10);
   border-left-color: var(--accent-2);
   color: #cfe1ff;
 }
-.detection-banner.done {
+.ceph-app .detection-banner.done {
   background: rgba(74,222,128,.08);
   border-left-color: var(--accent);
   color: #d1fae5;
 }
-.detection-banner.failed {
+.ceph-app .detection-banner.failed {
   background: rgba(239,68,68,.10);
   border-left-color: var(--error);
   color: #fecaca;
 }
-.detection-banner b { color: inherit; font-weight: 700; }
-.detection-banner .ok-tag {
+.ceph-app .detection-banner b { color: inherit; font-weight: 700; }
+.ceph-app .detection-banner .ok-tag {
   display: inline-block;
   font-size: 11px;
   padding: 2px 8px;
@@ -498,7 +479,7 @@ button.tool { display: flex; }
 }
 
 /* Spinner */
-.spinner {
+.ceph-app .spinner {
   width: 14px; height: 14px;
   border: 2px solid rgba(96,165,250,.3);
   border-top-color: #60a5fa;
@@ -511,10 +492,10 @@ button.tool { display: flex; }
 }
 
 /* Rinoplastia panel */
-.rhino-panel {
+.ceph-app .rhino-panel {
   background: var(--panel);
 }
-.rhino-close {
+.ceph-app .rhino-close {
   border: 1px solid var(--border);
   padding: 2px 8px;
   border-radius: 6px;
@@ -522,32 +503,32 @@ button.tool { display: flex; }
   color: var(--text-dim);
   background: var(--bg-2);
 }
-.rhino-close:hover { color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+.ceph-app .rhino-close:hover { color: #fca5a5; border-color: rgba(239,68,68,0.4); }
 
-.rhino-sliders { display: flex; flex-direction: column; gap: 10px; }
-.rhino-slider {
+.ceph-app .rhino-sliders { display: flex; flex-direction: column; gap: 10px; }
+.ceph-app .rhino-slider {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
 }
-.rhino-slider.active {
+.ceph-app .rhino-slider.active {
   border-color: rgba(74,222,128,0.5);
   background: rgba(74,222,128,0.07);
 }
-.rhino-slider .rs-header {
+.ceph-app .rhino-slider .rs-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
 }
-.rhino-slider .rs-label {
+.ceph-app .rhino-slider .rs-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
   display: flex; align-items: center; gap: 6px;
 }
-.rhino-slider .rs-tag {
+.ceph-app .rhino-slider .rs-tag {
   font-size: 10px;
   padding: 1px 6px;
   border-radius: 4px;
@@ -557,7 +538,7 @@ button.tool { display: flex; }
   font-weight: 700;
   letter-spacing: 0.5px;
 }
-.rhino-slider .rs-value {
+.ceph-app .rhino-slider .rs-value {
   font-size: 13px;
   font-weight: 700;
   color: var(--accent);
@@ -565,18 +546,18 @@ button.tool { display: flex; }
   min-width: 56px;
   text-align: right;
 }
-.rhino-slider.inactive .rs-value { color: var(--muted); }
-.rhino-slider input[type="range"] {
+.ceph-app .rhino-slider.inactive .rs-value { color: var(--muted); }
+.ceph-app .rhino-slider input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
 }
-.rhino-slider .rs-desc {
+.ceph-app .rhino-slider .rs-desc {
   font-size: 11.5px;
   color: var(--muted);
   margin-top: 2px;
 }
 
-.rhino-toggle {
+.ceph-app .rhino-toggle {
   display: flex; align-items: center; gap: 8px;
   font-size: 12px;
   background: var(--bg-2);
@@ -585,15 +566,15 @@ button.tool { display: flex; }
   border-radius: 8px;
   cursor: pointer;
 }
-.rhino-toggle input { accent-color: var(--accent-2); }
+.ceph-app .rhino-toggle input { accent-color: var(--accent-2); }
 
-.rhino-changes {
+.ceph-app .rhino-changes {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex; flex-direction: column; gap: 6px;
 }
-.rhino-changes li {
+.ceph-app .rhino-changes li {
   display: flex; justify-content: space-between;
   background: var(--bg-2);
   border-left: 3px solid var(--accent);
@@ -601,14 +582,14 @@ button.tool { display: flex; }
   padding: 6px 10px;
   font-size: 12px;
 }
-.rhino-changes .rc-label { color: var(--text-dim); }
-.rhino-changes .rc-value { font-weight: 700; color: #86efac; font-variant-numeric: tabular-nums; }
+.ceph-app .rhino-changes .rc-label { color: var(--text-dim); }
+.ceph-app .rhino-changes .rc-value { font-weight: 700; color: #86efac; font-variant-numeric: tabular-nums; }
 
 /* Annotation panel */
-.annotation-panel {
+.ceph-app .annotation-panel {
   background: var(--panel);
 }
-.ann-intro {
+.ceph-app .ann-intro {
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--text-dim);
@@ -618,32 +599,32 @@ button.tool { display: flex; }
   border-radius: 8px;
   margin-top: 6px;
 }
-.ann-progress {
+.ceph-app .ann-progress {
   display: flex; flex-direction: column; gap: 4px;
 }
-.ann-bar {
+.ceph-app .ann-bar {
   height: 10px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
-.ann-bar-fill {
+.ceph-app .ann-bar-fill {
   height: 100%;
   background: var(--accent);
   transition: width .25s ease;
 }
-.ann-progress-label {
+.ceph-app .ann-progress-label {
   font-size: 12px;
   color: var(--text);
 }
 
-.ann-list {
+.ceph-app .ann-list {
   list-style: none; padding: 0; margin: 0;
   display: flex; flex-direction: column; gap: 4px;
   max-height: 280px; overflow-y: auto;
 }
-.ann-item {
+.ceph-app .ann-item {
   display: grid;
   grid-template-columns: 14px 38px 1fr 18px auto;
   gap: 6px;
@@ -656,24 +637,24 @@ button.tool { display: flex; }
   font-size: 12px;
   transition: background .12s, border-color .12s;
 }
-.ann-item.active {
+.ceph-app .ann-item.active {
   border-color: var(--accent-2);
   background: rgba(96,165,250,.12);
 }
-.ann-item.confirmed {
+.ceph-app .ann-item.confirmed {
   border-color: rgba(74,222,128,0.5);
   background: rgba(74,222,128,0.07);
 }
-.ann-item.pending { opacity: .65; }
-.ann-item:hover { background: var(--panel-2); }
-.ann-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.4); }
-.ann-id { font-weight: 700; font-size: 11.5px; color: var(--text); }
-.ann-name { color: var(--text-dim); font-size: 11.5px; }
-.ann-status { font-weight: 700; text-align: center; }
-.ann-status.ann-confirmed { color: #86efac; }
-.ann-status.ann-placed { color: #fbbf24; }
-.ann-status.ann-pending { color: var(--muted); }
-.ann-confirm-btn {
+.ceph-app .ann-item.pending { opacity: .65; }
+.ceph-app .ann-item:hover { background: var(--panel-2); }
+.ceph-app .ann-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.4); }
+.ceph-app .ann-id { font-weight: 700; font-size: 11.5px; color: var(--text); }
+.ceph-app .ann-name { color: var(--text-dim); font-size: 11.5px; }
+.ceph-app .ann-status { font-weight: 700; text-align: center; }
+.ceph-app .ann-status.ann-confirmed { color: #86efac; }
+.ceph-app .ann-status.ann-placed { color: #fbbf24; }
+.ceph-app .ann-status.ann-pending { color: var(--muted); }
+.ceph-app .ann-confirm-btn {
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
@@ -682,26 +663,26 @@ button.tool { display: flex; }
   background: var(--bg);
   color: var(--text-dim);
 }
-.ann-confirm-btn:hover { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #86efac; }
-.ann-confirm-btn.active {
+.ceph-app .ann-confirm-btn:hover { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #86efac; }
+.ceph-app .ann-confirm-btn.active {
   background: #4ade80;
   border-color: #4ade80;
   color: #052e16;
 }
 
-.ann-stats {
+.ceph-app .ann-stats {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
   font-size: 12.5px;
 }
-.ann-cases {
+.ceph-app .ann-cases {
   list-style: none; padding: 0; margin: 8px 0 0;
   display: flex; flex-direction: column; gap: 3px;
   max-height: 200px; overflow-y: auto;
 }
-.ann-cases li {
+.ceph-app .ann-cases li {
   display: grid;
   grid-template-columns: 18px 1fr auto auto 20px;
   gap: 6px;
@@ -712,17 +693,17 @@ button.tool { display: flex; }
   border-radius: 4px;
   border: 1px solid var(--border);
 }
-.ann-cases .ac-mode { font-size: 14px; color: var(--accent-2); }
-.ann-cases .ac-id { font-family: monospace; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ann-cases .ac-pts { color: #86efac; font-weight: 600; }
-.ann-cases .ac-date { color: var(--muted); font-size: 10.5px; }
-.ann-cases button {
+.ceph-app .ann-cases .ac-mode { font-size: 14px; color: var(--accent-2); }
+.ceph-app .ann-cases .ac-id { font-family: monospace; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ceph-app .ann-cases .ac-pts { color: #86efac; font-weight: 600; }
+.ceph-app .ann-cases .ac-date { color: var(--muted); font-size: 10.5px; }
+.ceph-app .ann-cases button {
   border: none; background: transparent; color: var(--muted);
   padding: 0; cursor: pointer;
 }
-.ann-cases button:hover { color: #fca5a5; }
+.ceph-app .ann-cases button:hover { color: #fca5a5; }
 
-.ann-error {
+.ceph-app .ann-error {
   margin-top: 6px;
   padding: 6px 8px;
   background: rgba(239,68,68,0.12);
@@ -731,7 +712,7 @@ button.tool { display: flex; }
   font-size: 12px;
   color: #fca5a5;
 }
-.ann-ok {
+.ceph-app .ann-ok {
   margin-top: 6px;
   padding: 6px 8px;
   background: rgba(74,222,128,0.12);
@@ -740,10 +721,10 @@ button.tool { display: flex; }
   font-size: 12px;
   color: #86efac;
 }
-.ann-ok code { font-size: 10px; }
+.ceph-app .ann-ok code { font-size: 10px; }
 
 /* Pending note (en panel de resultados) */
-.pending-note {
+.ceph-app .pending-note {
   background: rgba(251,146,60,.10);
   border: 1px solid rgba(251,146,60,.35);
   color: #fdba74;
@@ -754,26 +735,26 @@ button.tool { display: flex; }
 }
 
 /* Botón primary en distinto color para "Confirmar" */
-button.primary.confirm {
+.ceph-app button.primary.confirm {
   background: #4ade80;
   border-color: #4ade80;
   color: #052e16;
 }
 
 /* Botón + selector de modelo, agrupados visualmente */
-.detect-group {
+.ceph-app .detect-group {
   display: inline-flex;
   align-items: stretch;
   border-radius: 6px;
   overflow: hidden;
   border: 1px solid var(--accent-2);
 }
-.detect-group button {
+.ceph-app .detect-group button {
   border: none;
   border-radius: 0;
   margin: 0;
 }
-.detect-group .model-select {
+.ceph-app .detect-group .model-select {
   border: none;
   border-left: 1px solid rgba(0,0,0,.25);
   background: rgba(96,165,250,.16);
@@ -786,9 +767,9 @@ button.primary.confirm {
   outline: none;
   max-width: 160px;
 }
-.detect-group .model-select:hover { background: rgba(96,165,250,.28); }
+.ceph-app .detect-group .model-select:hover { background: rgba(96,165,250,.28); }
 
-.main {
+.ceph-app .main {
   display: grid;
   /* Columnas `auto`: el ancho lo fija cada panel (.sidebar/.results). Con
      display:none la pista colapsa a 0 → los paneles se retraen individualmente
@@ -801,16 +782,16 @@ button.primary.confirm {
      pantalla. */
   min-width: 0;
 }
-.main.sidebar-hidden .sidebar { display: none; }
-.main.results-hidden .results { display: none; }
+.ceph-app .main.sidebar-hidden .sidebar { display: none; }
+.ceph-app .main.results-hidden .results { display: none; }
 /* Colocación EXPLÍCITA: con un panel en display:none el auto-placement
    desplazaba a los demás (el visor caía en la columna del panel y los
    resultados se estiraban en la 1fr). Cada hijo queda clavado a su pista. */
-.main > .sidebar     { grid-column: 1; grid-row: 1; }
-.main > .canvas-wrap { grid-column: 2; grid-row: 1; }
-.main > .results     { grid-column: 3; grid-row: 1; }
+.ceph-app .main > .sidebar { grid-column: 1; grid-row: 1; }
+.ceph-app .main > .canvas-wrap { grid-column: 2; grid-row: 1; }
+.ceph-app .main > .results { grid-column: 3; grid-row: 1; }
 
-.sidebar {
+.ceph-app .sidebar {
   width: 260px;
   background: var(--panel);
   border-right: 1px solid var(--border);
@@ -821,7 +802,7 @@ button.primary.confirm {
   overflow-x: hidden;   /* nunca barra horizontal: el contenido se ajusta al ancho */
   display: flex; flex-direction: column; gap: 9px;
 }
-.sidebar h3 {
+.ceph-app .sidebar h3 {
   margin: 6px 0 4px;
   font-size: 11px;
   text-transform: uppercase;
@@ -829,18 +810,18 @@ button.primary.confirm {
   color: var(--muted);
   font-weight: 600;
 }
-.sidebar .group {
+.ceph-app .sidebar .group {
   display: flex; flex-direction: column; gap: 4px;
 }
 
 /* Herramientas en rejilla compacta de 2 columnas (antes lista vertical: 9
    botones de 44px = ~400px; en rejilla ~220px) */
-.tools-grid {
+.ceph-app .tools-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));   /* minmax(0,..) → las celdas pueden encoger bajo su contenido */
   gap: 6px;
 }
-.tools-grid button.tool {
+.ceph-app .tools-grid button.tool {
   width: auto;
   min-width: 0;
   gap: 6px;
@@ -849,7 +830,7 @@ button.primary.confirm {
 }
 /* La etiqueta ocupa el espacio restante y, si no cabe, se ajusta con elipsis
    en vez de cortarse en seco (el nombre completo está en el tooltip). */
-.tools-grid .tool-label {
+.ceph-app .tools-grid .tool-label {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -858,14 +839,14 @@ button.primary.confirm {
 }
 /* En la rejilla compacta el atajo se omite (queda en el tooltip; en táctil no
    aplica) — así el texto de la herramienta cabe siempre a lo ancho. */
-.tools-grid button.tool kbd { display: none; }
+.ceph-app .tools-grid button.tool kbd { display: none; }
 
 /* Secciones plegables del sidebar (acordeón) — mismo patrón que el panel de
    Capas. La cabecera <summary> sustituye al <h3>. */
-.side-group {
+.ceph-app .side-group {
   border-top: 1px solid var(--border);
 }
-.side-group > summary {
+.ceph-app .side-group > summary {
   list-style: none;
   cursor: pointer;
   display: flex;
@@ -879,16 +860,16 @@ button.primary.confirm {
   padding: 9px 0;
   user-select: none;
 }
-.side-group > summary::-webkit-details-marker { display: none; }
-.side-group > summary::before {
+.ceph-app .side-group > summary::-webkit-details-marker { display: none; }
+.ceph-app .side-group > summary::before {
   content: '▸';
   font-size: 10px;
   color: var(--muted);
   transition: transform .15s;
 }
-.side-group[open] > summary::before { transform: rotate(90deg); }
-.side-group > summary:hover { color: var(--text); }
-.side-group > summary .sg-count {
+.ceph-app .side-group[open] > summary::before { transform: rotate(90deg); }
+.ceph-app .side-group > summary:hover { color: var(--text); }
+.ceph-app .side-group > summary .sg-count {
   margin-left: auto;
   font-size: 10.5px;
   font-weight: 600;
@@ -901,10 +882,10 @@ button.primary.confirm {
   text-transform: none;
   font-variant-numeric: tabular-nums;
 }
-.side-group > summary .sg-count.complete { color: #86efac; border-color: rgba(74,222,128,.4); }
-.side-group .sg-body { padding-bottom: 8px; }
+.ceph-app .side-group > summary .sg-count.complete { color: #86efac; border-color: rgba(74,222,128,.4); }
+.ceph-app .side-group .sg-body { padding-bottom: 8px; }
 
-.canvas-wrap {
+.ceph-app .canvas-wrap {
   position: relative;
   /* Fondo NEUTRO: una leve subida de luminancia navy en el centro-superior
      (donde vive la foto) que cae a bordes más oscuros. Sin tinte azul —
@@ -917,7 +898,7 @@ button.primary.confirm {
   min-height: 0;
   overflow: hidden;
 }
-.canvas-viewport {
+.ceph-app .canvas-viewport {
   position: relative;
   width: 100%;
   height: 100%;
@@ -930,7 +911,7 @@ button.primary.confirm {
   touch-action: none;
   overscroll-behavior: contain;
 }
-.canvas-host {
+.ceph-app .canvas-host {
   position: relative;
   /* Tamaño COMPLETO del visor (no max-*): así el `max-height: 100%` del
      canvas resuelve contra una altura definida y la foto nunca se sale por
@@ -948,7 +929,7 @@ button.primary.confirm {
    FUERA de .canvas-host para no heredar el transform del zoom (que es lo que
    emborronaba las etiquetas). Su respaldo se dimensiona por JS a
    px CSS × devicePixelRatio. Nunca captura eventos. */
-.anno-overlay {
+.ceph-app .anno-overlay {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -956,7 +937,7 @@ button.primary.confirm {
   pointer-events: none;
   z-index: 3;
 }
-.canvas-host canvas {
+.ceph-app .canvas-host canvas {
   display: block;
   max-width: 100%;
   /* 100% del visor (la celda del grid ya descuenta topbar/stepper/banner).
@@ -976,17 +957,17 @@ button.primary.confirm {
 
 /* Pantalla completa: el visor ocupa toda la pantalla con fondo oscuro y la
    imagen aprovecha toda la altura disponible. */
-.canvas-viewport:fullscreen {
+.ceph-app .canvas-viewport:fullscreen {
   background: var(--bg);
   padding: 0;
 }
-.canvas-viewport:fullscreen .canvas-host canvas {
+.ceph-app .canvas-viewport:fullscreen .canvas-host canvas {
   max-height: 100vh;
   border-radius: 0;
 }
 /* PSEUDO-fullscreen (iPad/PWA sin Fullscreen API): el visor se fija a toda la
    pantalla por CSS. Mismo aspecto que :fullscreen. */
-.canvas-viewport.fs-fallback {
+.ceph-app .canvas-viewport.fs-fallback {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -994,11 +975,11 @@ button.primary.confirm {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
            env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
-.canvas-viewport.fs-fallback .canvas-host canvas {
+.ceph-app .canvas-viewport.fs-fallback .canvas-host canvas {
   border-radius: 0;
 }
 
-.zoom-controls {
+.ceph-app .zoom-controls {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -1012,7 +993,7 @@ button.primary.confirm {
   z-index: 6;
   box-shadow: var(--shadow);
 }
-.zoom-controls button {
+.ceph-app .zoom-controls button {
   border: none;
   border-radius: 6px;
   padding: 4px 10px;
@@ -1022,10 +1003,10 @@ button.primary.confirm {
   background: transparent;
   min-width: 32px;
 }
-.zoom-controls button:hover {
+.ceph-app .zoom-controls button:hover {
   background: rgba(96,165,250,.18);
 }
-.zoom-controls .zoom-level {
+.ceph-app .zoom-controls .zoom-level {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-dim);
@@ -1035,7 +1016,7 @@ button.primary.confirm {
   font-variant-numeric: tabular-nums;
 }
 /* Zoom minimizado: solo el % (toca para expandir) + pantalla completa */
-.zoom-controls .zoom-level-btn {
+.ceph-app .zoom-controls .zoom-level-btn {
   border: none;
   border-radius: 6px;
   padding: 4px 10px;
@@ -1045,11 +1026,11 @@ button.primary.confirm {
   background: transparent;
   font-variant-numeric: tabular-nums;
 }
-.zoom-controls .zoom-level-btn:hover { color: var(--text); background: rgba(96,165,250,.18); }
+.ceph-app .zoom-controls .zoom-level-btn:hover { color: var(--text); background: rgba(96,165,250,.18); }
 
 /* Botones de RETRAER/EXPANDIR cada panel lateral: pestañas en los bordes
    del visor, centradas verticalmente. */
-.panel-toggle {
+.ceph-app .panel-toggle {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -1065,10 +1046,10 @@ button.primary.confirm {
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
 }
-.panel-toggle.left  { left: 0;  border-left: none;  border-radius: 0 7px 7px 0; }
-.panel-toggle.right { right: 0; border-right: none; border-radius: 7px 0 0 7px; }
+.ceph-app .panel-toggle.left { left: 0;  border-left: none;  border-radius: 0 7px 7px 0; }
+.ceph-app .panel-toggle.right { right: 0; border-right: none; border-radius: 7px 0 0 7px; }
 /* Pestaña del borde SUPERIOR: pliega/despliega la barra superior completa */
-.panel-toggle.top {
+.ceph-app .panel-toggle.top {
   top: 0;
   left: 50%;
   right: auto;
@@ -1078,12 +1059,12 @@ button.primary.confirm {
   border-top: none;
   border-radius: 0 0 7px 7px;
 }
-.panel-toggle:hover { color: var(--text); background: var(--panel-2); }
+.ceph-app .panel-toggle:hover { color: var(--text); background: var(--panel-2); }
 
 /* Barra superior plegada: desaparece la cabecera; el stepper (que queda
    arriba del todo) hereda la safe-area para que la hora de iOS no lo pise. */
-.app.topbar-hidden .topbar { display: none; }
-.app.topbar-hidden .flow-stepper {
+.ceph-app .app.topbar-hidden .topbar { display: none; }
+.ceph-app .app.topbar-hidden .flow-stepper {
   padding-top: calc(5px + env(safe-area-inset-top, 0px));
 }
 
@@ -1094,7 +1075,7 @@ button.primary.confirm {
 /* Contenedor de la franja inferior: apila "ajustar imagen" (arriba) y la barra
    de herramientas (abajo). Al ser un flujo en columna no hacen falta offsets
    fijos y nunca se solapan aunque la barra envuelva a varias filas. */
-.canvas-bottom {
+.ceph-app .canvas-bottom {
   position: absolute;
   /* Lo más abajo posible: cada píxel aquí es foto tapada. */
   bottom: calc(4px + env(safe-area-inset-bottom, 0px));
@@ -1113,8 +1094,7 @@ button.primary.confirm {
   max-width: calc(100% - 24px);
 }
 /* Dentro del contenedor los dos hijos son estáticos */
-.canvas-bottom > .rotate-controls,
-.canvas-bottom > .canvas-toolbar {
+.ceph-app .canvas-bottom > .rotate-controls, .ceph-app .canvas-bottom > .canvas-toolbar {
   position: static;
   transform: none;
   bottom: auto;
@@ -1122,7 +1102,7 @@ button.primary.confirm {
   max-width: 100%;
 }
 
-.canvas-toolbar {
+.ceph-app .canvas-toolbar {
   display: flex;
   align-items: stretch;
   gap: 2px;
@@ -1143,11 +1123,11 @@ button.primary.confirm {
    las consumen tanto `.canvas-toolbar` (aquí) como `.rotate-controls` (más
    abajo, en su propio bloque: va después en el archivo y a igualdad de
    especificidad ganaría por orden). */
-.canvas-bottom {
+.ceph-app .canvas-bottom {
   --fl-text: #9aa9c3;
   --fl-text-strong: #e8eefc;
 }
-.canvas-toolbar .ct-tool {
+.ceph-app .canvas-toolbar .ct-tool {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1161,7 +1141,7 @@ button.primary.confirm {
   color: var(--fl-text);
 }
 /* Botón de recoger, pegado al borde izquierdo de la barra */
-.canvas-toolbar .ct-min {
+.ceph-app .canvas-toolbar .ct-min {
   border: none;
   background: transparent;
   color: var(--fl-text);
@@ -1171,9 +1151,9 @@ button.primary.confirm {
   align-self: stretch;
   border-radius: 7px;
 }
-.canvas-toolbar .ct-min:hover { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
+.ceph-app .canvas-toolbar .ct-min:hover { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
 /* Pastilla recogida: una sola línea con el icono y el nombre de la activa */
-.canvas-toolbar.ct-collapsed {
+.ceph-app .canvas-toolbar.ct-collapsed {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -1186,21 +1166,21 @@ button.primary.confirm {
   color: var(--fl-text);
   cursor: pointer;
 }
-.canvas-toolbar.ct-collapsed:hover { color: var(--fl-text-strong); }
-.canvas-toolbar .ct-tool:hover:not(:disabled) { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
-.canvas-toolbar .ct-tool.active {
+.ceph-app .canvas-toolbar.ct-collapsed:hover { color: var(--fl-text-strong); }
+.ceph-app .canvas-toolbar .ct-tool:hover:not(:disabled) { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
+.ceph-app .canvas-toolbar .ct-tool.active {
   background: rgba(96,165,250,.18);
   color: #cfe1ff;
   box-shadow: inset 0 0 0 1px var(--accent-2);
 }
-.canvas-toolbar .ct-label {
+.ceph-app .canvas-toolbar .ct-label {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
   line-height: 1;
 }
-.canvas-toolbar .ct-sep {
+.ceph-app .canvas-toolbar .ct-sep {
   width: 1px;
   align-self: stretch;
   background: var(--border);
@@ -1209,7 +1189,7 @@ button.primary.confirm {
 /* La barra es OSCURA en ambos temas a propósito: flota sobre la fotografía,
    igual que los controles de zoom/rotación. No lleva override de tema claro. */
 
-.rotate-controls {
+.ceph-app .rotate-controls {
   position: absolute;
   /* Encima de la barra de herramientas (que ocupa la franja inferior) */
   bottom: calc(84px + env(safe-area-inset-bottom, 0px));
@@ -1233,7 +1213,7 @@ button.primary.confirm {
 }
 /* Barra minimizada: solo una pastilla (estado inicial en táctil — la barra
    completa tapaba la foto en el layout vertical) */
-.rotate-controls.rc-collapsed {
+.ceph-app .rotate-controls.rc-collapsed {
   font-size: 12px;
   font-weight: 600;
   color: var(--fl-text);
@@ -1241,14 +1221,14 @@ button.primary.confirm {
   border-radius: 999px;
   white-space: nowrap;
 }
-.rotate-controls.rc-collapsed:hover { color: var(--fl-text-strong); }
-.rotate-controls .rc-min {
+.ceph-app .rotate-controls.rc-collapsed:hover { color: var(--fl-text-strong); }
+.ceph-app .rotate-controls .rc-min {
   font-size: 11px;
   color: var(--fl-text);
   padding: 4px 6px;
   min-width: 0;
 }
-.rotate-controls .rc-label {
+.ceph-app .rotate-controls .rc-label {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1258,7 +1238,7 @@ button.primary.confirm {
   border-right: 1px solid var(--border);
   margin-right: 4px;
 }
-.rotate-controls button {
+.ceph-app .rotate-controls button {
   border: none;
   border-radius: 6px;
   padding: 4px 8px;
@@ -1268,21 +1248,21 @@ button.primary.confirm {
   background: transparent;
   min-width: 28px;
 }
-.rotate-controls button:hover:not(:disabled) {
+.ceph-app .rotate-controls button:hover:not(:disabled) {
   background: rgba(96,165,250,.18);
 }
-.rotate-controls button.auto {
+.ceph-app .rotate-controls button.auto {
   background: rgba(74,222,128,.18);
   color: #86efac;
 }
-.rotate-controls button.auto:hover {
+.ceph-app .rotate-controls button.auto:hover {
   background: rgba(74,222,128,.32);
 }
-.rotate-controls input[type="range"] {
+.ceph-app .rotate-controls input[type="range"] {
   width: 140px;
   accent-color: var(--accent-2);
 }
-.rotate-controls input[type="number"] {
+.ceph-app .rotate-controls input[type="number"] {
   width: 56px;
   background: var(--bg-2);
   border: 1px solid var(--border);
@@ -1292,27 +1272,27 @@ button.primary.confirm {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.rotate-controls .rc-unit {
+.ceph-app .rotate-controls .rc-unit {
   font-size: 12px;
   color: var(--text-dim);
 }
-.canvas-empty {
+.ceph-app .canvas-empty {
   text-align: center;
   color: var(--text-dim);
   padding: 40px;
   max-width: 520px;
 }
-.canvas-empty h2 {
+.ceph-app .canvas-empty h2 {
   margin: 12px 0 4px;
   color: var(--text);
   font-size: 20px;
 }
-.canvas-empty p { line-height: 1.55; font-size: 14px; }
-.canvas-empty .icon {
+.ceph-app .canvas-empty p { line-height: 1.55; font-size: 14px; }
+.ceph-app .canvas-empty .icon {
   font-size: 48px; opacity: .6;
 }
 
-.results {
+.ceph-app .results {
   width: 360px;
   background: var(--panel);
   border-left: 1px solid var(--border);
@@ -1323,7 +1303,7 @@ button.primary.confirm {
   overflow-y: auto;
   display: flex; flex-direction: column; gap: 14px;
 }
-.results h3 {
+.ceph-app .results h3 {
   margin: 6px 0 4px;
   font-size: 11px;
   text-transform: uppercase;
@@ -1336,86 +1316,86 @@ button.primary.confirm {
    Resumen visual de las medidas que deciden la rinoplastia. Mismos valores,
    rangos y veredictos que las tablas — solo cambia la presentación. Se adaptan
    al ancho del panel: 2 columnas en el panel de 360px, 1 si es muy estrecho. */
-.result-cards {
+.ceph-app .result-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
 }
-.metric-card {
+.ceph-app .metric-card {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 12px;
 }
-.metric-card .mc-head {
+.ceph-app .metric-card .mc-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 6px;
   margin-bottom: 6px;
 }
-.metric-card .mc-label {
+.ceph-app .metric-card .mc-label {
   font-size: 11.5px;
   color: var(--text-dim);
   line-height: 1.25;
 }
-.metric-card .mc-value-row {
+.ceph-app .metric-card .mc-value-row {
   display: flex;
   align-items: baseline;
   gap: 7px;
 }
-.metric-card .mc-value {
+.ceph-app .metric-card .mc-value {
   font-size: 22px;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
 }
-.metric-card .mc-delta {
+.ceph-app .metric-card .mc-delta {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.metric-card .mc-delta.ok    { color: var(--ok-strong, #86efac); }
-.metric-card .mc-delta.warn  { color: #fdba74; }
-.metric-card .mc-delta.error { color: #fca5a5; }
-.metric-card .mc-delta.muted { color: var(--muted); }
-.metric-card .mc-normal {
+.ceph-app .metric-card .mc-delta.ok { color: var(--ok-strong, #86efac); }
+.ceph-app .metric-card .mc-delta.warn { color: #fdba74; }
+.ceph-app .metric-card .mc-delta.error { color: #fca5a5; }
+.ceph-app .metric-card .mc-delta.muted { color: var(--muted); }
+.ceph-app .metric-card .mc-normal {
   font-size: 10.5px;
   color: var(--muted);
   margin: 3px 0 2px;
 }
 /* El gauge dentro de la tarjeta ocupa todo el ancho (en la tabla iba a 64px
    alineado a la derecha). */
-.metric-card .gauge {
+.ceph-app .metric-card .gauge {
   width: 100%;
   margin: 6px 0 1px;
 }
 
-:root[data-theme="light"] .metric-card .mc-delta.warn  { color: #b45309; }
-:root[data-theme="light"] .metric-card .mc-delta.error { color: var(--error); }
+:root[data-theme="light"] .ceph-app .metric-card .mc-delta.warn { color: #b45309; }
+:root[data-theme="light"] .ceph-app .metric-card .mc-delta.error { color: var(--error); }
 
-table.ceph {
+.ceph-app table.ceph {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
-table.ceph th, table.ceph td {
+.ceph-app table.ceph th, .ceph-app table.ceph td {
   text-align: left;
   padding: 8px 8px;
   border-bottom: 1px solid var(--border);
 }
-table.ceph th {
+.ceph-app table.ceph th {
   font-weight: 600;
   color: var(--text-dim);
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: .8px;
 }
-table.ceph td.num {
+.ceph-app table.ceph td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.badge {
+.ceph-app .badge {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
@@ -1426,7 +1406,7 @@ table.ceph td.num {
 
 /* Gauge de normalidad (columna "Normal" de las tablas): banda = rango normal,
    marcador = valor del paciente */
-.gauge {
+.ceph-app .gauge {
   position: relative;
   display: block;
   width: 64px;
@@ -1436,14 +1416,14 @@ table.ceph td.num {
   border: 1px solid var(--border);
   border-radius: 999px;
 }
-.gauge .g-band {
+.ceph-app .gauge .g-band {
   position: absolute;
   top: 0;
   height: 100%;
   background: rgba(74,222,128,.30);
   border-radius: 999px;
 }
-.gauge .g-marker {
+.ceph-app .gauge .g-marker {
   position: absolute;
   top: -3px;
   width: 3px;
@@ -1452,24 +1432,24 @@ table.ceph td.num {
   transform: translateX(-50%);
   box-shadow: 0 0 0 1px rgba(0,0,0,.5);
 }
-.gauge .g-marker.ok    { background: #4ade80; }
-.gauge .g-marker.warn  { background: #fbbf24; }
-.gauge .g-marker.error { background: #ef4444; }
-.badge.ok    { color: #86efac; background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); }
-.badge.warn  { color: #fdba74; background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.3); }
-.badge.error { color: #fca5a5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }
-.badge.muted { color: var(--text-dim); background: var(--bg-2); border-color: var(--border); }
+.ceph-app .gauge .g-marker.ok { background: #4ade80; }
+.ceph-app .gauge .g-marker.warn { background: #fbbf24; }
+.ceph-app .gauge .g-marker.error { background: #ef4444; }
+.ceph-app .badge.ok { color: #86efac; background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); }
+.ceph-app .badge.warn { color: #fdba74; background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.3); }
+.ceph-app .badge.error { color: #fca5a5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }
+.ceph-app .badge.muted { color: var(--text-dim); background: var(--bg-2); border-color: var(--border); }
 
 /* ============ Puntos anatómicos en FILAS ============
    Antes: rejilla de 2 pastillas por fila, que obligaba a recortar los nombres
    largos con elipsis ("Eje narina post. (Bp)"). En fila a ancho completo el
    nombre entra entero y la lista se escanea de un vistazo. */
-.points-list {
+.ceph-app .points-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.point-row {
+.ceph-app .point-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1490,23 +1470,23 @@ table.ceph td.num {
    mientras el color sí aplicaba: la fila se re-renderiza y reinicia la
    animación antes de que avance. En una lista de selección el resaltado
    instantáneo es además mejor: se nota al tocar puntos en cadena. */
-.point-row { transition: none; }
-.point-row:hover:not(:disabled) { background-color: var(--panel-2); }
-.point-row .dot {
+.ceph-app .point-row { transition: none; }
+.ceph-app .point-row:hover:not(:disabled) { background-color: var(--panel-2); }
+.ceph-app .point-row .dot {
   width: 9px; height: 9px; border-radius: 50%;
   box-shadow: 0 0 0 2px rgba(255,255,255,.08);
   flex-shrink: 0;
 }
 /* El nombre manda y ocupa el espacio disponible; ya NO se recorta */
-.point-row .pr-name { flex: 1 1 auto; min-width: 0; }
-.point-row .pr-id {
+.ceph-app .point-row .pr-name { flex: 1 1 auto; min-width: 0; }
+.ceph-app .point-row .pr-id {
   font-family: var(--font-mono);
   font-size: 10.5px;
   color: var(--muted);
   flex-shrink: 0;
 }
 /* Estado a la derecha: colocado (check) o pendiente (raya) */
-.point-row .pr-state {
+.ceph-app .point-row .pr-state {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1514,19 +1494,19 @@ table.ceph td.num {
   flex-shrink: 0;
   color: var(--muted);
 }
-.point-row.placed .pr-state { color: var(--ok-strong); }
-.point-row.placed .pr-name { color: var(--text); }
-.point-row:not(.placed) .pr-name { color: var(--text-dim); }
-.point-row.active {
+.ceph-app .point-row.placed .pr-state { color: var(--ok-strong); }
+.ceph-app .point-row.placed .pr-name { color: var(--text); }
+.ceph-app .point-row:not(.placed) .pr-name { color: var(--text-dim); }
+.ceph-app .point-row.active {
   background-color: rgba(96,165,250,.14);
   border-color: var(--accent-2);
   color: #cfe1ff;
 }
-.point-row.active .pr-name { color: #cfe1ff; }
+.ceph-app .point-row.active .pr-name { color: #cfe1ff; }
 /* Punto OPCIONAL (Nk/Cuello): no cuenta para el progreso, se coloca solo si se
    necesita su medida (ángulo cervicomental). */
-.point-row.optional .pr-name { font-style: italic; }
-.point-row.optional .pr-opt {
+.ceph-app .point-row.optional .pr-name { font-style: italic; }
+.ceph-app .point-row.optional .pr-opt {
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -1536,15 +1516,15 @@ table.ceph td.num {
   padding: 0 4px;
   flex-shrink: 0;
 }
-:root[data-theme="light"] .point-row.active { color: var(--accent-2); }
-:root[data-theme="light"] .point-row.active .pr-name { color: var(--accent-2); }
+:root[data-theme="light"] .ceph-app .point-row.active { color: var(--accent-2); }
+:root[data-theme="light"] .ceph-app .point-row.active .pr-name { color: var(--accent-2); }
 
-.lines-toggles {
+.ceph-app .lines-toggles {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-.lines-toggles label {
+.ceph-app .lines-toggles label {
   display: flex; align-items: center; gap: 6px;
   font-size: 12px;
   color: var(--text-dim);
@@ -1554,16 +1534,16 @@ table.ceph td.num {
   border-radius: 6px;
   cursor: pointer;
 }
-.lines-toggles input { accent-color: var(--accent-2); }
+.ceph-app .lines-toggles input { accent-color: var(--accent-2); }
 
 /* Modal */
-.modal-bg {
+.ceph-app .modal-bg {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.6);
   display: grid; place-items: center;
   z-index: 50;
 }
-.modal {
+.ceph-app .modal {
   background: var(--panel);
   border: 1px solid var(--border-strong);
   border-radius: 12px;
@@ -1573,17 +1553,17 @@ table.ceph td.num {
   overflow-y: auto;
   box-shadow: var(--shadow);
 }
-.modal h2 { margin: 0 0 10px; font-size: 18px; }
-.modal p  { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
-.modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.ceph-app .modal h2 { margin: 0 0 10px; font-size: 18px; }
+.ceph-app .modal p { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+.ceph-app .modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
 /* Camera */
-.camera-stage {
+.ceph-app .camera-stage {
   display: grid;
   place-items: center;
   gap: 10px;
 }
-.camera-stage video {
+.ceph-app .camera-stage video {
   width: 100%;
   max-height: 60vh;
   background: #000;
@@ -1591,7 +1571,7 @@ table.ceph td.num {
 }
 
 /* Calibration banner */
-.calibration-status {
+.ceph-app .calibration-status {
   font-size: 12px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -1599,14 +1579,14 @@ table.ceph td.num {
   border: 1px solid var(--border);
   color: var(--text-dim);
 }
-.calibration-status.ok {
+.ceph-app .calibration-status.ok {
   color: #d1fae5;
   border-color: rgba(74,222,128,.35);
   background: rgba(74,222,128,.08);
 }
 
 /* Hint pill at top of canvas (bajo la pestaña de plegado de la barra superior) */
-.hint {
+.ceph-app .hint {
   position: absolute;
   top: 30px; left: 50%;
   transform: translateX(-50%);
@@ -1623,12 +1603,12 @@ table.ceph td.num {
 
 /* Scrollbars */
 /* ============ Panel de capas (LayersPanel) ============ */
-.layers-panel {
+.ceph-app .layers-panel {
   border-top: 1px solid var(--border);
   margin-top: 8px;
   padding-top: 8px;
 }
-.layers-panel summary {
+.ceph-app .layers-panel summary {
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -1641,29 +1621,29 @@ table.ceph td.num {
   padding: 4px 0;
   user-select: none;
 }
-.layers-panel summary::-webkit-details-marker { display: none; }
-.layers-panel summary::before {
+.ceph-app .layers-panel summary::-webkit-details-marker { display: none; }
+.ceph-app .layers-panel summary::before {
   content: '▸';
   display: inline-block;
   transition: transform .15s;
 }
-.layers-panel[open] > summary::before { transform: rotate(90deg); }
-.layers-panel .global-actions {
+.ceph-app .layers-panel[open] > summary::before { transform: rotate(90deg); }
+.ceph-app .layers-panel .global-actions {
   display: flex; gap: 4px;
   margin: 6px 0;
 }
-.layers-panel .global-actions button {
+.ceph-app .layers-panel .global-actions button {
   flex: 1;
   font-size: 11px;
   padding: 4px 6px;
 }
-.layers-section {
+.ceph-app .layers-section {
   margin-top: 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-2);
 }
-.layers-section > summary {
+.ceph-app .layers-section > summary {
   padding: 6px 8px;
   font-size: 11px;
   color: var(--text);
@@ -1671,23 +1651,23 @@ table.ceph td.num {
   background: var(--panel-2);
   border-radius: 6px 6px 0 0;
 }
-.layers-section[open] > summary { border-bottom: 1px solid var(--border); }
-.layers-section .section-body {
+.ceph-app .layers-section[open] > summary { border-bottom: 1px solid var(--border); }
+.ceph-app .layers-section .section-body {
   padding: 6px 8px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.layers-section .section-actions {
+.ceph-app .layers-section .section-actions {
   display: flex; gap: 4px;
   margin-bottom: 4px;
 }
-.layers-section .section-actions button {
+.ceph-app .layers-section .section-actions button {
   flex: 1;
   font-size: 11px;
   padding: 3px 6px;
 }
-.layer-row {
+.ceph-app .layer-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1697,28 +1677,28 @@ table.ceph td.num {
   font-size: 12px;
   color: var(--text);
 }
-.layer-row:hover { background: var(--panel-2); }
-.layer-row .eye {
+.ceph-app .layer-row:hover { background: var(--panel-2); }
+.ceph-app .layer-row .eye {
   width: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.layer-row.hidden { color: var(--muted); }
-.layer-row.hidden .eye { opacity: .55; }
-.layer-row .dot {
+.ceph-app .layer-row.hidden { color: var(--muted); }
+.ceph-app .layer-row.hidden .eye { opacity: .55; }
+.ceph-app .layer-row .dot {
   width: 8px; height: 8px; border-radius: 50%;
   box-shadow: 0 0 0 1.5px rgba(255,255,255,.15);
   flex-shrink: 0;
 }
-.layer-row .layer-id {
+.ceph-app .layer-row .layer-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   color: var(--text-dim);
   min-width: 36px;
 }
-.layer-row .layer-name {
+.ceph-app .layer-row .layer-name {
   font-size: 12px;
   flex: 1;
   overflow: hidden;
@@ -1726,32 +1706,32 @@ table.ceph td.num {
   white-space: nowrap;
 }
 
-.sidebar::-webkit-scrollbar, .results::-webkit-scrollbar {
+.ceph-app .sidebar::-webkit-scrollbar, .ceph-app .results::-webkit-scrollbar {
   width: 8px;
 }
-.sidebar::-webkit-scrollbar-thumb, .results::-webkit-scrollbar-thumb {
+.ceph-app .sidebar::-webkit-scrollbar-thumb, .ceph-app .results::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
 }
 
 @media (max-width: 1100px) {
-  .sidebar { width: 220px; }
-  .results { width: 300px; }
+  .ceph-app .sidebar { width: 220px; }
+  .ceph-app .results { width: 300px; }
   /* Sidebar más estrecho: compactar herramientas para que las etiquetas
      completas quepan en las celdas de 2 columnas sin cortarse. */
-  .tools-grid button.tool { font-size: 11px; gap: 4px; padding: 8px 5px; }
+  .ceph-app .tools-grid button.tool { font-size: 11px; gap: 4px; padding: 8px 5px; }
 }
 @media (max-width: 880px) {
-  .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .ceph-app .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
   /* Colocación explícita en el APILADO (misma razón que en columnas) */
-  .main > .sidebar     { grid-column: 1; grid-row: 1; }
-  .main > .canvas-wrap { grid-column: 1; grid-row: 2; }
-  .main > .results     { grid-column: 1; grid-row: 3; }
+  .ceph-app .main > .sidebar { grid-column: 1; grid-row: 1; }
+  .ceph-app .main > .canvas-wrap { grid-column: 1; grid-row: 2; }
+  .ceph-app .main > .results { grid-column: 1; grid-row: 3; }
   /* Apilado vertical (iPad en vertical): la FOTO es la protagonista — los
      paneles ceden altura (con scroll propio) para que el visor sea usable.
      Antes 30vh+35vh dejaban la foto en una franja mínima no funcional. */
-  .sidebar { width: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 20vh; }
-  .results { width: auto; border-left: none; border-top: 1px solid var(--border); max-height: 26vh; }
+  .ceph-app .sidebar { width: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 20vh; }
+  .ceph-app .results { width: auto; border-left: none; border-top: 1px solid var(--border); max-height: 26vh; }
 }
 
 /* ============ Objetivos táctiles ≥44 pt (Apple HIG) ============
@@ -1761,60 +1741,56 @@ table.ceph td.num {
    arrastrar en toda la altura aunque el pulgar visible sea pequeño. */
 @media (any-pointer: coarse) {
   /* Sin retardo de 300 ms ni doble-tap-zoom sobre controles */
-  button, .point-row, label, input, .rhino-toggle { touch-action: manipulation; }
+  .ceph-app button, .ceph-app .point-row, .ceph-app label, .ceph-app input, .ceph-app .rhino-toggle { touch-action: manipulation; }
 
-  button {
+  .ceph-app button {
     min-height: 44px;
     padding-top: 9px;
     padding-bottom: 9px;
   }
-  .zoom-controls button,
-  .rotate-controls button { min-width: 44px; }
+  .ceph-app .zoom-controls button, .ceph-app .rotate-controls button { min-width: 44px; }
 
-  .point-row {
+  .ceph-app .point-row {
     min-height: 44px;
     font-size: 13px;
     padding: 8px;
   }
-  .point-row .dot { width: 11px; height: 11px; }
-  .point-row .pr-id { font-size: 11px; }
+  .ceph-app .point-row .dot { width: 11px; height: 11px; }
+  .ceph-app .point-row .pr-id { font-size: 11px; }
 
   /* Sliders: la zona táctil pasa a 44 px de alto (el pulgar nativo queda
      centrado y se puede arrastrar en toda la franja) */
-  input[type="range"] { min-height: 44px; }
+  .ceph-app input[type="range"] { min-height: 44px; }
 
   /* Pestañas de plegado en táctil: compactas (el usuario las quiere pequeñas).
      Se anula el min-height táctil general de los botones; al estar pegadas al
      borde de la pantalla siguen siendo fáciles de tocar. */
-  .panel-toggle { min-height: 0; padding-top: 0; padding-bottom: 0; }
-  .panel-toggle.left, .panel-toggle.right { width: 20px; height: 48px; }
-  .panel-toggle.top { width: 48px; height: 18px; }
-  .hint { top: 30px; }
+  .ceph-app .panel-toggle { min-height: 0; padding-top: 0; padding-bottom: 0; }
+  .ceph-app .panel-toggle.left, .ceph-app .panel-toggle.right { width: 20px; height: 48px; }
+  .ceph-app .panel-toggle.top { width: 48px; height: 18px; }
+  .ceph-app .hint { top: 30px; }
 
   /* Franja inferior en táctil: se exime del min-height de 44 px porque tapaba
      ~110 px de foto (dos filas × 44 px + relleno + hueco). El blanco sigue
      siendo cómodo por ANCHO (44 px) y porque están al borde de la pantalla.
      Ambas barras arrancan recogidas, así que en reposo solo hay 2 pastillas. */
-  .canvas-toolbar .ct-tool {
+  .ceph-app .canvas-toolbar .ct-tool {
     min-height: 0;
     padding-top: 4px;
     padding-bottom: 4px;
     min-width: 44px;
   }
-  .canvas-toolbar .ct-min { min-height: 0; padding-top: 0; padding-bottom: 0; }
-  .canvas-toolbar.ct-collapsed,
-  .rotate-controls.rc-collapsed {
+  .ceph-app .canvas-toolbar .ct-min { min-height: 0; padding-top: 0; padding-bottom: 0; }
+  .ceph-app .canvas-toolbar.ct-collapsed, .ceph-app .rotate-controls.rc-collapsed {
     min-height: 0;
     padding-top: 6px;
     padding-bottom: 6px;
   }
 
   /* Casillas más grandes + fila-etiqueta completa tocable */
-  input[type="checkbox"],
-  input[type="radio"] { width: 22px; height: 22px; }
-  .rhino-toggle { min-height: 44px; }
-  .layers-section label,
-  .layers-panel label { min-height: 40px; display: flex; align-items: center; }
+  .ceph-app input[type="checkbox"], .ceph-app input[type="radio"] { width: 22px; height: 22px; }
+  .ceph-app .rhino-toggle { min-height: 44px; }
+  .ceph-app .layers-section label, .ceph-app .layers-panel label { min-height: 40px; display: flex; align-items: center; }
 }
 
 /* ============ Tema claro para IMPRESIÓN ============
@@ -1835,16 +1811,15 @@ table.ceph td.num {
     --shadow: none;
     color-scheme: light;
   }
-  html, body, #root { overflow: visible; height: auto; }
-  .app { height: auto; display: block; }
+  .ceph-app { overflow: visible; height: auto; }
+  .ceph-app .app { height: auto; display: block; }
   /* Fuera todo lo interactivo: queda canvas + resultados */
-  .sidebar, .topbar .actions, .mode-switch, .flow-stepper, .detection-banner,
-  .zoom-controls, .rotate-controls, .hint, .toast { display: none !important; }
-  .main { display: block; }
-  .canvas-wrap { background: #fff; }
-  .canvas-host canvas { max-height: 90vh; box-shadow: none; }
-  .results { border: none; }
-  .badge.ok    { color: #166534; }
-  .badge.warn  { color: #9a3412; }
-  .badge.error { color: #991b1b; }
+  .ceph-app .sidebar, .ceph-app .topbar .actions, .ceph-app .mode-switch, .ceph-app .flow-stepper, .ceph-app .detection-banner, .ceph-app .zoom-controls, .ceph-app .rotate-controls, .ceph-app .hint, .ceph-app .toast { display: none !important; }
+  .ceph-app .main { display: block; }
+  .ceph-app .canvas-wrap { background: #fff; }
+  .ceph-app .canvas-host canvas { max-height: 90vh; box-shadow: none; }
+  .ceph-app .results { border: none; }
+  .ceph-app .badge.ok { color: #166534; }
+  .ceph-app .badge.warn { color: #9a3412; }
+  .ceph-app .badge.error { color: #991b1b; }
 }
