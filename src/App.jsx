@@ -1,7 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { translations } from "./translations";
 import { useLang } from "./LanguageContext";
 import { jsPDF } from "jspdf";
+
+// Modulo de cefalometria: se descarga solo cuando el cirujano lo abre.
+// Sus dependencias (MediaPipe, onnxruntime, face-api) NO entran en el bundle
+// principal gracias a este import dinamico.
+const Cefalometria = lazy(() => import("./cefalometria/Entry"));
 
 const SUPA_URL = "https://tzmbybwytfpaqaajwumz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6bWJ5Ynd5dGZwYXFhYWp3dW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTM2NDAsImV4cCI6MjA4ODI4OTY0MH0.6FqJRT7VaWp-k_tCV1a3PFiRmwXBUokXkvyBTZOVpcM";
@@ -308,6 +313,7 @@ function RhinoPlannerMain(){
   const canvasRef=useRef(null);const bgRef=useRef(null);const hasP=!!patient.nombre;
   const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
   const[notesOpen,setNotesOpen]=useState(window.innerWidth>1100);
+  const[showCeph,setShowCeph]=useState(false);
   const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
   useEffect(()=>{const onR=()=>{setWinSize({w:window.innerWidth,h:window.innerHeight});};window.addEventListener("resize",onR);return()=>window.removeEventListener("resize",onR);},[]);
   const compact=winSize.w<900;
@@ -876,6 +882,7 @@ function RhinoPlannerMain(){
         {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
         {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||t.save}</button>}
         {hasP&&<button onClick={cerrarPaciente} title={t.closePatient} style={{background:"#1E2F45",border:"1px solid #3A4A63",color:"#8AA5C0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>✕{compact?"":" "+t.closePatient}</button>}
+        {isPlus&&<button onClick={()=>setShowCeph(true)} title="Cefalometría" style={{background:"#2A1E45",border:"1px solid #8B6FD4",color:"#B79FF0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⌖{compact?"":" Cefalometría"}</button>}
         <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#5B8DB844":"#2A3D55"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
           {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>{t.patient}</div>))}
@@ -950,6 +957,13 @@ function RhinoPlannerMain(){
           )}
         </div>
       </div>
+      {/* MODULO DE CEFALOMETRIA (carga diferida) */}
+      {showCeph&&(
+        <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:900,background:"#0b1220",color:"#8AA5C0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontFamily:"inherit"}}>Cargando cefalometría…</div>}>
+          <Cefalometria/>
+          <button onClick={()=>setShowCeph(false)} title={t.close||"Cerrar"} style={{position:"fixed",top:10,right:14,zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
+        </Suspense>
+      )}
     </div>
   );
 }

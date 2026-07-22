@@ -1,0 +1,1847 @@
+/* RhinoPlan Medidas — Tema oscuro profesional */
+:root {
+  --bg: #0b1220;
+  --bg-2: #111a2e;
+  --panel: #16213a;
+  --panel-2: #1d2b48;
+  --border: #25365a;
+  --border-strong: #324a78;
+  --text: #e6edf6;
+  --text-dim: #9aa9c3;
+  /* Contraste AA (≈5:1 sobre --panel) — antes #6b7a99 quedaba en ~3.5:1,
+     ilegible en las etiquetas pequeñas de secciones y descripciones */
+  --muted: #8494b5;
+  --accent: #4ade80;
+  --accent-2: #60a5fa;
+  --warn: #fb923c;
+  --error: #ef4444;
+  --ok: #22c55e;
+  /* Texto de éxito/normalidad (columna "Proyectado", badges ok). Variable para
+     que se adapte al tema: claro en oscuro, oscuro-legible en claro. */
+  --ok-strong: #86efac;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  /* Fuente MONOESPACIADA para datos numéricos (ángulos, mm, ratios, escalas).
+     Alinea las columnas y da lectura de "instrumento calibrado". Se usa el
+     stack del sistema (SF Mono en iPad/Mac, Consolas en Windows) en vez de
+     descargar una webfont: la app es una PWA que debe funcionar sin red. */
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+  color-scheme: dark;
+}
+
+/* ============ Datos numéricos en monoespaciada ============ */
+table.ceph td.num,
+.rhino-slider .rs-value,
+.rhino-changes .rc-value,
+.progress-chip,
+.zoom-controls .zoom-level,
+.zoom-controls .zoom-level-btn,
+.side-group > summary .sg-count,
+.rotate-controls input[type="number"],
+.ann-cases .ac-pts,
+.badge {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* La mono renderiza más ancha: se compensa un punto para no forzar el layout */
+table.ceph td.num { font-size: 11.5px; }
+.badge { font-size: 10.5px; letter-spacing: -0.2px; }
+
+/* ============ TEMA CLARO ============
+   Solo cambia la paleta de la INTERFAZ (variables + los pocos textos con color
+   codificado a mano). Los colores CLÍNICOS del canvas (contorno, puntos,
+   siluetas de simulación) se dibujan sobre la foto y NO cambian. */
+:root[data-theme="light"] {
+  --bg: #eef1f7;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef2f8;
+  --border: #d6deea;
+  --border-strong: #b9c6da;
+  --text: #17233b;
+  --text-dim: #4b5972;
+  --muted: #6a778f;
+  --accent: #16a34a;
+  --accent-2: #2563eb;
+  --warn: #d97706;
+  --error: #dc2626;
+  --ok: #16a34a;
+  --ok-strong: #15803d;
+  --shadow: 0 8px 24px rgba(23,35,59,.12);
+  color-scheme: light;
+}
+/* Overrides puntuales donde el color de TEXTO estaba fijado claro (ilegible
+   sobre superficies blancas del tema claro). */
+:root[data-theme="light"] button.primary { color: #ffffff; }
+:root[data-theme="light"] button.danger { color: var(--error); }
+:root[data-theme="light"] button.tool.active {
+  background: rgba(37,99,235,.10);
+  color: var(--accent-2);
+}
+:root[data-theme="light"] button.tool.active kbd { color: var(--accent-2); }
+:root[data-theme="light"] .mode-switch button.active { background: rgba(37,99,235,.12); color: var(--accent-2); }
+:root[data-theme="light"] .detection-banner.detecting { color: var(--accent-2); }
+:root[data-theme="light"] .detection-banner.done { color: var(--ok-strong); }
+:root[data-theme="light"] .detection-banner.failed { color: var(--error); }
+:root[data-theme="light"] .detection-banner .ok-tag { color: var(--ok-strong); }
+:root[data-theme="light"] .badge.ok { color: var(--ok-strong); }
+:root[data-theme="light"] .badge.warn { color: #b45309; }
+:root[data-theme="light"] .badge.error { color: var(--error); }
+:root[data-theme="light"] .calibration-status.ok { color: var(--ok-strong); }
+:root[data-theme="light"] .pending-note { color: #b45309; }
+:root[data-theme="light"] .ann-ok { color: var(--ok-strong); }
+:root[data-theme="light"] .ann-error { color: var(--error); }
+:root[data-theme="light"] .ann-cases .ac-pts { color: var(--ok-strong); }
+:root[data-theme="light"] .rhino-changes .rc-value { color: var(--ok-strong); }
+:root[data-theme="light"] .rhino-slider .rs-value { color: var(--ok-strong); }
+:root[data-theme="light"] .sg-count.complete { color: var(--ok-strong); }
+/* Fondo del área de la foto: vignette claro (no el navy oscuro del tema oscuro) */
+:root[data-theme="light"] .canvas-wrap {
+  background:
+    radial-gradient(1100px 640px at 50% 20%, #ffffff, transparent 72%),
+    var(--bg);
+}
+
+.ceph-app, .ceph-app * { box-sizing: border-box; }
+
+/* Aislado bajo .ceph-app: el modulo vive dentro de la app principal y no
+   debe reestilizar html/body/#root de RhinoPlan. */
+.ceph-app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  /* Es una herramienta de manipulación directa, no un documento: sin selección
+     de texto. En iOS, arrastrar puntos/sliders SELECCIONABA media pantalla en
+     azul (long-press/drag dispara la selección nativa). */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Los campos de entrada sí permiten seleccionar/editar su texto */
+.ceph-app input, .ceph-app textarea, .ceph-app [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.ceph-app button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+button:hover:not(:disabled) {
+  background: var(--panel-2);
+  border-color: var(--border-strong);
+}
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+button.primary {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #0a1226;
+  font-weight: 600;
+}
+button.primary:hover { filter: brightness(1.08); }
+button.danger {
+  border-color: rgba(239,68,68,.4);
+  color: #fca5a5;
+}
+button.danger:hover { background: rgba(239,68,68,.12); }
+button.tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+button.tool.active {
+  background: rgba(96,165,250,.14);
+  border-color: var(--accent-2);
+  color: #cfe1ff;
+}
+/* Chip de atajo de teclado dentro de un botón de herramienta */
+button.tool kbd {
+  margin-left: auto;
+  font: 600 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+button.tool.active kbd { color: #cfe1ff; border-color: rgba(96,165,250,.4); }
+
+/* Anillo de FOCO VISIBLE (navegación por teclado — accesibilidad).
+   Solo con :focus-visible: el click con ratón/dedo no lo muestra. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+input[type="number"], input[type="text"], select {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font: inherit;
+  outline: none;
+}
+input:focus, select:focus { border-color: var(--accent-2); }
+
+label.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Layout */
+.app {
+  display: grid;
+  /* header en `auto`: en iPad la topbar puede ocupar 2 líneas (flex-wrap)
+     y no debe recortarse a 56px fijos */
+  grid-template-rows: auto auto auto 1fr;   /* header · stepper · banner · main */
+  /* Columna EXPLÍCITA acotada: sin esto la columna implícita se dimensiona por
+     max-content (textos nowrap de capas/tablas) y .main/banner se ensanchaban
+     más allá de la ventana (978px en iPad de 820) → controles derechos fuera. */
+  grid-template-columns: minmax(0, 1fr);
+  /* 100dvh = alto REAL visible en iOS (100vh incluye la zona bajo las barras
+     de Safari → la parte inferior quedaba cortada). Fallback 100vh. */
+  height: 100vh;
+  height: 100dvh;
+}
+.app > .main { grid-row: 4; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  /* Si no caben todas las acciones a lo ancho (iPad), la barra hace WRAP a
+     una segunda línea en vez de desbordar y recortar botones. */
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-height: 56px;
+  padding: 6px 16px;
+  /* Safe areas del PWA (viewport-fit=cover + status bar translúcida): sin
+     esto la hora/batería de iOS se pintan ENCIMA del logo y los botones. */
+  padding-top: calc(6px + env(safe-area-inset-top, 0px));
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
+}
+.topbar .brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.topbar .brand .logo {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  background: var(--accent-2);
+  color: #0b1220;
+  border-radius: 8px;
+  font-weight: 900;
+}
+.topbar .brand .sub {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 4px;
+}
+.topbar .spacer { flex: 1; }
+.topbar .actions {
+  display: flex;
+  gap: 6px 8px;
+  align-items: center;
+  /* La topbar envuelve sus TRES bloques (marca · modo · acciones), pero este
+     grupo era una única fila rígida: con foto cargada suma ~11 botones y en
+     iPad vertical desbordaba por la derecha dejando los últimos invisibles.
+     Envolver aquí también, alineado a la derecha como el resto de la barra. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* En ancho de iPad vertical el subtítulo de la marca solo quita sitio a la
+   primera fila de botones. El nombre completo queda. */
+@media (max-width: 900px) {
+  .topbar .brand .sub { display: none; }
+}
+/* Botón de tema claro/oscuro (icono sol/luna) */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.theme-toggle:hover { color: var(--text); }
+/* Botones con icono SVG: alinear icono + texto */
+.topbar .actions button,
+.canvas-empty button,
+button.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+button.tool { display: flex; }
+/* Botones/summary con icono SVG + texto: alinear y separar */
+.layers-panel .global-actions button,
+.layers-section .section-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.layers-panel > summary { align-items: center; }
+.rhino-toggle { align-items: center; }
+.rhino-toggle svg { flex-shrink: 0; }
+
+/* Stepper del flujo (bajo la cabecera) */
+.flow-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11.5px;
+  overflow-x: auto;
+}
+.fs-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.fs-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  color: var(--text-dim);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.fs-step.done .fs-dot {
+  background: rgba(74,222,128,.15);
+  border-color: rgba(74,222,128,.5);
+  color: #86efac;
+}
+.fs-step.current { color: var(--text); font-weight: 600; }
+.fs-step.current .fs-dot {
+  border-color: var(--accent-2);
+  color: #cfe1ff;
+  background: rgba(96,165,250,.15);
+}
+.fs-line {
+  flex: 0 0 22px;
+  height: 1px;
+  background: var(--border);
+}
+/* Separador vertical entre grupos de acciones (captura | análisis | export) */
+.topbar .tb-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Chip de progreso de puntos colocados (antes: texto gris plano) */
+.progress-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+.progress-chip .pc-bar {
+  width: 52px;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-chip .pc-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-2);
+  border-radius: 999px;
+  transition: width .25s ease;
+}
+/* Al completar, el relleno pasa a verde (semántica de éxito) */
+.progress-chip.complete { border-color: rgba(74,222,128,.45); color: #86efac; }
+.progress-chip.complete .pc-fill { background: var(--accent); }
+
+/* Toast de confirmación (export, confirmar puntos) — discreto, no bloquea */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(11,18,32,.96);
+  border: 1px solid rgba(74,222,128,.45);
+  color: #d1fae5;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 60;
+  pointer-events: none;
+  animation: rp-toast-in .2s ease-out;
+}
+@keyframes rp-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.mode-switch {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-2);
+  margin-left: 18px;
+}
+.mode-switch button {
+  border: none;
+  border-radius: 0;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  letter-spacing: .4px;
+}
+.mode-switch button:hover {
+  background: rgba(96,165,250,.08);
+  color: var(--text);
+}
+.mode-switch button.active {
+  background: rgba(96,165,250,.16);
+  color: #e0f2fe;
+  box-shadow: inset 0 -2px 0 var(--accent-2);
+}
+.mode-switch button + button {
+  border-left: 1px solid var(--border);
+}
+
+/* Detection banner — tinte plano + barra de acento a la izquierda (patrón de
+   aviso limpio, sin degradados) */
+.detection-banner {
+  padding: 8px 16px;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  background: var(--bg-2);
+}
+.detection-banner.detecting {
+  background: rgba(96,165,250,.10);
+  border-left-color: var(--accent-2);
+  color: #cfe1ff;
+}
+.detection-banner.done {
+  background: rgba(74,222,128,.08);
+  border-left-color: var(--accent);
+  color: #d1fae5;
+}
+.detection-banner.failed {
+  background: rgba(239,68,68,.10);
+  border-left-color: var(--error);
+  color: #fecaca;
+}
+.detection-banner b { color: inherit; font-weight: 700; }
+.detection-banner .ok-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(34,197,94,.22);
+  color: #86efac;
+  border: 1px solid rgba(34,197,94,.4);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* Spinner */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(96,165,250,.3);
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  display: inline-block;
+  animation: rp-spin .8s linear infinite;
+}
+@keyframes rp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Rinoplastia panel */
+.rhino-panel {
+  background: var(--panel);
+}
+.rhino-close {
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+}
+.rhino-close:hover { color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+
+.rhino-sliders { display: flex; flex-direction: column; gap: 10px; }
+.rhino-slider {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.rhino-slider.active {
+  border-color: rgba(74,222,128,0.5);
+  background: rgba(74,222,128,0.07);
+}
+.rhino-slider .rs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.rhino-slider .rs-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.rhino-slider .rs-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.rhino-slider .rs-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+}
+.rhino-slider.inactive .rs-value { color: var(--muted); }
+.rhino-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.rhino-slider .rs-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.rhino-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.rhino-toggle input { accent-color: var(--accent-2); }
+
+.rhino-changes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.rhino-changes li {
+  display: flex; justify-content: space-between;
+  background: var(--bg-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.rhino-changes .rc-label { color: var(--text-dim); }
+.rhino-changes .rc-value { font-weight: 700; color: #86efac; font-variant-numeric: tabular-nums; }
+
+/* Annotation panel */
+.annotation-panel {
+  background: var(--panel);
+}
+.ann-intro {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+.ann-progress {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ann-bar {
+  height: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ann-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width .25s ease;
+}
+.ann-progress-label {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ann-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 280px; overflow-y: auto;
+}
+.ann-item {
+  display: grid;
+  grid-template-columns: 14px 38px 1fr 18px auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background .12s, border-color .12s;
+}
+.ann-item.active {
+  border-color: var(--accent-2);
+  background: rgba(96,165,250,.12);
+}
+.ann-item.confirmed {
+  border-color: rgba(74,222,128,0.5);
+  background: rgba(74,222,128,0.07);
+}
+.ann-item.pending { opacity: .65; }
+.ann-item:hover { background: var(--panel-2); }
+.ann-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.4); }
+.ann-id { font-weight: 700; font-size: 11.5px; color: var(--text); }
+.ann-name { color: var(--text-dim); font-size: 11.5px; }
+.ann-status { font-weight: 700; text-align: center; }
+.ann-status.ann-confirmed { color: #86efac; }
+.ann-status.ann-placed { color: #fbbf24; }
+.ann-status.ann-pending { color: var(--muted); }
+.ann-confirm-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dim);
+}
+.ann-confirm-btn:hover { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #86efac; }
+.ann-confirm-btn.active {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #052e16;
+}
+
+.ann-stats {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12.5px;
+}
+.ann-cases {
+  list-style: none; padding: 0; margin: 8px 0 0;
+  display: flex; flex-direction: column; gap: 3px;
+  max-height: 200px; overflow-y: auto;
+}
+.ann-cases li {
+  display: grid;
+  grid-template-columns: 18px 1fr auto auto 20px;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.ann-cases .ac-mode { font-size: 14px; color: var(--accent-2); }
+.ann-cases .ac-id { font-family: monospace; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ann-cases .ac-pts { color: #86efac; font-weight: 600; }
+.ann-cases .ac-date { color: var(--muted); font-size: 10.5px; }
+.ann-cases button {
+  border: none; background: transparent; color: var(--muted);
+  padding: 0; cursor: pointer;
+}
+.ann-cases button:hover { color: #fca5a5; }
+
+.ann-error {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.35);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #fca5a5;
+}
+.ann-ok {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.35);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #86efac;
+}
+.ann-ok code { font-size: 10px; }
+
+/* Pending note (en panel de resultados) */
+.pending-note {
+  background: rgba(251,146,60,.10);
+  border: 1px solid rgba(251,146,60,.35);
+  color: #fdba74;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Botón primary en distinto color para "Confirmar" */
+button.primary.confirm {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #052e16;
+}
+
+/* Botón + selector de modelo, agrupados visualmente */
+.detect-group {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--accent-2);
+}
+.detect-group button {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+}
+.detect-group .model-select {
+  border: none;
+  border-left: 1px solid rgba(0,0,0,.25);
+  background: rgba(96,165,250,.16);
+  color: var(--text);
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 0;
+  cursor: pointer;
+  outline: none;
+  max-width: 160px;
+}
+.detect-group .model-select:hover { background: rgba(96,165,250,.28); }
+
+.main {
+  display: grid;
+  /* Columnas `auto`: el ancho lo fija cada panel (.sidebar/.results). Con
+     display:none la pista colapsa a 0 → los paneles se retraen individualmente
+     sin reglas de combinaciones. */
+  grid-template-columns: auto 1fr auto;
+  min-height: 0;
+  /* CLAVE: sin esto, .main (grid item de .app) usa min-width:auto y su
+     min-content (textos largos del panel de capas) lo ensancha MÁS ALLÁ de la
+     ventana (981px en iPad vertical de 820) → controles derechos fuera de
+     pantalla. */
+  min-width: 0;
+}
+.main.sidebar-hidden .sidebar { display: none; }
+.main.results-hidden .results { display: none; }
+/* Colocación EXPLÍCITA: con un panel en display:none el auto-placement
+   desplazaba a los demás (el visor caía en la columna del panel y los
+   resultados se estiraban en la 1fr). Cada hijo queda clavado a su pista. */
+.main > .sidebar     { grid-column: 1; grid-row: 1; }
+.main > .canvas-wrap { grid-column: 2; grid-row: 1; }
+.main > .results     { grid-column: 3; grid-row: 1; }
+
+.sidebar {
+  width: 260px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(12px + env(safe-area-inset-left, 0px));
+  overflow-y: auto;
+  overflow-x: hidden;   /* nunca barra horizontal: el contenido se ajusta al ancho */
+  display: flex; flex-direction: column; gap: 9px;
+}
+.sidebar h3 {
+  margin: 6px 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.sidebar .group {
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+/* Herramientas en rejilla compacta de 2 columnas (antes lista vertical: 9
+   botones de 44px = ~400px; en rejilla ~220px) */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));   /* minmax(0,..) → las celdas pueden encoger bajo su contenido */
+  gap: 6px;
+}
+.tools-grid button.tool {
+  width: auto;
+  min-width: 0;
+  gap: 6px;
+  padding: 8px;
+  overflow: hidden;
+}
+/* La etiqueta ocupa el espacio restante y, si no cabe, se ajusta con elipsis
+   en vez de cortarse en seco (el nombre completo está en el tooltip). */
+.tools-grid .tool-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* En la rejilla compacta el atajo se omite (queda en el tooltip; en táctil no
+   aplica) — así el texto de la herramienta cabe siempre a lo ancho. */
+.tools-grid button.tool kbd { display: none; }
+
+/* Secciones plegables del sidebar (acordeón) — mismo patrón que el panel de
+   Capas. La cabecera <summary> sustituye al <h3>. */
+.side-group {
+  border-top: 1px solid var(--border);
+}
+.side-group > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 9px 0;
+  user-select: none;
+}
+.side-group > summary::-webkit-details-marker { display: none; }
+.side-group > summary::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform .15s;
+}
+.side-group[open] > summary::before { transform: rotate(90deg); }
+.side-group > summary:hover { color: var(--text); }
+.side-group > summary .sg-count {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.side-group > summary .sg-count.complete { color: #86efac; border-color: rgba(74,222,128,.4); }
+.side-group .sg-body { padding-bottom: 8px; }
+
+.canvas-wrap {
+  position: relative;
+  /* Fondo NEUTRO: una leve subida de luminancia navy en el centro-superior
+     (donde vive la foto) que cae a bordes más oscuros. Sin tinte azul —
+     hace resaltar la fotografía sin teñir el área de trabajo. */
+  background:
+    radial-gradient(1100px 640px at 50% 20%, #101b32, transparent 72%),
+    var(--bg);
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+}
+.canvas-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Importante: bloquea zoom/pan nativos del navegador en el área del visor
+     para que nuestros handlers (wheel + touch de 2 dedos) tengan control total. */
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+.canvas-host {
+  position: relative;
+  /* Tamaño COMPLETO del visor (no max-*): así el `max-height: 100%` del
+     canvas resuelve contra una altura definida y la foto nunca se sale por
+     abajo. El flex interno la mantiene centrada y el origen del zoom (centro
+     del host) coincide con el centro del visor, como antes. */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* transform aplicado por JS para zoom+pan */
+  will-change: transform;
+}
+/* Overlay de anotaciones en resolución de pantalla: cubre el visor entero,
+   FUERA de .canvas-host para no heredar el transform del zoom (que es lo que
+   emborronaba las etiquetas). Su respaldo se dimensiona por JS a
+   px CSS × devicePixelRatio. Nunca captura eventos. */
+.anno-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+.canvas-host canvas {
+  display: block;
+  max-width: 100%;
+  /* 100% del visor (la celda del grid ya descuenta topbar/stepper/banner).
+     La fórmula fija anterior (100vh − 120px) se quedó obsoleta al añadir el
+     stepper y con el 100vh de iOS: la foto se salía por abajo y se RECORTABA. */
+  max-height: 100%;
+  background: #000;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  cursor: crosshair;
+  /* SIN `image-rendering: -webkit-optimize-contrast`: el zoom es un
+     `transform: scale()` sobre el bitmap ya rasterizado, y en WebKit (iPad) esa
+     regla se comporta como `crisp-edges` — al ampliar, las etiquetas salían
+     escalonadas e ilegibles en vez de interpoladas. Con el valor por defecto el
+     navegador suaviza el reescalado y el texto se lee. */
+}
+
+/* Pantalla completa: el visor ocupa toda la pantalla con fondo oscuro y la
+   imagen aprovecha toda la altura disponible. */
+.canvas-viewport:fullscreen {
+  background: var(--bg);
+  padding: 0;
+}
+.canvas-viewport:fullscreen .canvas-host canvas {
+  max-height: 100vh;
+  border-radius: 0;
+}
+/* PSEUDO-fullscreen (iPad/PWA sin Fullscreen API): el visor se fija a toda la
+   pantalla por CSS. Mismo aspecto que :fullscreen. */
+.canvas-viewport.fs-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--bg);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+           env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.canvas-viewport.fs-fallback .canvas-host canvas {
+  border-radius: 0;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(11,18,32,.92);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 2px;
+  z-index: 6;
+  box-shadow: var(--shadow);
+}
+.zoom-controls button {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  background: transparent;
+  min-width: 32px;
+}
+.zoom-controls button:hover {
+  background: rgba(96,165,250,.18);
+}
+.zoom-controls .zoom-level {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 0 8px;
+  min-width: 50px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* Zoom minimizado: solo el % (toca para expandir) + pantalla completa */
+.zoom-controls .zoom-level-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-controls .zoom-level-btn:hover { color: var(--text); background: rgba(96,165,250,.18); }
+
+/* Botones de RETRAER/EXPANDIR cada panel lateral: pestañas en los bordes
+   del visor, centradas verticalmente. */
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  width: 16px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(11,18,32,.92);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+}
+.panel-toggle.left  { left: 0;  border-left: none;  border-radius: 0 7px 7px 0; }
+.panel-toggle.right { right: 0; border-right: none; border-radius: 7px 0 0 7px; }
+/* Pestaña del borde SUPERIOR: pliega/despliega la barra superior completa */
+.panel-toggle.top {
+  top: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 15px;
+  border-top: none;
+  border-radius: 0 0 7px 7px;
+}
+.panel-toggle:hover { color: var(--text); background: var(--panel-2); }
+
+/* Barra superior plegada: desaparece la cabecera; el stepper (que queda
+   arriba del todo) hereda la safe-area para que la hora de iOS no lo pise. */
+.app.topbar-hidden .topbar { display: none; }
+.app.topbar-hidden .flow-stepper {
+  padding-top: calc(5px + env(safe-area-inset-top, 0px));
+}
+
+/* ============ Barra de herramientas flotante del visor ============
+   Vive sobre la foto, abajo y centrada. Sustituye a la lista de herramientas
+   que ocupaba el sidebar. Sombra contenida: la regla es no "sangrar" sobre la
+   fotografía — el borde fino define el canto. */
+/* Contenedor de la franja inferior: apila "ajustar imagen" (arriba) y la barra
+   de herramientas (abajo). Al ser un flujo en columna no hacen falta offsets
+   fijos y nunca se solapan aunque la barra envuelva a varias filas. */
+.canvas-bottom {
+  position: absolute;
+  /* Lo más abajo posible: cada píxel aquí es foto tapada. */
+  bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* `max-content` es CLAVE: al estar posicionado en absoluto, sin esto el
+     contenedor colapsa al ancho mínimo y la barra envuelve aunque quepa en una
+     fila. Con max-content prefiere el ancho completo y solo envuelve al topar
+     con el max-width. */
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+/* Dentro del contenedor los dos hijos son estáticos */
+.canvas-bottom > .rotate-controls,
+.canvas-bottom > .canvas-toolbar {
+  position: static;
+  transform: none;
+  bottom: auto;
+  left: auto;
+  max-width: 100%;
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px;
+  max-width: calc(100% - 24px);
+  flex-wrap: wrap;
+  justify-content: center;
+  background: rgba(11,18,32,.94);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.28);
+}
+/* Texto de las barras FLOTANTES sobre la foto.
+   Su fondo es azul oscuro FIJO en ambos temas (flotan sobre la imagen, como la
+   UI de una cámara), pero el color de texto salía de `var(--text-dim)`, que en
+   tema claro es gris OSCURO: quedaba texto oscuro sobre fondo oscuro, ~1.9:1 de
+   contraste, ilegible. Estas dos variables lo fijan, independientes del tema, y
+   las consumen tanto `.canvas-toolbar` (aquí) como `.rotate-controls` (más
+   abajo, en su propio bloque: va después en el archivo y a igualdad de
+   especificidad ganaría por orden). */
+.canvas-bottom {
+  --fl-text: #9aa9c3;
+  --fl-text-strong: #e8eefc;
+}
+.canvas-toolbar .ct-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  padding: 4px 5px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fl-text);
+}
+/* Botón de recoger, pegado al borde izquierdo de la barra */
+.canvas-toolbar .ct-min {
+  border: none;
+  background: transparent;
+  color: var(--fl-text);
+  padding: 0 4px;
+  font-size: 15px;
+  line-height: 1;
+  align-self: stretch;
+  border-radius: 7px;
+}
+.canvas-toolbar .ct-min:hover { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
+/* Pastilla recogida: una sola línea con el icono y el nombre de la activa */
+.canvas-toolbar.ct-collapsed {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--fl-text);
+  cursor: pointer;
+}
+.canvas-toolbar.ct-collapsed:hover { color: var(--fl-text-strong); }
+.canvas-toolbar .ct-tool:hover:not(:disabled) { background: rgba(96,165,250,.14); color: var(--fl-text-strong); }
+.canvas-toolbar .ct-tool.active {
+  background: rgba(96,165,250,.18);
+  color: #cfe1ff;
+  box-shadow: inset 0 0 0 1px var(--accent-2);
+}
+.canvas-toolbar .ct-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.canvas-toolbar .ct-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 4px 3px;
+}
+/* La barra es OSCURA en ambos temas a propósito: flota sobre la fotografía,
+   igual que los controles de zoom/rotación. No lleva override de tema claro. */
+
+.rotate-controls {
+  position: absolute;
+  /* Encima de la barra de herramientas (que ocupa la franja inferior) */
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(11,18,32,.92);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 4px 8px;
+  z-index: 6;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  max-width: calc(100% - 24px);
+  /* Si no cabe a lo ancho (iPad vertical), la barra hace WRAP en vez de
+     recortarse por la derecha */
+  flex-wrap: wrap;
+  justify-content: center;
+}
+/* Barra minimizada: solo una pastilla (estado inicial en táctil — la barra
+   completa tapaba la foto en el layout vertical) */
+.rotate-controls.rc-collapsed {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fl-text);
+  padding: 6px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.rotate-controls.rc-collapsed:hover { color: var(--fl-text-strong); }
+.rotate-controls .rc-min {
+  font-size: 11px;
+  color: var(--fl-text);
+  padding: 4px 6px;
+  min-width: 0;
+}
+.rotate-controls .rc-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--fl-text);
+  padding-right: 4px;
+  border-right: 1px solid var(--border);
+  margin-right: 4px;
+}
+.rotate-controls button {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fl-text-strong);
+  background: transparent;
+  min-width: 28px;
+}
+.rotate-controls button:hover:not(:disabled) {
+  background: rgba(96,165,250,.18);
+}
+.rotate-controls button.auto {
+  background: rgba(74,222,128,.18);
+  color: #86efac;
+}
+.rotate-controls button.auto:hover {
+  background: rgba(74,222,128,.32);
+}
+.rotate-controls input[type="range"] {
+  width: 140px;
+  accent-color: var(--accent-2);
+}
+.rotate-controls input[type="number"] {
+  width: 56px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.rotate-controls .rc-unit {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.canvas-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 40px;
+  max-width: 520px;
+}
+.canvas-empty h2 {
+  margin: 12px 0 4px;
+  color: var(--text);
+  font-size: 20px;
+}
+.canvas-empty p { line-height: 1.55; font-size: 14px; }
+.canvas-empty .icon {
+  font-size: 48px; opacity: .6;
+}
+
+.results {
+  width: 360px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 12px;
+  overflow-x: hidden;   /* nunca barra horizontal dentro del panel */
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-right: calc(12px + env(safe-area-inset-right, 0px));
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.results h3 {
+  margin: 6px 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ============ Tarjetas de medidas CLAVE ============
+   Resumen visual de las medidas que deciden la rinoplastia. Mismos valores,
+   rangos y veredictos que las tablas — solo cambia la presentación. Se adaptan
+   al ancho del panel: 2 columnas en el panel de 360px, 1 si es muy estrecho. */
+.result-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.metric-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.metric-card .mc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.metric-card .mc-label {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.25;
+}
+.metric-card .mc-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.metric-card .mc-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.metric-card .mc-delta {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.metric-card .mc-delta.ok    { color: var(--ok-strong, #86efac); }
+.metric-card .mc-delta.warn  { color: #fdba74; }
+.metric-card .mc-delta.error { color: #fca5a5; }
+.metric-card .mc-delta.muted { color: var(--muted); }
+.metric-card .mc-normal {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin: 3px 0 2px;
+}
+/* El gauge dentro de la tarjeta ocupa todo el ancho (en la tabla iba a 64px
+   alineado a la derecha). */
+.metric-card .gauge {
+  width: 100%;
+  margin: 6px 0 1px;
+}
+
+:root[data-theme="light"] .metric-card .mc-delta.warn  { color: #b45309; }
+:root[data-theme="light"] .metric-card .mc-delta.error { color: var(--error); }
+
+table.ceph {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.ceph th, table.ceph td {
+  text-align: left;
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--border);
+}
+table.ceph th {
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+table.ceph td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+/* Gauge de normalidad (columna "Normal" de las tablas): banda = rango normal,
+   marcador = valor del paciente */
+.gauge {
+  position: relative;
+  display: block;
+  width: 64px;
+  height: 7px;
+  margin: 4px 0 1px auto;   /* alineado a la derecha bajo el texto de la celda */
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.gauge .g-band {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(74,222,128,.30);
+  border-radius: 999px;
+}
+.gauge .g-marker {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 11px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.5);
+}
+.gauge .g-marker.ok    { background: #4ade80; }
+.gauge .g-marker.warn  { background: #fbbf24; }
+.gauge .g-marker.error { background: #ef4444; }
+.badge.ok    { color: #86efac; background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); }
+.badge.warn  { color: #fdba74; background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.3); }
+.badge.error { color: #fca5a5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }
+.badge.muted { color: var(--text-dim); background: var(--bg-2); border-color: var(--border); }
+
+/* ============ Puntos anatómicos en FILAS ============
+   Antes: rejilla de 2 pastillas por fila, que obligaba a recortar los nombres
+   largos con elipsis ("Eje narina post. (Bp)"). En fila a ancho completo el
+   nombre entra entero y la lista se escanea de un vistazo. */
+.points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.point-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+/* SIN transición (anula la global de `button`). Con ella, el fondo y el borde
+   del estado activo se quedaban congelados en su valor inicial (transparente)
+   mientras el color sí aplicaba: la fila se re-renderiza y reinicia la
+   animación antes de que avance. En una lista de selección el resaltado
+   instantáneo es además mejor: se nota al tocar puntos en cadena. */
+.point-row { transition: none; }
+.point-row:hover:not(:disabled) { background-color: var(--panel-2); }
+.point-row .dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.08);
+  flex-shrink: 0;
+}
+/* El nombre manda y ocupa el espacio disponible; ya NO se recorta */
+.point-row .pr-name { flex: 1 1 auto; min-width: 0; }
+.point-row .pr-id {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+/* Estado a la derecha: colocado (check) o pendiente (raya) */
+.point-row .pr-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.point-row.placed .pr-state { color: var(--ok-strong); }
+.point-row.placed .pr-name { color: var(--text); }
+.point-row:not(.placed) .pr-name { color: var(--text-dim); }
+.point-row.active {
+  background-color: rgba(96,165,250,.14);
+  border-color: var(--accent-2);
+  color: #cfe1ff;
+}
+.point-row.active .pr-name { color: #cfe1ff; }
+/* Punto OPCIONAL (Nk/Cuello): no cuenta para el progreso, se coloca solo si se
+   necesita su medida (ángulo cervicomental). */
+.point-row.optional .pr-name { font-style: italic; }
+.point-row.optional .pr-opt {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+:root[data-theme="light"] .point-row.active { color: var(--accent-2); }
+:root[data-theme="light"] .point-row.active .pr-name { color: var(--accent-2); }
+
+.lines-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.lines-toggles label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.lines-toggles input { accent-color: var(--accent-2); }
+
+/* Modal */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  display: grid; place-items: center;
+  z-index: 50;
+}
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 18px;
+  width: min(520px, 92vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.modal h2 { margin: 0 0 10px; font-size: 18px; }
+.modal p  { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+.modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* Camera */
+.camera-stage {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+}
+.camera-stage video {
+  width: 100%;
+  max-height: 60vh;
+  background: #000;
+  border-radius: 8px;
+}
+
+/* Calibration banner */
+.calibration-status {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.calibration-status.ok {
+  color: #d1fae5;
+  border-color: rgba(74,222,128,.35);
+  background: rgba(74,222,128,.08);
+}
+
+/* Hint pill at top of canvas (bajo la pestaña de plegado de la barra superior) */
+.hint {
+  position: absolute;
+  top: 30px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(11,18,32,.92);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-dim);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 4;
+}
+
+/* Scrollbars */
+/* ============ Panel de capas (LayersPanel) ============ */
+.layers-panel {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.layers-panel summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--text-dim);
+  padding: 4px 0;
+  user-select: none;
+}
+.layers-panel summary::-webkit-details-marker { display: none; }
+.layers-panel summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform .15s;
+}
+.layers-panel[open] > summary::before { transform: rotate(90deg); }
+.layers-panel .global-actions {
+  display: flex; gap: 4px;
+  margin: 6px 0;
+}
+.layers-panel .global-actions button {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 6px;
+}
+.layers-section {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-2);
+}
+.layers-section > summary {
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 1px;
+  background: var(--panel-2);
+  border-radius: 6px 6px 0 0;
+}
+.layers-section[open] > summary { border-bottom: 1px solid var(--border); }
+.layers-section .section-body {
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.layers-section .section-actions {
+  display: flex; gap: 4px;
+  margin-bottom: 4px;
+}
+.layers-section .section-actions button {
+  flex: 1;
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+}
+.layer-row:hover { background: var(--panel-2); }
+.layer-row .eye {
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.layer-row.hidden { color: var(--muted); }
+.layer-row.hidden .eye { opacity: .55; }
+.layer-row .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.15);
+  flex-shrink: 0;
+}
+.layer-row .layer-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 36px;
+}
+.layer-row .layer-name {
+  font-size: 12px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar::-webkit-scrollbar, .results::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar::-webkit-scrollbar-thumb, .results::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+@media (max-width: 1100px) {
+  .sidebar { width: 220px; }
+  .results { width: 300px; }
+  /* Sidebar más estrecho: compactar herramientas para que las etiquetas
+     completas quepan en las celdas de 2 columnas sin cortarse. */
+  .tools-grid button.tool { font-size: 11px; gap: 4px; padding: 8px 5px; }
+}
+@media (max-width: 880px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  /* Colocación explícita en el APILADO (misma razón que en columnas) */
+  .main > .sidebar     { grid-column: 1; grid-row: 1; }
+  .main > .canvas-wrap { grid-column: 1; grid-row: 2; }
+  .main > .results     { grid-column: 1; grid-row: 3; }
+  /* Apilado vertical (iPad en vertical): la FOTO es la protagonista — los
+     paneles ceden altura (con scroll propio) para que el visor sea usable.
+     Antes 30vh+35vh dejaban la foto en una franja mínima no funcional. */
+  .sidebar { width: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 20vh; }
+  .results { width: auto; border-left: none; border-top: 1px solid var(--border); max-height: 26vh; }
+}
+
+/* ============ Objetivos táctiles ≥44 pt (Apple HIG) ============
+   Solo en dispositivos con puntero grueso (táctil / iPad), para no inflar el
+   layout compacto de escritorio. `min-height: 44px` en los inputs de rango
+   agranda la zona táctil sin romper el estilo nativo (accent-color) — se puede
+   arrastrar en toda la altura aunque el pulgar visible sea pequeño. */
+@media (any-pointer: coarse) {
+  /* Sin retardo de 300 ms ni doble-tap-zoom sobre controles */
+  button, .point-row, label, input, .rhino-toggle { touch-action: manipulation; }
+
+  button {
+    min-height: 44px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .zoom-controls button,
+  .rotate-controls button { min-width: 44px; }
+
+  .point-row {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px;
+  }
+  .point-row .dot { width: 11px; height: 11px; }
+  .point-row .pr-id { font-size: 11px; }
+
+  /* Sliders: la zona táctil pasa a 44 px de alto (el pulgar nativo queda
+     centrado y se puede arrastrar en toda la franja) */
+  input[type="range"] { min-height: 44px; }
+
+  /* Pestañas de plegado en táctil: compactas (el usuario las quiere pequeñas).
+     Se anula el min-height táctil general de los botones; al estar pegadas al
+     borde de la pantalla siguen siendo fáciles de tocar. */
+  .panel-toggle { min-height: 0; padding-top: 0; padding-bottom: 0; }
+  .panel-toggle.left, .panel-toggle.right { width: 20px; height: 48px; }
+  .panel-toggle.top { width: 48px; height: 18px; }
+  .hint { top: 30px; }
+
+  /* Franja inferior en táctil: se exime del min-height de 44 px porque tapaba
+     ~110 px de foto (dos filas × 44 px + relleno + hueco). El blanco sigue
+     siendo cómodo por ANCHO (44 px) y porque están al borde de la pantalla.
+     Ambas barras arrancan recogidas, así que en reposo solo hay 2 pastillas. */
+  .canvas-toolbar .ct-tool {
+    min-height: 0;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-width: 44px;
+  }
+  .canvas-toolbar .ct-min { min-height: 0; padding-top: 0; padding-bottom: 0; }
+  .canvas-toolbar.ct-collapsed,
+  .rotate-controls.rc-collapsed {
+    min-height: 0;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  /* Casillas más grandes + fila-etiqueta completa tocable */
+  input[type="checkbox"],
+  input[type="radio"] { width: 22px; height: 22px; }
+  .rhino-toggle { min-height: 44px; }
+  .layers-section label,
+  .layers-panel label { min-height: 40px; display: flex; align-items: center; }
+}
+
+/* ============ Tema claro para IMPRESIÓN ============
+   Al imprimir la página (Cmd/Ctrl+P): fondos blancos, texto oscuro, y se
+   ocultan los controles de edición — queda la imagen analizada + resultados.
+   (El Informe PDF exportado ya es claro; esto cubre la impresión directa.) */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --bg-2: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f3f4f6;
+    --border: #d1d5db;
+    --border-strong: #9ca3af;
+    --text: #111827;
+    --text-dim: #374151;
+    --muted: #6b7280;
+    --shadow: none;
+    color-scheme: light;
+  }
+  html, body, #root { overflow: visible; height: auto; }
+  .app { height: auto; display: block; }
+  /* Fuera todo lo interactivo: queda canvas + resultados */
+  .sidebar, .topbar .actions, .mode-switch, .flow-stepper, .detection-banner,
+  .zoom-controls, .rotate-controls, .hint, .toast { display: none !important; }
+  .main { display: block; }
+  .canvas-wrap { background: #fff; }
+  .canvas-host canvas { max-height: 90vh; box-shadow: none; }
+  .results { border: none; }
+  .badge.ok    { color: #166534; }
+  .badge.warn  { color: #9a3412; }
+  .badge.error { color: #991b1b; }
+}
