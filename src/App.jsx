@@ -131,13 +131,35 @@ function shapeCenter(s){
   return{x:0,y:0};
 }
 function ptSeg(p,a,b){const ab={x:b.x-a.x,y:b.y-a.y},ap={x:p.x-a.x,y:p.y-a.y};const t=Math.max(0,Math.min(1,(ap.x*ab.x+ap.y*ab.y)/((ab.x*ab.x+ab.y*ab.y)||1)));return Math.hypot(ap.x-t*ab.x,ap.y-t*ab.y);}
+// Canvas fuera de pantalla, solo para medir el ancho del texto.
+// Se crea una vez y se reutiliza en cada comprobacion.
+let _measureCv=null;
+/**
+ * Caja real que ocupa una figura de texto en el lienzo.
+ * Debe coincidir con el recuadro punteado que dibuja drawShape para que
+ * lo que se ve seleccionable sea exactamente lo que se puede tocar.
+ */
+function textBox(s){
+  if(!_measureCv)_measureCv=document.createElement("canvas");
+  const ctx=_measureCv.getContext("2d");
+  const fs=s.size*4+11;
+  ctx.font=`${fs}px Georgia,serif`;
+  const w=ctx.measureText(s.text||"").width;
+  return{x:s.x-3,y:s.y-s.size*4-12,w:w+6,h:s.size*4+16};
+}
 function hit(s,pos,d=20){
   if(s.type==="pen")return s.points?.some(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<d);
   if(s.type==="polygon"){if(!s.points?.length)return false;for(let i=0;i<s.points.length;i++){const a=s.points[i],b=s.points[(i+1)%s.points.length];if(ptSeg(pos,a,b)<d)return true;}return false;}
   if(s.type==="line"||s.type==="dashed"||s.type==="arrow")return ptSeg(pos,{x:s.x1,y:s.y1},{x:s.x2,y:s.y2})<d;
   if(s.type==="rect"){const cx=s.x+s.w/2,cy=s.y+s.h/2,rot=-(s.rotation||0);const dx=pos.x-cx,dy=pos.y-cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);return lx>-Math.abs(s.w)/2-d&&lx<Math.abs(s.w)/2+d&&ly>-Math.abs(s.h)/2-d&&ly<Math.abs(s.h)/2+d;}
   if(s.type==="ellipse"||s.type==="knot"){const rot=-(s.rotation||0);const dx=pos.x-s.cx,dy=pos.y-s.cy;const lx=dx*Math.cos(rot)-dy*Math.sin(rot),ly=dx*Math.sin(rot)+dy*Math.cos(rot);const rx=Math.abs(s.rx)||1,ry=Math.abs(s.ry)||1;return(lx*lx)/((rx+d)*(rx+d))+(ly*ly)/((ry+d)*(ry+d))<=1;}
-  if(s.type==="text")return Math.hypot(pos.x-s.x,pos.y-s.y)<30;return false;
+  if(s.type==="text"){
+    // Antes: circulo de 30px alrededor de (s.x,s.y), el inicio del texto.
+    // Un texto largo quedaba fuera del area tocable en casi toda su extension.
+    const b=textBox(s),m=d/2;
+    return pos.x>=b.x-m&&pos.x<=b.x+b.w+m&&pos.y>=b.y-m&&pos.y<=b.y+b.h+m;
+  }
+  return false;
 }
 
 /* ═══ Modals ═══ */
