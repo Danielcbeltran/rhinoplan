@@ -39,6 +39,13 @@ const MODEL_URL =
 // la redescarga en todos los dispositivos.
 const MODEL_CACHE = 'rhinoplan-models-v1';
 
+// Diagnóstico por consola. DEBE quedar en false en producción: los mensajes
+// imprimen coordenadas de landmarks faciales de pacientes reales.
+// Poner en true sólo en local al reentrenar el modelo o cambiar INPUT_SIZE:
+// verifica la forma de la salida y el revertido del letterbox, que es lo que
+// falla en silencio (los puntos aparecen desplazados sin dar ningún error).
+const DEBUG_DETECTION = false;
+
 const INPUT_SIZE = 960;        // imgsz con el que se exportó (yolov8s-pose 960)
 const CONF_THRESHOLD = 0.10;   // confianza mínima de la detección
 
@@ -231,9 +238,10 @@ export const customAdapter: DetectorAdapter = {
       const dims = o.dims;                 // [1, 5+3*NK, A]
       const ch = dims[1], A = dims[2];
       const d = o.data as Float32Array;
-      // [DIAG temporal] forma de la salida + parámetros del letterbox
-      console.log('[custom] outDims=', dims, 'imgW=', W, 'imgH=', H,
-        'scale=', scale.toFixed(4), 'padX=', padX.toFixed(1), 'padY=', padY.toFixed(1));
+      if (DEBUG_DETECTION) {
+        console.log('[custom] outDims=', dims, 'imgW=', W, 'imgH=', H,
+          'scale=', scale.toFixed(4), 'padX=', padX.toFixed(1), 'padY=', padY.toFixed(1));
+      }
 
       // Mejor detección por confianza (esperamos una sola cara)
       let bestA = -1, bestConf = 0;
@@ -262,9 +270,10 @@ export const customAdapter: DetectorAdapter = {
         // Revertir letterbox → coords de la imagen original
         const x = (kx - padX) / scale;
         const y = (ky - padY) / scale;
-        // [DIAG temporal] punta nasal (Pn = índice 5): crudo 640 vs revertido
-        if (j === 5) {
-          console.log('[custom] Pn raw640=(', kx.toFixed(1), ',', ky.toFixed(1),
+        // Punta nasal (Pn = índice 5): crudo vs revertido. Es el punto de
+        // control del letterbox — si está bien, el resto también.
+        if (DEBUG_DETECTION && j === 5) {
+          console.log('[custom] Pn raw=(', kx.toFixed(1), ',', ky.toFixed(1),
             ') -> img=(', x.toFixed(1), ',', y.toFixed(1), ') conf=', kc.toFixed(2),
             'boxConf=', bestConf.toFixed(2));
         }
