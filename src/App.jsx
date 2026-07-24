@@ -3,6 +3,9 @@ import { translations } from "./translations";
 import { useLang } from "./LanguageContext";
 import { jsPDF } from "jspdf";
 
+// Solo tipos y funciones puras (unos pocos KB): puede ir en el bundle principal.
+import { parseCefalometria } from "./cefalometria/bridge";
+
 // Modulo de cefalometria: se descarga solo cuando el cirujano lo abre.
 // Sus dependencias (MediaPipe, onnxruntime, face-api) NO entran en el bundle
 // principal gracias a este import dinamico.
@@ -64,6 +67,28 @@ const W=380,H=480;
 const EMPTY_PAT={nombre:"",documento:"",tipoDoc:"CC",edad:"",sexo:"F",fecha:new Date().toISOString().slice(0,10),cirujano:"",notas:""};
 const EMPTY_ANN={externo:[],septal:[],frontal:[],lateral:[],basal:[],basalExt:[]};
 const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
+
+// ---- Fotos con identificador estable ---------------------------------------
+// Formato v1 (historico): fotos = { pre:[base64,...], post:[...] }
+// Formato v2 (actual):    fotos = { pre:[{id,src},...], post:[...] }
+//
+// El id permite que una medicion de cefalometria apunte SIEMPRE a la misma
+// foto. Con el formato v1, al borrar una foto intermedia los indices se
+// desplazaban y cualquier referencia quedaba apuntando a otra imagen en
+// silencio. La conversion es automatica al cargar el paciente.
+function nuevaFotoId(){return "f_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function normFotos(raw){
+  const out={pre:[],post:[]};
+  for(const k of["pre","post"]){
+    const arr=Array.isArray(raw&&raw[k])?raw[k]:[];
+    out[k]=arr.map(f=>{
+      if(typeof f==="string")return{id:nuevaFotoId(),src:f};        // v1 -> v2
+      if(f&&typeof f.src==="string")return{id:f.id||nuevaFotoId(),src:f.src};
+      return null;
+    }).filter(Boolean);
+  }
+  return out;
+}
 
 // ---- Niveles de suscripcion -------------------------------------------------
 // free = gratis | pro = $29 | plus = $49 (incluye modulo de cefalometria)
@@ -327,8 +352,10 @@ function RhinoPlannerMain(){
   const[editTplId,setEditTplId]=useState(null);const[editTplName,setEditTplName]=useState("");
   const[saving,setSaving]=useState(false);const[saveMsg,setSaveMsg]=useState("");const[showSettings,setShowSettings]=useState(false);
   const[fotos,setFotos]=useState({pre:[],post:[]});const[showFotos,setShowFotos]=useState(false);const[fotoIdx,setFotoIdx]=useState(-1);const[fotoZoom,setFotoZoom]=useState(1);const[fotoPan,setFotoPan]=useState({x:0,y:0});const[fotoDrag,setFotoDrag]=useState(null);
-  const allFotosFlat=[...fotos.pre,...fotos.post];
-  function openFoto(src){const idx=allFotosFlat.indexOf(src);setFotoIdx(idx>=0?idx:0);setFotoZoom(1);setFotoPan({x:0,y:0});}
+  const[cefalometria,setCefalometria]=useState({v:1,mediciones:[]});
+  // Fotos aplanadas con su momento, que es lo que consume el modulo de cefalometria.
+  const allFotosFlat=[...fotos.pre.map(f=>({...f,momento:"pre"})),...fotos.post.map(f=>({...f,momento:"post"}))];
+  function openFoto(id){const idx=allFotosFlat.findIndex(f=>f.id===id);setFotoIdx(idx>=0?idx:0);setFotoZoom(1);setFotoPan({x:0,y:0});}
   function closeFoto(){setFotoIdx(-1);setFotoZoom(1);setFotoPan({x:0,y:0});}
   function nextFoto(){if(fotoIdx<allFotosFlat.length-1){setFotoIdx(fotoIdx+1);setFotoZoom(1);setFotoPan({x:0,y:0});}}
   function prevFoto(){if(fotoIdx>0){setFotoIdx(fotoIdx-1);setFotoZoom(1);setFotoPan({x:0,y:0});}}
@@ -467,12 +494,14 @@ function RhinoPlannerMain(){
   useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);loadColors(token,authUser);}},[]);
 
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  async function savePaciente(){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  async function savePaciente(overrideCefalo){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),cefalometria:JSON.stringify(overrideCefalo&&overrideCefalo.mediciones?overrideCefalo:cefalometria),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
   function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}
     try{const pn=pl._notes;setPlanNotes({pre:pn?.pre||"",post:pn?.post||""});}catch(e){setPlanNotes({pre:"",post:""});}
     if(pl._notes)delete pl._notes;
-    setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(p.fotos?JSON.parse(p.fotos):{pre:[],post:[]});}catch(e){setFotos({pre:[],post:[]});}setShowPacList(false);}
-  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});}
+    setPlanRaw(pl);resetHistory(pl);setPlanMode("pre");try{setFotos(normFotos(p.fotos?JSON.parse(p.fotos):null));}catch(e){setFotos({pre:[],post:[]});}
+    try{setCefalometria(parseCefalometria(p.cefalometria));}catch(e){setCefalometria({v:1,mediciones:[]});}
+    setShowPacList(false);}
+  function nuevoPaciente(){setPatient({...EMPTY_PAT});setPatientId(null);setPlanRaw({...EMPTY_PLAN});resetHistory(EMPTY_PLAN);setPlanMode("pre");setFotos({pre:[],post:[]});setPlanNotes({pre:"",post:""});setCefalometria({v:1,mediciones:[]});}
   // Cierra el paciente activo y deja el area de trabajo en blanco.
   // Pide confirmacion porque los cambios sin guardar se pierden.
   function cerrarPaciente(){if(!confirm(t.confirmClosePatient))return;nuevoPaciente();setSaveMsg("");}
@@ -506,10 +535,17 @@ function RhinoPlannerMain(){
     input.onchange=async()=>{
       const files=Array.from(input.files);
       const compressed=await Promise.all(files.map(f=>compressImage(f)));
-      setFotos(prev=>({...prev,[tipo]:[...prev[tipo],...compressed]}));
+      setFotos(prev=>({...prev,[tipo]:[...prev[tipo],...compressed.map(src=>({id:nuevaFotoId(),src}))]}));
     };input.click();
   }
-  function removeFoto(tipo,idx){setFotos(prev=>({...prev,[tipo]:prev[tipo].filter((_,i)=>i!==idx)}));}
+  function removeFoto(tipo,idx){
+    const f=fotos[tipo][idx];
+    // Si la foto tiene mediciones de cefalometria, avisar antes de dejarlas huerfanas.
+    const asociadas=f?cefalometria.mediciones.filter(m=>m.fotoId===f.id):[];
+    if(asociadas.length>0&&!confirm(t.confirmDeletePhotoWithMeasures.replace("{n}",asociadas.length)))return;
+    setFotos(prev=>({...prev,[tipo]:prev[tipo].filter((_,i)=>i!==idx)}));
+    if(asociadas.length>0)setCefalometria(c=>({...c,mediciones:c.mediciones.filter(m=>m.fotoId!==f.id)}));
+  }
 
   useEffect(()=>{
     const img=new Image();
@@ -623,7 +659,7 @@ function RhinoPlannerMain(){
       let fCellH=(availH-fGap*(nRows-1))/nRows;
       const maxCellH=fW*1.35;
       if(fCellH>maxCellH)fCellH=maxCellH;
-      const rendered=await Promise.all(list.map(src=>new Promise(resolve=>{
+      const rendered=await Promise.all(list.map(f=>new Promise(resolve=>{
         const img=new Image();
         img.onload=()=>{
           const iRatio=img.naturalWidth/img.naturalHeight;
@@ -635,7 +671,7 @@ function RhinoPlannerMain(){
           resolve({data:cv2.toDataURL("image/jpeg",0.85),dw,dh});
         };
         img.onerror=()=>resolve(null);
-        img.src=src;
+        img.src=f.src;
       })));
       for(let i=0;i<rendered.length;i++){
         const r=rendered[i];if(!r)continue;
@@ -793,9 +829,9 @@ function RhinoPlannerMain(){
             </div>
             {fotos[tipo].length===0?<div style={{color:"#666",fontSize:11,fontStyle:"italic",padding:"12px 0"}}>{t.noPhotos}</div>:(
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
-                {fotos[tipo].map((src,i)=>(
-                  <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>openFoto(src)}>
-                    <img src={src} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                {fotos[tipo].map((f,i)=>(
+                  <div key={f.id} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>openFoto(f.id)}>
+                    <img src={f.src} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
                     <button onClick={e=>{e.stopPropagation();removeFoto(tipo,i);}} style={{position:"absolute",top:3,right:3,background:"#000000AA",border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
                   </div>
                 ))}
@@ -819,7 +855,7 @@ function RhinoPlannerMain(){
         onTouchMove={e=>{e.preventDefault();if(e.touches.length===1&&fotoDrag&&!fotoDrag.pinch&&fotoZoom>1)setFotoPan({x:e.touches[0].clientX-fotoDrag.x,y:e.touches[0].clientY-fotoDrag.y});if(e.touches.length===2&&fotoDrag?.pinch){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setFotoZoom(Math.max(0.5,Math.min(5,fotoDrag.startZoom*(d/fotoDrag.pinch))));}}}
         onTouchEnd={()=>setFotoDrag(null)}
       >
-        <img src={allFotosFlat[fotoIdx]} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:8,transform:`scale(${fotoZoom}) translate(${fotoPan.x/fotoZoom}px,${fotoPan.y/fotoZoom}px)`,transition:fotoDrag?"none":"transform 0.15s",userSelect:"none",pointerEvents:"none"}} draggable={false}/>
+        <img src={allFotosFlat[fotoIdx]?.src} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:8,transform:`scale(${fotoZoom}) translate(${fotoPan.x/fotoZoom}px,${fotoPan.y/fotoZoom}px)`,transition:fotoDrag?"none":"transform 0.15s",userSelect:"none",pointerEvents:"none"}} draggable={false}/>
         {/* Close */}
         <button onClick={closeFoto} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18,zIndex:10}}>✕</button>
         {/* Prev */}
@@ -982,8 +1018,20 @@ function RhinoPlannerMain(){
       {/* MODULO DE CEFALOMETRIA (carga diferida) */}
       {showCeph&&(
         <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:900,background:"#0b1220",color:"#8AA5C0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontFamily:"inherit"}}>Cargando cefalometría…</div>}>
-          <Cefalometria/>
-          <button onClick={()=>setShowCeph(false)} title={t.close||"Cerrar"} style={{position:"fixed",top:10,right:14,zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
+          <Cefalometria
+            pacienteNombre={patient.nombre||""}
+            fotos={allFotosFlat}
+            cefalometria={cefalometria}
+            lang={lang}
+            onSave={data=>{
+              setCefalometria(data);
+              // Persistir de inmediato: si el cirujano cierra el modulo sin
+              // pulsar Guardar en el paciente, la medicion se perderia.
+              // Se pasa `data` explicitamente porque setState es asincrono.
+              if(patientId)savePaciente(data);
+            }}
+          />
+          <button onClick={()=>setShowCeph(false)} title={t.close} style={{position:"fixed",top:10,right:14,zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
         </Suspense>
       )}
     </div>

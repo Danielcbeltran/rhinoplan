@@ -8,6 +8,11 @@ import CanvasArea, {
 import ResultsTable from './components/ResultsTable';
 import CameraCapture from './components/CameraCapture';
 import {
+  type CephProps, type Medicion, type FotoPaciente,
+  cefalometriaVacia, nuevaMedicionId, extraerEstado, estadoAParche,
+  guardarMedicion, medicionesDeFoto,
+} from './bridge';
+import {
   pointsForMode, linesForMode, FRONTAL_GUIDES, PROFILE_GUIDES,
   ANGLE_MEASURES,
   farkasMeasurements, farkasSymmetryIndex, pairSymmetry, evaluateThirds, frontalThirds, FIFTH_LABELS,
@@ -176,7 +181,11 @@ function downscaleDataUrl(dataUrl: string, maxSide = MAX_IMAGE_SIDE): Promise<st
   });
 }
 
-export default function App() {
+// Props opcionales: cuando el modulo corre dentro de RhinoPlan recibe el
+// paciente activo; suelto (npm run dev) funciona igual que antes.
+export default function App({
+  pacienteNombre, fotos: fotosPaciente, cefalometria: cefaloIni, onSave, lang,
+}: CephProps = {}) {
   const [mode, setMode] = useState<Mode>('perfil');
   const [modeStates, setModeStates] = useState<Record<Mode, ModeState>>({
     perfil: initialState('perfil'),
@@ -234,6 +243,18 @@ export default function App() {
   const [topbarHidden, setTopbarHidden] = useState(false);
   // Toast de confirmación (export, confirmar puntos) — autodescartable
   const [toast, setToast] = useState<string | null>(null);
+
+  // ---------- Integracion con RhinoPlan ----------
+  // Conjunto completo de mediciones del paciente. Se inicializa con lo que
+  // llega por props y se devuelve entero por onSave (la app principal lo
+  // persiste en la columna `cefalometria` de `pacientes`).
+  const [cefaloData, setCefaloData] = useState(() => cefaloIni ?? cefalometriaVacia());
+  // Foto del paciente cargada actualmente (null = imagen suelta o ninguna).
+  const [fotoActivaId, setFotoActivaId] = useState<string | null>(null);
+  // Medicion que se esta editando (null = aun no guardada).
+  const [medicionActualId, setMedicionActualId] = useState<string | null>(null);
+  const [showFotoPicker, setShowFotoPicker] = useState(false);
+  const dentroDeRhinoPlan = Array.isArray(fotosPaciente);
   const toastTimerRef = useRef<number>(0);
   function showToast(msg: string) {
     setToast(msg);
@@ -942,6 +963,68 @@ export default function App() {
     e.target.value = '';
   }
 
+  // ---------- Integracion con el paciente de RhinoPlan ----------
+
+  /**
+   * Instantanea de los angulos estandar para poder listar y comparar
+   * mediciones sin recalcular. Usa ANGLE_MEASURES + angle3pt, exactamente las
+   * mismas formulas que la tabla de resultados: no define ninguna nueva.
+   */
+  function snapshotValores(ms: typeof current): Record<string, number | string | null> {
+    const out: Record<string, number | string | null> = {};
+    for (const m of ANGLE_MEASURES) {
+      const [a, v, b] = m.points;
+      const pa = ms.points[a], pv = ms.points[v], pb = ms.points[b];
+      out[m.id] = pa && pv && pb ? Number(angle3pt(pa, pv, pb).toFixed(1)) : null;
+    }
+    return out;
+  }
+
+  /**
+   * Carga una foto del paciente. Si esa foto ya tiene mediciones guardadas,
+   * restaura la mas reciente en vez de empezar de cero.
+   */
+  function cargarFotoPaciente(foto: FotoPaciente) {
+    setShowFotoPicker(false);
+    setFotoActivaId(foto.id);
+    const previas = medicionesDeFoto(cefaloData, foto.id).filter((m) => m.modo === mode);
+    if (previas.length > 0) {
+      const m = previas[0];
+      setMedicionActualId(m.id);
+      patchCurrent(estadoAParche(m, foto.src) as any);
+      showToast(`Medicion del ${new Date(m.fecha).toLocaleDateString()} restaurada`);
+    } else {
+      setMedicionActualId(null);
+      void loadNewImageSrc(foto.src);
+    }
+  }
+
+  /** Guarda la medicion actual en el paciente (crea o actualiza). */
+  function guardarEnPaciente() {
+    if (!onSave) return;
+    if (!fotoActivaId) {
+      showToast('Carga primero una foto del paciente para poder guardar');
+      return;
+    }
+    const foto = (fotosPaciente ?? []).find((f) => f.id === fotoActivaId);
+    if (!foto) { showToast('La foto ya no existe en el paciente'); return; }
+
+    const medicion: Medicion = {
+      id: medicionActualId ?? nuevaMedicionId(),
+      fotoId: foto.id,
+      momento: foto.momento,
+      modo: mode,
+      fecha: new Date().toISOString(),
+      estado: extraerEstado(current),
+      valores: snapshotValores(current),
+    };
+    const data = guardarMedicion(cefaloData, medicion);
+    setCefaloData(data);
+    setMedicionActualId(medicion.id);
+    void onSave(data);
+    showToast('✓ Medicion guardada en el paciente');
+  }
+
   function resetMarks() {
     pushHistory();   // "Borrar todas las marcas" es reversible con Deshacer
     patchCurrent({
@@ -1352,7 +1435,22 @@ export default function App() {
 
           {/* Grupo CAPTURA. Un solo botón "primary" en toda la barra: el paso
               SIGUIENTE del flujo (cargar → detectar → confirmar → informe). */}
-          <button className={flowStep === 'load' ? 'primary' : ''} onClick={() => fileInputRef.current?.click()}>
+          {/* Dentro de RhinoPlan la via principal es elegir una foto del
+              paciente; el selector de archivo queda como alternativa. */}
+          {dentroDeRhinoPlan && (
+            <button
+              className={flowStep === 'load' ? 'primary' : ''}
+              onClick={() => setShowFotoPicker(true)}
+              title="Elegir una foto del paciente activo"
+            >
+              <Icon name="folder" /> Fotos del paciente
+              {fotosPaciente!.length > 0 && ` (${fotosPaciente!.length})`}
+            </button>
+          )}
+          <button
+            className={!dentroDeRhinoPlan && flowStep === 'load' ? 'primary' : ''}
+            onClick={() => fileInputRef.current?.click()}
+          >
             <Icon name="folder" /> Cargar foto
           </button>
           {/* Oculto con visually-hidden y NO con display:none — en iOS Safari el
@@ -1420,6 +1518,17 @@ export default function App() {
           <span className="tb-sep" />
 
           {/* Grupo EXPORTACIÓN */}
+          {dentroDeRhinoPlan && (
+            <button
+              onClick={guardarEnPaciente}
+              disabled={!hasImage || !fotoActivaId}
+              title={fotoActivaId
+                ? 'Guardar esta medicion en la historia del paciente'
+                : 'Carga una foto del paciente para poder guardar'}
+            >
+              <Icon name="download" /> {medicionActualId ? 'Actualizar medicion' : 'Guardar en paciente'}
+            </button>
+          )}
           <button onClick={exportPNG} disabled={!hasImage}><Icon name="download" /> PNG</button>
           <button className={flowStep === 'export' ? 'primary' : ''} onClick={exportPDF} disabled={!hasImage}>
             <Icon name="fileText" /> Informe PDF
@@ -1624,6 +1733,82 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* Selector de fotos del paciente activo (solo dentro de RhinoPlan).
+          Estilos en linea a proposito: evita depender del CSS del modulo. */}
+      {showFotoPicker && dentroDeRhinoPlan && (
+        <div
+          onClick={() => setShowFotoPicker(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000000BB',
+                   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#111b2e', border: '1px solid #2a3d55', borderRadius: 12,
+                     padding: 18, maxWidth: 760, width: '100%', maxHeight: '82vh', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <div style={{ color: '#c8dcf0', fontSize: 15, fontWeight: 600 }}>Fotos del paciente</div>
+                {pacienteNombre && (
+                  <div style={{ color: '#7f9bb8', fontSize: 12, marginTop: 2 }}>{pacienteNombre}</div>
+                )}
+              </div>
+              <button onClick={() => setShowFotoPicker(false)} style={{ background: 'none', border: 'none', color: '#8aa5c0', fontSize: 18, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {(fotosPaciente ?? []).length === 0 ? (
+              <div style={{ color: '#7f9bb8', fontSize: 13, padding: '26px 0', textAlign: 'center' }}>
+                Este paciente todavia no tiene fotos. Agregalas desde RhinoPlan
+                con el boton de fotos y vuelve aqui.
+              </div>
+            ) : (
+              (['pre', 'post'] as const).map((mom) => {
+                const lista = (fotosPaciente ?? []).filter((f) => f.momento === mom);
+                if (lista.length === 0) return null;
+                return (
+                  <div key={mom} style={{ marginBottom: 16 }}>
+                    <div style={{ color: mom === 'pre' ? '#5b8db8' : '#4a9f6a', fontSize: 10,
+                                  textTransform: 'uppercase', letterSpacing: '0.12em',
+                                  fontWeight: 700, marginBottom: 8 }}>
+                      {mom === 'pre' ? 'Preoperatorio' : 'Postoperatorio'}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+                      {lista.map((f) => {
+                        const previas = medicionesDeFoto(cefaloData, f.id);
+                        const activa = f.id === fotoActivaId;
+                        return (
+                          <button
+                            key={f.id}
+                            onClick={() => cargarFotoPaciente(f)}
+                            style={{ position: 'relative', padding: 0, borderRadius: 8, overflow: 'hidden',
+                                     border: activa ? '2px solid #8b6fd4' : '1px solid #354a62',
+                                     background: 'none', cursor: 'pointer', aspectRatio: '1' }}
+                          >
+                            <img src={f.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            {previas.length > 0 && (
+                              <span style={{ position: 'absolute', top: 5, right: 5, background: '#8b6fd4',
+                                             color: '#0b1220', fontSize: 9, fontWeight: 700,
+                                             padding: '2px 6px', borderRadius: 10 }}>
+                                {previas.length} med.
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            <div style={{ color: '#6b8299', fontSize: 11, borderTop: '1px solid #22334a', paddingTop: 10, marginTop: 4 }}>
+              Las fotos con etiqueta morada ya tienen mediciones guardadas: al
+              abrirlas se restaura la mas reciente de este modo.
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCamera && (
         <CameraCapture

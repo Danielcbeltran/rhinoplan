@@ -188,6 +188,8 @@ export const translations = {
     trialRemaining: "Prueba",
     closePatient: "Cerrar paciente",
     confirmClosePatient: "¿Cerrar el paciente actual? Los cambios sin guardar se perderán.",
+    confirmDeletePhotoWithMeasures: "Esta foto tiene {n} medición(es) de cefalometría. Si la eliminas, también se borrarán. ¿Continuar?",
+    close: "Cerrar",
   },
 
   en: {
@@ -357,6 +359,8 @@ export const translations = {
     trialRemaining: "Trial",
     closePatient: "Close patient",
     confirmClosePatient: "Close the current patient? Unsaved changes will be lost.",
+    confirmDeletePhotoWithMeasures: "This photo has {n} cephalometry measurement(s). Deleting it will also delete them. Continue?",
+    close: "Close",
   },
 
   fr: {
@@ -526,6 +530,8 @@ export const translations = {
     trialRemaining: "Essai",
     closePatient: "Fermer le patient",
     confirmClosePatient: "Fermer le patient actuel ? Les modifications non enregistrées seront perdues.",
+    confirmDeletePhotoWithMeasures: "Cette photo a {n} mesure(s) de céphalométrie. Les supprimer aussi ? Continuer ?",
+    close: "Fermer",
   },
 
   pt: {
@@ -701,6 +707,8 @@ export const translations = {
     trialRemaining: "Avaliação",
     closePatient: "Fechar paciente",
     confirmClosePatient: "Fechar o paciente atual? As alterações não salvas serão perdidas.",
+    confirmDeletePhotoWithMeasures: "Esta foto tem {n} medição(ões) de cefalometria. Ao excluí-la, elas também serão apagadas. Continuar?",
+    close: "Fechar",
   },
 
   de: {
@@ -870,6 +878,8 @@ export const translations = {
     trialRemaining: "Testversion",
     closePatient: "Patient schließen",
     confirmClosePatient: "Aktuellen Patienten schließen? Nicht gespeicherte Änderungen gehen verloren.",
+    confirmDeletePhotoWithMeasures: "Dieses Foto hat {n} kephalometrische Messung(en). Beim Löschen gehen sie ebenfalls verloren. Fortfahren?",
+    close: "Schließen",
   },
 
   it: {
@@ -1039,6 +1049,8 @@ export const translations = {
     trialRemaining: "Prova",
     closePatient: "Chiudi paziente",
     confirmClosePatient: "Chiudere il paziente corrente? Le modifiche non salvate andranno perse.",
+    confirmDeletePhotoWithMeasures: "Questa foto ha {n} misurazione/i di cefalometria. Eliminandola verranno cancellate anche quelle. Continuare?",
+    close: "Chiudi",
   },
 
   tr: {
@@ -1208,5 +1220,7 @@ export const translations = {
     trialRemaining: "Deneme",
     closePatient: "Hastayı kapat",
     confirmClosePatient: "Mevcut hastayı kapatmak istiyor musunuz? Kaydedilmemiş değişiklikler kaybolacak.",
+    confirmDeletePhotoWithMeasures: "Bu fotoğrafta {n} sefalometri ölçümü var. Silerseniz onlar da silinecek. Devam edilsin mi?",
+    close: "Kapat",
   },
 };
