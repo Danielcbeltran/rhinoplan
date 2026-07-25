@@ -190,6 +190,10 @@ export const translations = {
     confirmClosePatient: "¿Cerrar el paciente actual? Los cambios sin guardar se perderán.",
     confirmDeletePhotoWithMeasures: "Esta foto tiene {n} medición(es) de cefalometría. Si la eliminas, también se borrarán. ¿Continuar?",
     close: "Cerrar",
+    cephTryFree: "Probar gratis",
+    cephTrialStart: "Activar prueba de cefalometría (30 días gratis)",
+    cephTrialConfirm: "¿Activar tu prueba gratuita de cefalometría? Tendrás acceso completo durante 30 días. Solo puedes usarla una vez.",
+    trialAlreadyUsed: "Ya usaste tu prueba gratuita de cefalometría.",
   },
 
   en: {
@@ -361,6 +365,10 @@ export const translations = {
     confirmClosePatient: "Close the current patient? Unsaved changes will be lost.",
     confirmDeletePhotoWithMeasures: "This photo has {n} cephalometry measurement(s). Deleting it will also delete them. Continue?",
     close: "Close",
+    cephTryFree: "Try free",
+    cephTrialStart: "Start cephalometry trial (30 days free)",
+    cephTrialConfirm: "Start your free cephalometry trial? You get full access for 30 days. You can only use it once.",
+    trialAlreadyUsed: "You have already used your free cephalometry trial.",
   },
 
   fr: {
@@ -532,6 +540,10 @@ export const translations = {
     confirmClosePatient: "Fermer le patient actuel ? Les modifications non enregistrées seront perdues.",
     confirmDeletePhotoWithMeasures: "Cette photo a {n} mesure(s) de céphalométrie. Les supprimer aussi ? Continuer ?",
     close: "Fermer",
+    cephTryFree: "Essai gratuit",
+    cephTrialStart: "Activer l'essai de céphalométrie (30 jours gratuits)",
+    cephTrialConfirm: "Activer votre essai gratuit de céphalométrie ? Accès complet pendant 30 jours. Utilisable une seule fois.",
+    trialAlreadyUsed: "Vous avez déjà utilisé votre essai gratuit de céphalométrie.",
   },
 
   pt: {
@@ -709,6 +721,10 @@ export const translations = {
     confirmClosePatient: "Fechar o paciente atual? As alterações não salvas serão perdidas.",
     confirmDeletePhotoWithMeasures: "Esta foto tem {n} medição(ões) de cefalometria. Ao excluí-la, elas também serão apagadas. Continuar?",
     close: "Fechar",
+    cephTryFree: "Testar grátis",
+    cephTrialStart: "Ativar teste de cefalometria (30 dias grátis)",
+    cephTrialConfirm: "Ativar seu teste gratuito de cefalometria? Acesso completo por 30 dias. Só pode usar uma vez.",
+    trialAlreadyUsed: "Você já usou seu teste gratuito de cefalometria.",
   },
 
   de: {
@@ -880,6 +896,10 @@ export const translations = {
     confirmClosePatient: "Aktuellen Patienten schließen? Nicht gespeicherte Änderungen gehen verloren.",
     confirmDeletePhotoWithMeasures: "Dieses Foto hat {n} kephalometrische Messung(en). Beim Löschen gehen sie ebenfalls verloren. Fortfahren?",
     close: "Schließen",
+    cephTryFree: "Kostenlos testen",
+    cephTrialStart: "Kephalometrie-Test starten (30 Tage gratis)",
+    cephTrialConfirm: "Kostenlosen Kephalometrie-Test starten? 30 Tage voller Zugriff. Nur einmal nutzbar.",
+    trialAlreadyUsed: "Sie haben Ihren kostenlosen Kephalometrie-Test bereits genutzt.",
   },
 
   it: {
@@ -1051,6 +1071,10 @@ export const translations = {
     confirmClosePatient: "Chiudere il paziente corrente? Le modifiche non salvate andranno perse.",
     confirmDeletePhotoWithMeasures: "Questa foto ha {n} misurazione/i di cefalometria. Eliminandola verranno cancellate anche quelle. Continuare?",
     close: "Chiudi",
+    cephTryFree: "Prova gratis",
+    cephTrialStart: "Attiva la prova di cefalometria (30 giorni gratis)",
+    cephTrialConfirm: "Attivare la prova gratuita di cefalometria? Accesso completo per 30 giorni. Utilizzabile una sola volta.",
+    trialAlreadyUsed: "Hai già usato la tua prova gratuita di cefalometria.",
   },
 
   tr: {
@@ -1222,5 +1246,9 @@ export const translations = {
     confirmClosePatient: "Mevcut hastayı kapatmak istiyor musunuz? Kaydedilmemiş değişiklikler kaybolacak.",
     confirmDeletePhotoWithMeasures: "Bu fotoğrafta {n} sefalometri ölçümü var. Silerseniz onlar da silinecek. Devam edilsin mi?",
     close: "Kapat",
+    cephTryFree: "Ücretsiz dene",
+    cephTrialStart: "Sefalometri denemesini başlat (30 gün ücretsiz)",
+    cephTrialConfirm: "Ücretsiz sefalometri denemesini başlat? 30 gün tam erişim. Yalnızca bir kez kullanılabilir.",
+    trialAlreadyUsed: "Ücretsiz sefalometri denemenizi zaten kullandınız.",
   },
 };

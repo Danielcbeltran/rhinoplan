@@ -316,7 +316,41 @@ function RhinoPlannerMain(){
   // Derivados: todo el gating existente sigue usando isPro sin cambios.
   const isPro=TIERS[tier]>=TIERS.pro;
   const isPlus=TIERS[tier]>=TIERS.plus;
-  async function checkPro(tk,user){try{const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email),tk);if(Array.isArray(d)&&d.length>0){const sub=d[0];if(sub.status==="active"){setTier(normalizeTier(sub.plan));setTrialDays(0);return;}if(sub.status==="trial"&&sub.trial_ends_at){const remaining=Math.ceil((new Date(sub.trial_ends_at)-Date.now())/(1000*60*60*24));if(remaining>0){setTier(sub.plan?normalizeTier(sub.plan):TRIAL_TIER);setTrialDays(remaining);return;}}}setTier("free");setTrialDays(0);}catch(e){setTier("free");setTrialDays(0);}}
+  // Estado de las pruebas, para saber si mostrar los botones de activacion.
+  const[proTrialUsed,setProTrialUsed]=useState(true);
+  const[plusTrialUsed,setPlusTrialUsed]=useState(true);
+  const[plusTrialDays,setPlusTrialDays]=useState(0);
+  // El nivel efectivo es el MAXIMO de: plan pagado, prueba Pro viva, prueba Plus viva.
+  async function checkPro(tk,user){
+    try{
+      const d=await supaFetch("subscriptions?email=eq."+encodeURIComponent(user.email),tk);
+      if(!Array.isArray(d)||d.length===0){resetAccess();return;}
+      const sub=d[0];
+      const now=Date.now();
+      const dias=iso=>iso?Math.ceil((new Date(iso)-now)/(1000*60*60*24)):0;
+
+      // 1. Plan pagado
+      let nivel=0; // 0 free, 1 pro, 2 plus
+      if(sub.status==="active")nivel=TIERS[normalizeTier(sub.plan)];
+
+      // 2. Prueba de Pro
+      const proDias=Math.max(0,dias(sub.pro_trial_ends_at));
+      if(proDias>0)nivel=Math.max(nivel,TIERS.pro);
+
+      // 3. Prueba de Plus
+      const plusDias=Math.max(0,dias(sub.plus_trial_ends_at));
+      if(plusDias>0)nivel=Math.max(nivel,TIERS.plus);
+
+      setTier(nivel>=TIERS.plus?"plus":nivel>=TIERS.pro?"pro":"free");
+      // trialDays: dias restantes de la prueba que sostiene el acceso Pro (compat. UI existente)
+      setTrialDays(sub.status==="active"?0:proDias);
+      setPlusTrialDays(plusDias);
+      // Una prueba se considera "usada" si la bandera esta puesta O si tiene fecha (por si acaso)
+      setProTrialUsed(!!sub.pro_trial_used||!!sub.pro_trial_ends_at);
+      setPlusTrialUsed(!!sub.plus_trial_used||!!sub.plus_trial_ends_at);
+    }catch(e){resetAccess();}
+  }
+  function resetAccess(){setTier("free");setTrialDays(0);setPlusTrialDays(0);setProTrialUsed(false);setPlusTrialUsed(false);}
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
@@ -409,7 +443,27 @@ function RhinoPlannerMain(){
   const canUndo=(histIdx[hk]||0)>0;const canRedo=(histIdx[hk]||0)<((history[hk]||[[]]).length||1)-1;
   useEffect(()=>{function onKey(e){if(e.ctrlKey&&e.key==="z"){e.preventDefault();undo();}if(e.ctrlKey&&(e.key==="y"||e.key==="Z")){e.preventDefault();redo();}if(e.ctrlKey&&(e.key==="d"||e.key==="D")){e.preventDefault();duplicateShape();}if(e.key==="Escape"){if(fotoIdx>=0)closeFoto();else if(current?.type==="polygon"){setCurrent(null);setDrawing(false);}}if(fotoIdx>=0){if(e.key==="ArrowRight")nextFoto();if(e.key==="ArrowLeft")prevFoto();if(e.key==="+"||e.key==="=")setFotoZoom(z=>Math.min(5,z+0.5));if(e.key==="-")setFotoZoom(z=>Math.max(0.5,z-0.5));}}window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);});
 
-  async function createTrial(){try{const trialEnd=new Date(Date.now()+30*24*60*60*1000).toISOString();await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",plan:TRIAL_TIER,trial_ends_at:trialEnd,provider_customer_id:"",provider_subscription_id:""});checkPro(token,authUser);}catch(e){console.log("Trial creation:",e.message);}}
+  // Activa una prueba de 30 dias del tipo indicado ("pro" | "plus"), una sola vez.
+  async function activarPrueba(tipo){
+    if(!authUser)return;
+    const usada=tipo==="plus"?plusTrialUsed:proTrialUsed;
+    if(usada){alert(t.trialAlreadyUsed);return;}
+    const fin=new Date(Date.now()+30*24*60*60*1000).toISOString();
+    const campoFin=tipo==="plus"?"plus_trial_ends_at":"pro_trial_ends_at";
+    const campoUsada=tipo==="plus"?"plus_trial_used":"pro_trial_used";
+    try{
+      // ¿Ya existe fila para este usuario?
+      const existe=await supaFetch("subscriptions?email=eq."+encodeURIComponent(authUser.email)+"&select=email",token);
+      if(Array.isArray(existe)&&existe.length>0){
+        await supaFetch("subscriptions?email=eq."+encodeURIComponent(authUser.email),token,"PATCH",{[campoFin]:fin,[campoUsada]:true});
+      }else{
+        await supaFetch("subscriptions",token,"POST",{email:authUser.email,user_id:authUser.id,status:"trial",plan:"free",[campoFin]:fin,[campoUsada]:true,provider_customer_id:"",provider_subscription_id:""});
+      }
+      await checkPro(token,authUser);
+    }catch(e){console.log("Trial "+tipo+":",e.message);}
+  }
+  function createTrial(){return activarPrueba("pro");}      // prueba de la app (Pro)
+  function activarPruebaPlus(){return activarPrueba("plus");} // prueba de cefalometria (Plus)
   function handleLogin(tok,user,refreshTok){setToken(tok);setAuthUser(user);try{localStorage.setItem("rhinoplan_token",tok);localStorage.setItem("rhinoplan_user",JSON.stringify(user));if(refreshTok)localStorage.setItem("rhinoplan_refresh",refreshTok);}catch(e){}loadPacientes(tok);loadUserTemplates(tok);checkPro(tok,user);}
   function resetHistory(pl){const h={},hi={};["pre","post"].forEach(m=>Object.keys(EMPTY_ANN).forEach(v=>{h[m+"_"+v]=[[...(pl[m]?.[v]||[])]];hi[m+"_"+v]=0;}));setHistory(h);setHistIdx(hi);}
   function copyPlanMode(){
@@ -940,7 +994,8 @@ function RhinoPlannerMain(){
         {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
         {hasP&&<button onClick={savePaciente} disabled={saving} style={{background:saving?"#333":"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{saving?"...":saveMsg||t.save}</button>}
         {hasP&&<button onClick={cerrarPaciente} title={t.closePatient} style={{background:"#1E2F45",border:"1px solid #3A4A63",color:"#8AA5C0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>✕{compact?"":" "+t.closePatient}</button>}
-        {isPlus&&<button onClick={()=>setShowCeph(true)} title="Cefalometría" style={{background:"#2A1E45",border:"1px solid #8B6FD4",color:"#B79FF0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⌖{compact?"":" Cefalometría"}</button>}
+        {hasP&&isPlus&&<button onClick={()=>setShowCeph(true)} title="Cefalometría" style={{background:"#2A1E45",border:"1px solid #8B6FD4",color:"#B79FF0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⌖{compact?"":" Cefalometría"}{plusTrialDays>0&&<span style={{fontSize:7,fontWeight:700,background:"#8B6FD4",color:"#0b1220",padding:"1px 4px",borderRadius:6}}>{plusTrialDays}d</span>}</button>}
+        {hasP&&!isPlus&&!plusTrialUsed&&<button onClick={()=>{if(confirm(t.cephTrialConfirm))activarPruebaPlus();}} title={t.cephTrialStart} style={{background:"#2A1E45",border:"1px dashed #8B6FD4",color:"#B79FF0",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⌖{compact?"":" "+t.cephTryFree}</button>}
         <div onClick={()=>setShowModal(true)} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:`1px solid ${hasP?"#5B8DB844":"#2A3D55"}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>
           <div style={{width:22,height:22,borderRadius:"50%",background:hasP?"linear-gradient(135deg,#5B8DB8,#3A6B8E)":"#1E2F45",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>{hasP?"👤":"➕"}</div>
           {!compact&&(hasP?(<div><div style={{color:"#C8DCF0",fontSize:10,fontWeight:600}}>{patient.nombre}</div><div style={{color:"#888",fontSize:8}}>{patient.tipoDoc} {patient.documento}</div></div>):(<div style={{color:"#555",fontSize:10,fontStyle:"italic"}}>{t.patient}</div>))}
