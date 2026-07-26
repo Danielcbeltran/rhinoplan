@@ -981,7 +981,7 @@ function RhinoPlannerMain(){
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{background:"#8B6FD4",color:"#0b1220",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Plus</span>
             <span style={{color:"#C8DCF0",fontSize:13,fontWeight:600}}>RhinoPlan Plus</span>
-            {isPlus&&<span style={{marginLeft:"auto",color:plusTrialDays>0?"#B79FF0":"#4ADE80",fontSize:11,fontWeight:600}}>{plusTrialDays>0?(t.trialRemaining||"Trial")+": "+plusTrialDays+" "+(t.days||"days"):t.plusActiveDesc||"Activo"}</span>}
+            {isPlus&&<span style={{marginLeft:"auto",color:plusTrialDays>0?"#B79FF0":"#4ADE80",fontSize:11,fontWeight:600}}>{plusTrialDays>0?(t.trialRemaining||"Trial")+": "+plusTrialDays+" "+(t.days||"days"):t.proActive}</span>}
           </div>
           {isPlus&&plusTrialDays===0?(
             <div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5}}>{t.plusActiveDesc||"Cefalometría activa"}</div>
