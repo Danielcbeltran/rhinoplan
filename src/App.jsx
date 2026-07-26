@@ -976,6 +976,29 @@ function RhinoPlannerMain(){
           <button onClick={async()=>{try{const tk=localStorage.getItem("rhinoplan_token");const r=await fetch("https://www.rhinoplan.app/api/checkout",{method:"POST",headers:{Authorization:"Bearer "+tk}});const d=await r.json();if(d.url){window.location.href=d.url;}else{alert("Error: could not start checkout. Please try again.");}}catch(e){alert("Error: could not start checkout. Please try again.");}}} style={{display:"block",width:"100%",textAlign:"center",background:"linear-gradient(135deg,#F5BE3A,#D49A18)",color:"#152238",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
             {t.upgradeToPro}
           </button></>)}</div>
+        {/* Plus — cefalometria */}
+        <div style={{marginTop:12,padding:"16px",background:"linear-gradient(135deg,#241a3d,#1a1530)",border:`1px solid ${isPlus?"#8B6FD444":"#8B6FD444"}`,borderRadius:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{background:"#8B6FD4",color:"#0b1220",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Plus</span>
+            <span style={{color:"#C8DCF0",fontSize:13,fontWeight:600}}>RhinoPlan Plus</span>
+            {isPlus&&<span style={{marginLeft:"auto",color:plusTrialDays>0?"#B79FF0":"#4ADE80",fontSize:11,fontWeight:600}}>{plusTrialDays>0?(t.trialRemaining||"Trial")+": "+plusTrialDays+" "+(t.days||"days"):t.plusActiveDesc||"Activo"}</span>}
+          </div>
+          {isPlus&&plusTrialDays===0?(
+            <div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5}}>{t.plusActiveDesc||"Cefalometría activa"}</div>
+          ):(<>
+            <div style={{color:"#7A8FA6",fontSize:11,lineHeight:1.5,marginBottom:12}}>{t.plusDesc}</div>
+            {!plusTrialUsed&&<button onClick={()=>{if(confirm(t.cephTrialConfirm))activarPruebaPlus();}} style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"2px solid #8B6FD4",color:"#B79FF0",fontWeight:700,fontSize:12,padding:"10px 0",borderRadius:8,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
+              {t.cephTrialStart||"Activar prueba de 30 días"}
+            </button>}
+            <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:12}}>
+              <span style={{color:"#B79FF0",fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',Georgia,serif"}}>$49</span>
+              <span style={{color:"#7A8FA6",fontSize:11}}>USD/{t.month}</span>
+            </div>
+            <button onClick={async()=>{try{const tk=localStorage.getItem("rhinoplan_token");const r=await fetch("https://www.rhinoplan.app/api/checkout",{method:"POST",headers:{Authorization:"Bearer "+tk,"Content-Type":"application/json"},body:JSON.stringify({plan:"plus"})});const j=await r.json();if(j.url)window.location.href=j.url;}catch(e){console.log("checkout plus:",e.message);}}} style={{display:"block",width:"100%",textAlign:"center",background:"linear-gradient(135deg,#8B6FD4,#6D4FB8)",color:"#fff",fontWeight:700,fontSize:12,padding:"11px 0",borderRadius:8,cursor:"pointer",fontFamily:"inherit",border:"none"}}>
+              {t.upgradeToPlus||"Obtener Plus →"}
+            </button>
+          </>)}
+        </div>
         {/* Privacy & Account */}
         <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:8}}>
           <a href="https://rhinoplan.app/privacy.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.privacyPolicy}</a>

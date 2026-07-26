@@ -194,6 +194,9 @@ export const translations = {
     cephTrialStart: "Activar prueba de cefalometría (30 días gratis)",
     cephTrialConfirm: "¿Activar tu prueba gratuita de cefalometría? Tendrás acceso completo durante 30 días. Solo puedes usarla una vez.",
     trialAlreadyUsed: "Ya usaste tu prueba gratuita de cefalometría.",
+    plusDesc: "Todo lo de Pro más el módulo de cefalometría: detección de puntos, mediciones y análisis facial.",
+    plusActiveDesc: "Plan Plus activo — cefalometría disponible.",
+    upgradeToPlus: "Obtener Plus →",
   },
 
   en: {
@@ -369,6 +372,9 @@ export const translations = {
     cephTrialStart: "Start cephalometry trial (30 days free)",
     cephTrialConfirm: "Start your free cephalometry trial? You get full access for 30 days. You can only use it once.",
     trialAlreadyUsed: "You have already used your free cephalometry trial.",
+    plusDesc: "Everything in Pro plus the cephalometry module: landmark detection, measurements and facial analysis.",
+    plusActiveDesc: "Plus plan active — cephalometry available.",
+    upgradeToPlus: "Get Plus →",
   },
 
   fr: {
@@ -544,6 +550,9 @@ export const translations = {
     cephTrialStart: "Activer l'essai de céphalométrie (30 jours gratuits)",
     cephTrialConfirm: "Activer votre essai gratuit de céphalométrie ? Accès complet pendant 30 jours. Utilisable une seule fois.",
     trialAlreadyUsed: "Vous avez déjà utilisé votre essai gratuit de céphalométrie.",
+    plusDesc: "Tout Pro plus le module de céphalométrie : détection de points, mesures et analyse faciale.",
+    plusActiveDesc: "Plan Plus actif — céphalométrie disponible.",
+    upgradeToPlus: "Obtenir Plus →",
   },
 
   pt: {
@@ -725,6 +734,9 @@ export const translations = {
     cephTrialStart: "Ativar teste de cefalometria (30 dias grátis)",
     cephTrialConfirm: "Ativar seu teste gratuito de cefalometria? Acesso completo por 30 dias. Só pode usar uma vez.",
     trialAlreadyUsed: "Você já usou seu teste gratuito de cefalometria.",
+    plusDesc: "Tudo do Pro mais o módulo de cefalometria: detecção de pontos, medições e análise facial.",
+    plusActiveDesc: "Plano Plus ativo — cefalometria disponível.",
+    upgradeToPlus: "Obter Plus →",
   },
 
   de: {
@@ -900,6 +912,9 @@ export const translations = {
     cephTrialStart: "Kephalometrie-Test starten (30 Tage gratis)",
     cephTrialConfirm: "Kostenlosen Kephalometrie-Test starten? 30 Tage voller Zugriff. Nur einmal nutzbar.",
     trialAlreadyUsed: "Sie haben Ihren kostenlosen Kephalometrie-Test bereits genutzt.",
+    plusDesc: "Alles aus Pro plus das Kephalometrie-Modul: Punkterkennung, Messungen und Gesichtsanalyse.",
+    plusActiveDesc: "Plus-Tarif aktiv — Kephalometrie verfügbar.",
+    upgradeToPlus: "Plus holen →",
   },
 
   it: {
@@ -1075,6 +1090,9 @@ export const translations = {
     cephTrialStart: "Attiva la prova di cefalometria (30 giorni gratis)",
     cephTrialConfirm: "Attivare la prova gratuita di cefalometria? Accesso completo per 30 giorni. Utilizzabile una sola volta.",
     trialAlreadyUsed: "Hai già usato la tua prova gratuita di cefalometria.",
+    plusDesc: "Tutto di Pro più il modulo di cefalometria: rilevamento punti, misurazioni e analisi facciale.",
+    plusActiveDesc: "Piano Plus attivo — cefalometria disponibile.",
+    upgradeToPlus: "Ottieni Plus →",
   },
 
   tr: {
@@ -1250,5 +1268,8 @@ export const translations = {
     cephTrialStart: "Sefalometri denemesini başlat (30 gün ücretsiz)",
     cephTrialConfirm: "Ücretsiz sefalometri denemesini başlat? 30 gün tam erişim. Yalnızca bir kez kullanılabilir.",
     trialAlreadyUsed: "Ücretsiz sefalometri denemenizi zaten kullandınız.",
+    plusDesc: "Pro'daki her şey artı sefalometri modülü: nokta tespiti, ölçümler ve yüz analizi.",
+    plusActiveDesc: "Plus planı etkin — sefalometri kullanılabilir.",
+    upgradeToPlus: "Plus'ı al →",
   },
 };
