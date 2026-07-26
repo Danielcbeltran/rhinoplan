@@ -1,7 +1,11 @@
 /* RhinoPlan Medidas — Tema oscuro profesional */
 :root {
-  --bg: #0b1220;
-  --bg-2: #111a2e;
+  /* Fondo base igualado al de RhinoPlan (#152238) para que la transicion al
+     entrar/salir del modulo no de un salto de color. El resto de la paleta
+     del modulo se conserva: es una herramienta de analisis con identidad
+     propia coherente, y sus contrastes estan calculados para legibilidad AA. */
+  --bg: #152238;
+  --bg-2: #1a2942;
   --panel: #16213a;
   --panel-2: #1d2b48;
   --border: #25365a;
@@ -20,8 +24,6 @@
      que se adapte al tema: claro en oscuro, oscuro-legible en claro. */
   --ok-strong: #86efac;
   --shadow: 0 10px 30px rgba(0,0,0,.35);
-  /* La fuente NO se aplica aqui: :root es <html> y afectaria a toda la app
-     principal. Se declara como variable y se usa dentro de .ceph-app. */
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   /* Fuente MONOESPACIADA para datos numéricos (ángulos, mm, ratios, escalas).
