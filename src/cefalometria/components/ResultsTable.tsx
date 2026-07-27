@@ -585,13 +585,13 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
       </div>
 
       <div>
-        <h3>Tercios faciales verticales</h3>
+        <h3>{t('secVerticalThirds')}</h3>
         <table className="ceph">
           <thead>
-            <tr><th>Tercio</th><th className="num">Paciente</th><th className="num">Normal</th><th>Eval.</th></tr>
+            <tr><th>{t('thThird')}</th><th className="num">{t('thPatient')}</th><th className="num">{t('thNormal')}</th><th>{t('thEval')}</th></tr>
           </thead>
           <tbody>
-            {(['Superior (Tr–G)', 'Medio (G–Sn)', 'Inferior (Sn–Me)'] as const).map((label, i) => {
+            {([t('thirdUpperP'), t('thirdMidP'), t('thirdLowerP')] as const).map((label, i) => {
               const r = thirds?.ratios[i] ?? null;
               const pct = r != null ? r * 100 : null;
               const level = pct != null ? evaluate(pct, 33.33, 4) : 'muted';
@@ -619,6 +619,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
 
 // ============ Resultados FRENTE — Análisis antropométrico de Farkas ============
 function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, Pt>>; mmPerPx: number | null }) {
+  const t = useT();
   const f = farkasMeasurements(points);
   const sym = farkasSymmetryIndex(f);
   const thirds = frontalThirds(points);
@@ -672,18 +673,18 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <h3>Farkas — medidas globales</h3>
         <table className="ceph">
           <thead>
-            <tr><th>Medida</th><th className="num">Paciente</th></tr>
+            <tr><th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th></tr>
           </thead>
           <tbody>
-            <GlobalRow label="Altura fisiognómica (tr–gn)"          v={fmtDist(f.faceHeight)} />
-            <GlobalRow label="Altura nasal media (n–sn)"            v={fmtDist(f.noseHeightMid)} />
-            <GlobalRow label="Altura nasal (n–prn)"                 v={fmtDist(f.noseHeight)} />
-            <GlobalRow label="Altura mucosa bucal (sto–gn)"         v={fmtDist(f.mouthHeight)} />
-            <GlobalRow label="Anchura interocular interna (en_d–en_i)" v={fmtDist(f.interEndoCanth)} />
-            <GlobalRow label="Anchura interocular externa (ex_d–ex_i)" v={fmtDist(f.interExoCanth)} />
-            <GlobalRow label="Anchura bi-auricular (t_d–t_i)"       v={fmtDist(f.biauricular)} />
-            <GlobalRow label="Anchura nasal (al_d–al_i)"            v={fmtDist(f.noseWidth)} />
-            <GlobalRow label="Anchura bucal (ch_d–ch_i)"            v={fmtDist(f.mouthWidth)} />
+            <GlobalRow label={t('measFaceHeight')}          v={fmtDist(f.faceHeight)} />
+            <GlobalRow label={t('measNoseHeightMid')}            v={fmtDist(f.noseHeightMid)} />
+            <GlobalRow label={t('measNoseHeight')}                 v={fmtDist(f.noseHeight)} />
+            <GlobalRow label={t('measMouthHeight')}         v={fmtDist(f.mouthHeight)} />
+            <GlobalRow label={t('measInterEndo')} v={fmtDist(f.interEndoCanth)} />
+            <GlobalRow label={t('measInterExo')} v={fmtDist(f.interExoCanth)} />
+            <GlobalRow label={t('measBiauricular')}       v={fmtDist(f.biauricular)} />
+            <GlobalRow label={t('measNoseWidth')}            v={fmtDist(f.noseWidth)} />
+            <GlobalRow label={t('measMouthWidth')}            v={fmtDist(f.mouthWidth)} />
           </tbody>
         </table>
       </div>
@@ -694,15 +695,15 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <table className="ceph">
           <thead>
             <tr>
-              <th>Tercio</th>
-              <th className="num">Altura</th>
-              <th className="num">% del total</th>
-              <th className="num">Ideal</th>
+              <th>{t('thThird')}</th>
+              <th className="num">{t('thHeight')}</th>
+              <th className="num">{t('thPctTotal')}</th>
+              <th className="num">{t('thIdeal')}</th>
               <th>Eval.</th>
             </tr>
           </thead>
           <tbody>
-            {(['Superior (tr–cejas)', 'Medio (cejas–sn)', 'Inferior (sn–gn)'] as const).map((label, i) => {
+            {([t('thirdUpperF'), t('thirdMidF'), t('thirdLowerF')] as const).map((label, i) => {
               const heights = thirds ? [thirds.upper, thirds.middle, thirds.lower] : [null, null, null];
               const h = heights[i];
               const r = thirds?.ratios[i] ?? null;
