@@ -77,7 +77,7 @@ export default function Toolbar(props: Props) {
           al alcance del pulgar en iPad. */}
       <details className="side-group">
         <summary>
-          Puntos anatómicos
+          {t('anatomicalPoints')}
           <span className={`sg-count ${placedPoints >= totalMandatory ? 'complete' : ''}`}>
             {placedPoints}/{totalMandatory}
           </span>

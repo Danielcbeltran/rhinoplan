@@ -12,6 +12,7 @@ import {
   cefalometriaVacia, nuevaMedicionId, extraerEstado, estadoAParche,
   guardarMedicion, medicionesDeFoto,
 } from './bridge';
+import { useT } from './i18n';
 import {
   pointsForMode, linesForMode, FRONTAL_GUIDES, PROFILE_GUIDES,
   ANGLE_MEASURES,
@@ -186,6 +187,7 @@ function downscaleDataUrl(dataUrl: string, maxSide = MAX_IMAGE_SIDE): Promise<st
 export default function App({
   pacienteNombre, fotos: fotosPaciente, cefalometria: cefaloIni, onSave, lang,
 }: CephProps = {}) {
+  const tt = useT();
   const [mode, setMode] = useState<Mode>('perfil');
   const [modeStates, setModeStates] = useState<Record<Mode, ModeState>>({
     perfil: initialState('perfil'),
@@ -1419,7 +1421,7 @@ export default function App({
           {hasImage ? (
             <span
               className={`progress-chip ${placedCount >= totalPoints ? 'complete' : ''}`}
-              title="Puntos anatómicos colocados"
+              title={tt('pointsPlaced')}
             >
               <span className="pc-bar">
                 <span
@@ -1441,9 +1443,9 @@ export default function App({
             <button
               className={flowStep === 'load' ? 'primary' : ''}
               onClick={() => setShowFotoPicker(true)}
-              title="Elegir una foto del paciente activo"
+              title={tt('patientPhotos')}
             >
-              <Icon name="folder" /> Fotos del paciente
+              <Icon name="folder" /> {tt('patientPhotos')}
               {fotosPaciente!.length > 0 && ` (${fotosPaciente!.length})`}
             </button>
           )}
@@ -1451,7 +1453,7 @@ export default function App({
             className={!dentroDeRhinoPlan && flowStep === 'load' ? 'primary' : ''}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="folder" /> Cargar foto
+            <Icon name="folder" /> {tt('loadPhoto')}
           </button>
           {/* Oculto con visually-hidden y NO con display:none — en iOS Safari el
               click programático sobre un input file con display:none es errático
@@ -1472,10 +1474,10 @@ export default function App({
                 className={flowStep === 'detect' ? 'primary' : ''}
                 onClick={onDetect}
                 disabled={isDetecting}
-                title="Detectar puntos automáticamente con IA en el navegador"
+                title={tt('detectAutoTitle')}
               >
                 {isDetecting ? <><span className="spinner" /> Detectando…</>
-                  : <><Icon name="sparkles" /> {current.detectionStatus === 'done' ? 'Re-detectar' : 'Detectar auto'}</>}
+                  : <><Icon name="sparkles" /> {current.detectionStatus === 'done' ? tt('detectRedo') : tt('detectAuto')}</>}
               </button>
               <span
                 className="model-select"
@@ -1492,7 +1494,7 @@ export default function App({
             </button>
           )}
           {current.confirmed && (
-            <button onClick={onUnconfirm} title="Volver a editar los puntos">
+            <button onClick={onUnconfirm} title={tt('stepCorrect')}>
               <Icon name="pencil" /> Editar puntos
             </button>
           )}
@@ -1500,18 +1502,18 @@ export default function App({
             <button
               className={rhinoSimActive ? 'primary confirm' : ''}
               onClick={() => setRhinoSimActive(!rhinoSimActive)}
-              title="Simular proyección prequirúrgica de rinoplastia"
+              title={tt('rhinoplasty')}
             >
-              <Icon name="flask" /> {rhinoSimActive ? 'Cerrar simulación' : 'Rinoplastia'}
+              <Icon name="flask" /> {rhinoSimActive ? tt('rhinoplastyClose') : tt('rhinoplasty')}
             </button>
           )}
           {!rhinoSimActive && (
             <button
               className={annotationModeActive ? 'primary confirm' : ''}
               onClick={() => setAnnotationModeActive(!annotationModeActive)}
-              title="Crear dataset de entrenamiento anotando puntos manualmente"
+              title={tt('annotationMode')}
             >
-              <Icon name="dataset" /> {annotationModeActive ? 'Cerrar anotación' : `Anotación${datasetCount > 0 ? ` (${datasetCount})` : ''}`}
+              <Icon name="dataset" /> {annotationModeActive ? tt('annotationClose') : `${tt('annotation')}${datasetCount > 0 ? ` (${datasetCount})` : ''}`}
             </button>
           )}
 
@@ -1526,12 +1528,12 @@ export default function App({
                 ? 'Guardar esta medicion en la historia del paciente'
                 : 'Carga una foto del paciente para poder guardar'}
             >
-              <Icon name="download" /> {medicionActualId ? 'Actualizar medicion' : 'Guardar en paciente'}
+              <Icon name="download" /> {medicionActualId ? tt('updateMeasurement') : tt('saveToPatient')}
             </button>
           )}
           <button onClick={exportPNG} disabled={!hasImage}><Icon name="download" /> PNG</button>
           <button className={flowStep === 'export' ? 'primary' : ''} onClick={exportPDF} disabled={!hasImage}>
-            <Icon name="fileText" /> Informe PDF
+            <Icon name="fileText" /> {tt('pdfReport')}
           </button>
         </div>
       </header>
@@ -1543,15 +1545,15 @@ export default function App({
           Corregir/Confirmar → Exportar. Indicador, no navegación. */}
       <div className="flow-stepper" aria-label="Progreso del análisis">
         {([
-          { id: 'load',    n: 1, label: 'Cargar foto',          done: hasImage },
-          { id: 'detect',  n: 2, label: 'Detectar puntos',      done: current.detectionStatus === 'done' },
-          { id: 'confirm', n: 3, label: 'Corregir y confirmar', done: !!current.confirmed },
-          { id: 'export',  n: 4, label: 'Analizar y exportar',  done: false },
+          { id: 'load',    n: 1, label: 'stepLoad',    done: hasImage },
+          { id: 'detect',  n: 2, label: 'stepDetect',  done: current.detectionStatus === 'done' },
+          { id: 'confirm', n: 3, label: 'stepCorrect', done: !!current.confirmed },
+          { id: 'export',  n: 4, label: 'stepAnalyze', done: false },
         ] as const).map((s, i, arr) => (
           <Fragment key={s.id}>
             <div className={`fs-step ${s.done ? 'done' : ''} ${flowStep === s.id ? 'current' : ''}`}>
               <span className="fs-dot">{s.done ? '✓' : s.n}</span>
-              <span className="fs-label">{s.label}</span>
+              <span className="fs-label">{tt(s.label)}</span>
             </div>
             {i < arr.length - 1 && <span className="fs-line" />}
           </Fragment>

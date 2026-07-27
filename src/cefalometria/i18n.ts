@@ -58,6 +58,40 @@ const ES: Record<string, string> = {
   close: 'Cerrar',
   closeAnnotation: 'Cerrar modo anotación',
   closeSimulation: 'Cerrar simulación',
+
+  // — Barra superior (App) —
+  patientPhotos: 'Fotos del paciente',
+  loadPhoto: 'Cargar foto',
+  detectAuto: 'Detectar auto',
+  detectAutoTitle: 'Detectar puntos automáticamente con IA en el navegador',
+  detecting: 'Detectando…',
+  detectRedo: 'Redetectar',
+  rhinoplasty: 'Rinoplastia',
+  rhinoplastyClose: 'Cerrar simulación',
+  annotation: 'Anotación',
+  annotationClose: 'Cerrar anotación',
+  saveToPatient: 'Guardar en paciente',
+  updateMeasurement: 'Actualizar medición',
+  pdfReport: 'Informe PDF',
+  pointsPlaced: 'Puntos anatómicos colocados',
+
+  // — Stepper del flujo —
+  stepLoad: 'Cargar foto',
+  stepDetect: 'Detectar puntos',
+  stepCorrect: 'Corregir',
+  stepAnalyze: 'Analizar',
+
+  // — Selector de fotos del paciente —
+  patientPhotosTitle: 'Fotos del paciente',
+  noPhotos: 'Este paciente no tiene fotos todavía.',
+  preop: 'Preoperatorio',
+  postop: 'Postoperatorio',
+
+  // — Paneles de puntos / calibración / medidas —
+  anatomicalPoints: 'Puntos anatómicos',
+  calibration: 'Calibración',
+  keyMeasures: 'Medidas clave',
+  annotationMode: 'Modo Anotación',
 };
 
 // Traducciones. Solo las claves que difieren del español; el resto hereda ES.
@@ -93,6 +127,36 @@ const EN: Record<string, string> = {
   close: 'Close',
   closeAnnotation: 'Close annotation mode',
   closeSimulation: 'Close simulation',
+
+  patientPhotos: 'Patient photos',
+  loadPhoto: 'Load photo',
+  detectAuto: 'Auto-detect',
+  detectAutoTitle: 'Automatically detect landmarks with in-browser AI',
+  detecting: 'Detecting…',
+  detectRedo: 'Re-detect',
+  rhinoplasty: 'Rhinoplasty',
+  rhinoplastyClose: 'Close simulation',
+  annotation: 'Annotation',
+  annotationClose: 'Close annotation',
+  saveToPatient: 'Save to patient',
+  updateMeasurement: 'Update measurement',
+  pdfReport: 'PDF report',
+  pointsPlaced: 'Anatomical landmarks placed',
+
+  stepLoad: 'Load photo',
+  stepDetect: 'Detect landmarks',
+  stepCorrect: 'Correct',
+  stepAnalyze: 'Analyze',
+
+  patientPhotosTitle: 'Patient photos',
+  noPhotos: 'This patient has no photos yet.',
+  preop: 'Preoperative',
+  postop: 'Postoperative',
+
+  anatomicalPoints: 'Anatomical landmarks',
+  calibration: 'Calibration',
+  keyMeasures: 'Key measurements',
+  annotationMode: 'Annotation mode',
 };
 
 // Los demás idiomas se irán llenando; por ahora heredan español.

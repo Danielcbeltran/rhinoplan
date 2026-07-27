@@ -13,6 +13,7 @@ import {
   type PointId, type Pt, type Mode,
 } from '../cephalometry';
 import type { CustomLine, CustomAngle, Ruler } from './CanvasArea';
+import { useT } from '../i18n';
 
 interface Props {
   mode: Mode;
@@ -91,6 +92,7 @@ function MetricCard({
 }
 
 export default function ResultsTable(props: Props) {
+  const t = useT();
   const {
     mode, points, mmPerPx, customLines, customAngles, rulers = [],
     refCalibMm, setRefCalibMm, calibrationManual, confirmed, detectionStatus,
@@ -113,7 +115,7 @@ export default function ResultsTable(props: Props) {
         </div>
       )}
       <div>
-        <h3>Calibración</h3>
+        <h3>{t('calibration')}</h3>
         <div className={`calibration-status ${mmPerPx ? 'ok' : ''}`}>
           {mmPerPx
             ? <>Escala: <b>{(1 / mmPerPx).toFixed(2)} px/mm</b> &middot; <b>{mmPerPx.toFixed(4)} mm/px</b></>
@@ -223,6 +225,7 @@ export default function ResultsTable(props: Props) {
 
 // ============ Resultados PERFIL — Perfilometría blanda ============
 function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, Pt>>; mmPerPx: number | null }) {
+  const t = useT();
   const goode = goodeNasalProjection(points);
   const goodeV = goodeVerdict(goode?.ratio);
   const cp = chinProjectionSigned(points['N'], points['Pog'], points['Pn'], points['Po'], points['Or']);
@@ -269,7 +272,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
   return (
     <>
       <div>
-        <h3>Medidas clave</h3>
+        <h3>{t('keyMeasures')}</h3>
         <div className="result-cards">
           <MetricCard
             label="Ángulo nasolabial" sublabel="Cm–Sn–Ls"
