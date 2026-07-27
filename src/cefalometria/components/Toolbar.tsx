@@ -5,6 +5,8 @@ import {
 import type { Tool } from './CanvasArea';
 import Icon from './Icon';
 
+import { useT } from '../i18n';
+
 interface Props {
   mode: Mode;
   tool: Tool;
@@ -46,6 +48,7 @@ const FRENTE_GROUPS: { key: PointGroup; label: string }[] = [
 ];
 
 export default function Toolbar(props: Props) {
+  const t = useT();
   const {
     mode, tool, activePointId, setActivePointId, onPickPoint, points,
     visibleLines, setVisibleLines, onResetMarks, hasImage,
@@ -88,7 +91,7 @@ export default function Toolbar(props: Props) {
                 <div style={{
                   fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase',
                   letterSpacing: 1, margin: '4px 0',
-                }}>{g.label}</div>
+                }}>{t(g.key)}</div>
                 <div className="points-list">
                   {items.map((p) => {
                     const placed = !!points[p.id];
@@ -174,17 +177,17 @@ export default function Toolbar(props: Props) {
         <summary>Asistentes</summary>
         <div className="sg-body">
         <div className="lines-toggles" style={{ gridTemplateColumns: '1fr' }}>
-          <label title="Muestra una lupa magnificada x4 sobre el cursor para colocar puntos con precisión píxel">
+          <label title={t('magnifierTitle')}>
             <input type="checkbox" checked={magnifierEnabled}
               onChange={(e) => setMagnifierEnabled(e.target.checked)} />
             <Icon name="magnifier" size={14} /> Lupa al colocar
           </label>
-          <label title="Al colocar un punto, snap al borde más fuerte cercano (8 px)">
+          <label title={t('edgeSnapTitle')}>
             <input type="checkbox" checked={edgeSnapEnabled}
               onChange={(e) => setEdgeSnapEnabled(e.target.checked)} />
             <Icon name="magnet" size={14} /> Snap a borde
           </label>
-          <label title="Marcas tenues con posiciones canónicas como referencia">
+          <label title={t('guidesTitle')}>
             <input type="checkbox" checked={templateVisible}
               onChange={(e) => setTemplateVisible(e.target.checked)} />
             <Icon name="ghost" size={14} /> Plantilla guía
@@ -203,7 +206,7 @@ export default function Toolbar(props: Props) {
         </summary>
         <div className="sg-body">
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}
-                 title="Ajusta el tamaño del texto de las etiquetas dibujadas sobre la foto">
+                 title={t('labelSizeTitle')}>
             <span style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Tamaño del texto</span>
               <b>{Math.round(labelScale * 100)} %</b>
