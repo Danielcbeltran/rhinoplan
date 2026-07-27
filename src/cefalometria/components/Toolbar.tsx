@@ -101,7 +101,7 @@ export default function Toolbar(props: Props) {
                         key={p.id}
                         className={`point-row ${placed ? 'placed' : ''} ${active ? 'active' : ''} ${p.optional ? 'optional' : ''}`}
                         onClick={() => onPickPoint(p.id)}
-                        title={p.optional ? `${p.desc} · Opcional — colócalo solo si necesitas su medida` : p.desc}
+                        title={p.optional ? `${t('desc-'+p.id)} · ${t('optionalHint')}` : t('desc-'+p.id)}
                         disabled={!hasImage}
                       >
                         <span className="dot" style={{ background: p.color }} />
