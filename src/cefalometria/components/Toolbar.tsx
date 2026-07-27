@@ -105,7 +105,7 @@ export default function Toolbar(props: Props) {
                         disabled={!hasImage}
                       >
                         <span className="dot" style={{ background: p.color }} />
-                        <span className="pr-name">{p.name}</span>
+                        <span className="pr-name">{t('name-'+p.id)}</span>
                         {p.optional && <span className="pr-opt">opc.</span>}
                         <span className="pr-id">{p.id}</span>
                         <span className="pr-state" aria-hidden>

@@ -179,7 +179,7 @@ export default function LayersPanel(p: Props) {
                 <Eye on={visible} />
                 <span className="dot" style={{ background: pt.color }} />
                 <span className="layer-id">{pt.id}</span>
-                <span className="layer-name" title={t('desc-'+pt.id)}>{pt.name}</span>
+                <span className="layer-name" title={t('desc-'+pt.id)}>{t('name-'+pt.id)}</span>
               </div>
             );
           })}
