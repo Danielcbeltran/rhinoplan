@@ -230,6 +230,31 @@ const ES: Record<string, string> = {
   linesSection: 'Líneas',
   anglesSection: 'Ángulos',
   measuresSection: 'Medidas',
+
+  // — Veredictos clínicos —
+  verdictNormal: 'Normal',
+  verdictOutOfRange: 'Fuera de rango',
+  verdictAdequate: 'Proyección adecuada',
+  verdictUnder: 'Nariz subproyectada',
+  verdictOver: 'Nariz sobreproyectada',
+  aligned: 'Alineadas',
+  thMeasure: 'Medida',
+  thPatient: 'Paciente',
+  thNormal: 'Normal',
+  thEval: 'Eval.',
+  placeNeckHint: 'Coloca el punto Cuello (Nk) — opcional — desde la lista de puntos.',
+
+  // — Medidas clave (tarjetas) —
+  mkNasolabial: 'Ángulo nasolabial',
+  mkNasolabialNormal: 'Normal 100° ±10',
+  mkNasofrontal: 'Ángulo nasofrontal',
+  mkNasofrontalNormal: 'Normal 125° ±8',
+  mkGoode: 'Proyección nasal (Goode)',
+  mkGoodeSub: 'Proyección ÷ Longitud (req. N, Pn, AC)',
+  mkGoodeNormal: 'Normal 0.55 – 0.60',
+  mkTipRot: 'Rotación de punta (Frankfort)',
+  mkTipRotSub: 'Columela Sn–Cm vs vertical de Frankfort (Po–Or)',
+  mkTipRotNormal: 'Normal 0 – 30°',
 };
 
 // Traducciones. Solo las claves que difieren del español; el resto hereda ES.
@@ -426,6 +451,29 @@ const EN: Record<string, string> = {
   linesSection: 'Lines',
   anglesSection: 'Angles',
   measuresSection: 'Measurements',
+
+  verdictNormal: 'Normal',
+  verdictOutOfRange: 'Out of range',
+  verdictAdequate: 'Adequate projection',
+  verdictUnder: 'Under-projected nose',
+  verdictOver: 'Over-projected nose',
+  aligned: 'Aligned',
+  thMeasure: 'Measure',
+  thPatient: 'Patient',
+  thNormal: 'Normal',
+  thEval: 'Eval.',
+  placeNeckHint: 'Place the Neck (Nk) point — optional — from the points list.',
+
+  mkNasolabial: 'Nasolabial angle',
+  mkNasolabialNormal: 'Normal 100° ±10',
+  mkNasofrontal: 'Nasofrontal angle',
+  mkNasofrontalNormal: 'Normal 125° ±8',
+  mkGoode: 'Nasal projection (Goode)',
+  mkGoodeSub: 'Projection ÷ Length (req. N, Pn, AC)',
+  mkGoodeNormal: 'Normal 0.55 – 0.60',
+  mkTipRot: 'Tip rotation (Frankfort)',
+  mkTipRotSub: 'Columella Sn–Cm vs Frankfort vertical (Po–Or)',
+  mkTipRotNormal: 'Normal 0 – 30°',
 };
 
 // Los demás idiomas se irán llenando; por ahora heredan español.

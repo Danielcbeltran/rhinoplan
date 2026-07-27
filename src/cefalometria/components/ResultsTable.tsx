@@ -253,9 +253,9 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
   const goodeLevel = goodeV === 'adecuada' ? 'ok'
     : goodeV === 'muted' ? 'muted'
     : 'warn';
-  const goodeText = goodeV === 'adecuada' ? 'Proyección adecuada'
-    : goodeV === 'subproyectada' ? 'Nariz subproyectada'
-    : goodeV === 'sobreproyectada' ? 'Nariz sobreproyectada'
+  const goodeText = goodeV === 'adecuada' ? t('verdictAdequate')
+    : goodeV === 'subproyectada' ? t('verdictUnder')
+    : goodeV === 'sobreproyectada' ? t('verdictOver')
     : '—';
 
   // Medidas CLAVE (tarjetas). Mismos ideales/tolerancias que las filas de tabla
@@ -267,7 +267,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
     ? angle3pt(points['G']!, points['N']!, points['Pn']!) : null;
   const nfrLevel = nfrAngle == null ? 'muted' as const : evaluate(nfrAngle, 125, 8);
   const verdict = (v: number | null, lv: 'ok' | 'warn' | 'error' | 'muted') =>
-    v == null ? '—' : lv === 'ok' ? 'Normal' : lv === 'muted' ? '—' : 'Fuera de rango';
+    v == null ? '—' : lv === 'ok' ? t('verdictNormal') : lv === 'muted' ? '—' : t('verdictOutOfRange');
 
   return (
     <>
@@ -275,35 +275,35 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <h3>{t('keyMeasures')}</h3>
         <div className="result-cards">
           <MetricCard
-            label="Ángulo nasolabial" sublabel="Cm–Sn–Ls"
+            label={t('mkNasolabial')} sublabel="Cm–Sn–Ls"
             value={nlAngle != null ? `${nlAngle.toFixed(1)}°` : '—'}
             delta={nlAngle != null ? deltaLabel(nlAngle, 100, '°') : null}
             level={nlLevel} verdict={verdict(nlAngle, nlLevel)}
-            normalLabel="Normal 100° ±10"
+            normalLabel={t('mkNasolabialNormal')}
             gauge={{ value: nlAngle, ideal: 100, tol: 10 }}
           />
           <MetricCard
-            label="Ángulo nasofrontal" sublabel="G–N–Pn"
+            label={t('mkNasofrontal')} sublabel="G–N–Pn"
             value={nfrAngle != null ? `${nfrAngle.toFixed(1)}°` : '—'}
             delta={nfrAngle != null ? deltaLabel(nfrAngle, 125, '°') : null}
             level={nfrLevel} verdict={verdict(nfrAngle, nfrLevel)}
-            normalLabel="Normal 125° ±8"
+            normalLabel={t('mkNasofrontalNormal')}
             gauge={{ value: nfrAngle, ideal: 125, tol: 8 }}
           />
           <MetricCard
-            label="Proyección nasal (Goode)" sublabel="Proyección ÷ Longitud (req. N, Pn, AC)"
+            label={t('mkGoode')} sublabel={t('mkGoodeSub')}
             value={goode ? goode.ratio.toFixed(2) : '—'}
             delta={goode ? deltaLabel(goode.ratio, 0.575, '', 2) : null}
             level={goodeLevel} verdict={goode ? goodeText : '—'}
-            normalLabel="Normal 0.55 – 0.60"
+            normalLabel={t('mkGoodeNormal')}
             gauge={{ value: goode ? goode.ratio : null, ideal: 0.575, tol: 0.025 }}
           />
           <MetricCard
-            label="Rotación de punta (Frankfort)" sublabel="Columela Sn–Cm vs vertical de Frankfort (Po–Or)"
+            label={t('mkTipRot')} sublabel={t('mkTipRotSub')}
             value={tipRot != null ? `${tipRot.toFixed(1)}°` : '—'}
             delta={tipRot != null ? deltaLabel(tipRot, TIPROT_IDEAL, '°') : null}
             level={tipRotLevel} verdict={verdict(tipRot, tipRotLevel)}
-            normalLabel="Normal 0 – 30°"
+            normalLabel={t('mkTipRotNormal')}
             gauge={{ value: tipRot, ideal: TIPROT_IDEAL, tol: TIPROT_TOL }}
           />
         </div>
@@ -314,8 +314,8 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th><th className="num">Paciente</th>
-              <th className="num">Normal</th><th>Eval.</th>
+              <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
+              <th className="num">{t('thNormal')}</th><th>{t('thEval')}</th>
             </tr>
           </thead>
           <tbody>
@@ -331,7 +331,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               return (
                 <tr key={m.id}>
                   <td title={m.desc}>
-                    <b>{m.label}</b>
+                    <b>{t('ang-'+m.id)}</b>
                     {needsNk && (
                       <div style={{ fontSize: 10.5, color: 'var(--warn)', fontWeight: 400, marginTop: 2 }}>
                         Coloca el punto <b>Cuello (Nk)</b> — opcional — desde la lista de puntos.
