@@ -197,6 +197,7 @@ export const translations = {
     plusDesc: "Todo lo de Pro más el módulo de cefalometría: detección de puntos, mediciones y análisis facial.",
     plusActiveDesc: "Plan Plus activo — cefalometría disponible.",
     upgradeToPlus: "Obtener Plus →",
+    cephalometry: "Cefalometría",
   },
 
   en: {
@@ -375,6 +376,7 @@ export const translations = {
     plusDesc: "Everything in Pro plus the cephalometry module: landmark detection, measurements and facial analysis.",
     plusActiveDesc: "Plus plan active — cephalometry available.",
     upgradeToPlus: "Get Plus →",
+    cephalometry: "Cephalometry",
   },
 
   fr: {
@@ -553,6 +555,7 @@ export const translations = {
     plusDesc: "Tout Pro plus le module de céphalométrie : détection de points, mesures et analyse faciale.",
     plusActiveDesc: "Plan Plus actif — céphalométrie disponible.",
     upgradeToPlus: "Obtenir Plus →",
+    cephalometry: "Céphalométrie",
   },
 
   pt: {
@@ -737,6 +740,7 @@ export const translations = {
     plusDesc: "Tudo do Pro mais o módulo de cefalometria: detecção de pontos, medições e análise facial.",
     plusActiveDesc: "Plano Plus ativo — cefalometria disponível.",
     upgradeToPlus: "Obter Plus →",
+    cephalometry: "Cefalometria",
   },
 
   de: {
@@ -915,6 +919,7 @@ export const translations = {
     plusDesc: "Alles aus Pro plus das Kephalometrie-Modul: Punkterkennung, Messungen und Gesichtsanalyse.",
     plusActiveDesc: "Plus-Tarif aktiv — Kephalometrie verfügbar.",
     upgradeToPlus: "Plus holen →",
+    cephalometry: "Kephalometrie",
   },
 
   it: {
@@ -1093,6 +1098,7 @@ export const translations = {
     plusDesc: "Tutto di Pro più il modulo di cefalometria: rilevamento punti, misurazioni e analisi facciale.",
     plusActiveDesc: "Piano Plus attivo — cefalometria disponibile.",
     upgradeToPlus: "Ottieni Plus →",
+    cephalometry: "Cefalometria",
   },
 
   tr: {
@@ -1271,5 +1277,6 @@ export const translations = {
     plusDesc: "Pro'daki her şey artı sefalometri modülü: nokta tespiti, ölçümler ve yüz analizi.",
     plusActiveDesc: "Plus planı etkin — sefalometri kullanılabilir.",
     upgradeToPlus: "Plus'ı al →",
+    cephalometry: "Sefalometri",
   },
 };
