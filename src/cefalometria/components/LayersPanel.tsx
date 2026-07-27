@@ -3,6 +3,7 @@ import {
   type PointId, type Mode,
 } from '../cephalometry';
 import Icon from './Icon';
+import { useT } from '../i18n';
 
 // ============ Catálogo de capas por modo ============
 
@@ -86,6 +87,7 @@ interface Props {
 // ============ Componente ============
 
 export default function LayersPanel(p: Props) {
+  const t = useT();
   const {
     mode, visibleLines, setVisibleLines,
     pointsHidden, setPointsHidden,
@@ -147,11 +149,11 @@ export default function LayersPanel(p: Props) {
                if (e.target !== e.currentTarget) return;
                setPanelOpen((e.target as HTMLDetailsElement).open);
              }}>
-      <summary><Icon name="layers" size={13} /> Capas de análisis</summary>
+      <summary><Icon name="layers" size={13} /> {t('layersTitle')}</summary>
 
       <div className="global-actions">
-        <button onClick={showAll} title="Mostrar todos los elementos"><Icon name="eye" size={13} /> Mostrar todo</button>
-        <button onClick={hideAll} title="Ocultar todos los elementos"><Icon name="eyeOff" size={13} /> Ocultar todo</button>
+        <button onClick={showAll} title={t('showAll')}><Icon name="eye" size={13} /> Mostrar todo</button>
+        <button onClick={hideAll} title={t('hideAll')}><Icon name="eyeOff" size={13} /> Ocultar todo</button>
       </div>
 
       {/* ============ Puntos ============ */}
@@ -190,7 +192,7 @@ export default function LayersPanel(p: Props) {
                  ...sectionsOpen,
                  lines: (e.target as HTMLDetailsElement).open,
                })}>
-        <summary>Líneas ({lines.filter((l) => isLineVisible(l.id)).length}/{lines.length})</summary>
+        <summary>{t('linesSection')} ({lines.filter((l) => isLineVisible(l.id)).length}/{lines.length})</summary>
         <div className="section-body">
           <div className="section-actions">
             <button onClick={allLinesOn}>Mostrar todas</button>
@@ -205,7 +207,7 @@ export default function LayersPanel(p: Props) {
                    role="button"
                    aria-pressed={visible}>
                 <Eye on={visible} />
-                <span className="layer-name">{l.label}</span>
+                <span className="layer-name">{t('line-'+l.id)}</span>
               </div>
             );
           })}
@@ -219,7 +221,7 @@ export default function LayersPanel(p: Props) {
                    ...sectionsOpen,
                    angles: (e.target as HTMLDetailsElement).open,
                  })}>
-          <summary>Ángulos ({anglesShown.length}/{angles.length})</summary>
+          <summary>{t('anglesSection')} ({anglesShown.length}/{angles.length})</summary>
           <div className="section-body">
             <div className="section-actions">
               <button onClick={allAnglesOn}>Mostrar todos</button>
@@ -239,7 +241,7 @@ export default function LayersPanel(p: Props) {
                      role="button"
                      aria-pressed={on}>
                   <Eye on={on} />
-                  <span className="layer-name">{a.label}</span>
+                  <span className="layer-name">{t('ang-'+a.id)}</span>
                 </div>
               );
             })}
@@ -253,7 +255,7 @@ export default function LayersPanel(p: Props) {
                  ...sectionsOpen,
                  measures: (e.target as HTMLDetailsElement).open,
                })}>
-        <summary>Medidas ({measures.length - measuresHidden.length}/{measures.length})</summary>
+        <summary>{t('measuresSection')} ({measures.length - measuresHidden.length}/{measures.length})</summary>
         <div className="section-body">
           <div className="section-actions">
             <button onClick={allMeasuresOn}>Mostrar todas</button>
@@ -268,7 +270,7 @@ export default function LayersPanel(p: Props) {
                    role="button"
                    aria-pressed={visible}>
                 <Eye on={visible} />
-                <span className="layer-name">{m.label}</span>
+                <span className="layer-name">{t('meas-'+m.id)}</span>
               </div>
             );
           })}
