@@ -103,7 +103,7 @@ export default function ResultsTable(props: Props) {
   const refA = mode === 'frente' ? points['en_d'] : points['N'];
   const refB = mode === 'frente' ? points['en_i'] : points['Pn'];
   const refReady = !!(refA && refB);
-  const refLabel = mode === 'frente' ? 'Distancia intercantal (en_d–en_i)' : 'Nasion–Pronasale (N–Pn)';
+  const refLabel = mode === 'frente' ? t('distIntercanthal') : t('nasionPronasale');
   const refHint  = mode === 'frente' ? 'ej. ~31 mm en adultos' : 'longitud nasal del paciente';
 
   return (
@@ -215,9 +215,9 @@ export default function ResultsTable(props: Props) {
 
       <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.55 }}>
         {mode === 'perfil'
-          ? 'Referencias: ángulos faciales blandos (Powell-Humphreys, Ricketts), proyección nasal (Goode adaptado) y mentón (cero meridiano González-Ulloa).'
-          : 'Referencias: cánones de proporción facial (tercios y quintos clásicos, ratios Powell).'}
-        {' '}Esta herramienta es orientativa y no sustituye el juicio clínico.
+          ? t('refProfile')
+          : t('refFrontal')}
+        {' '}{t('disclaimerTool')}
       </div>
     </aside>
   );
@@ -353,7 +353,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             })}
             {/* Ángulo nasofacial — recta–recta (plano facial G–Pog vs dorso N–Pn) */}
             <tr>
-              <td title="Ángulo agudo entre el plano facial (G–Pog) y el dorso nasal (N–Pn). Requiere G, Pog, N, Pn.">
+              <td title={t('descNasofacial')}>
                 <b>Ángulo nasofacial</b>
               </td>
               <td className="num">
@@ -383,7 +383,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </thead>
           <tbody>
             <tr>
-              <td title="Distancia desde Nasion hasta Pronasale">
+              <td title={t('descNPn')}>
                 <b>Longitud nasal</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   N → Pn
@@ -395,7 +395,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td>{badge('muted', '—')}</td>
             </tr>
             <tr>
-              <td title="Distancia desde Nasion hasta Pliegue alar">
+              <td title={t('descNAC')}>
                 <b>Línea base</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   N → AC (pliegue alar)
@@ -407,7 +407,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td>{badge('muted', '—')}</td>
             </tr>
             <tr>
-              <td title="Distancia perpendicular desde Pronasale hasta la recta N–AC">
+              <td title={t('descGoodePerp')}>
                 <b>Proyección nasal</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   Perpendicular Pn → N–AC
@@ -435,7 +435,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </thead>
           <tbody>
             <tr>
-              <td title="Distancia perpendicular signada desde A (punto más bajo del ala) a la recta Ba–Bp. Positivo = A por debajo del eje.">
+              <td title={t('descAlarPerp')}>
                 <b>AB</b> · Distancia A → eje Ba–Bp<br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>req. A, Ba, Bp</span>
               </td>
@@ -449,7 +449,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td className="num" style={{ color: 'var(--text-dim)' }}>1 – 2 mm</td>
             </tr>
             <tr>
-              <td title="Distancia perpendicular signada desde Cb (punto más bajo de la columnela) a la recta Ba–Bp. Positivo = Cb por debajo del eje.">
+              <td title={t('descColumPerp')}>
                 <b>BC</b> · Distancia C → eje Ba–Bp<br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>req. Cb, Ba, Bp</span>
               </td>
@@ -463,7 +463,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td className="num" style={{ color: 'var(--text-dim)' }}>1 – 2 mm</td>
             </tr>
             <tr>
-              <td title="Show columelar: BC − AB. Positivo = columnela visible bajo el ala.">
+              <td title={t('descShowColum')}>
                 <b>Show columelar</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>BC − AB</span>
               </td>
@@ -483,7 +483,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             Clasificación
           </div>
           {rel == null
-            ? badge('muted', 'Faltan A, Ba, Bp o C')
+            ? badge('muted', t('missingABBpC'))
             : abMm == null || cbMm == null
               ? badge('muted', 'sin calibrar')
               : (
@@ -516,12 +516,12 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </thead>
           <tbody>
             <tr>
-              <td title="Cero meridiano de González-Ulloa: distancia de Pog a la línea por N perpendicular a Frankfort (Po–Or); sin Po/Or, vertical de la foto">
+              <td title={t('descZeroMeridian')}>
                 <b>Proyección del mentón</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   {cpFrankfort
-                    ? 'Cero meridiano ⊥ Frankfort (N, Pog, Po, Or)'
-                    : 'Cero meridiano · vertical de foto (faltan Po/Or)'}
+                    ? t('zeroMeridianFrankfort')
+                    : t('zeroMeridianPhoto')}
                 </span>
               </td>
               <td className="num">
@@ -556,7 +556,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </thead>
           <tbody>
             <tr>
-              <td title="Ángulo agudo entre la línea de Frankfort (Po–Or) y el plano facial blando (G–Pog). 90° = cara perpendicular al cráneo.">
+              <td title={t('descFacialFrankfort')}>
                 <b>Inclinación facial vs FH</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   ∠(Po–Or, G–Pog) — req. Po, Or, G, Pog
@@ -656,13 +656,13 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <h3>Medida clave</h3>
         <div className="result-cards">
           <MetricCard
-            label="Desviación intercantal vs labial"
-            sublabel="Vertical por midpoint(en_d, en_i) vs vertical por sto/midpoint(ch_d, ch_i)"
+            label={t('deviationIntercanthal')}
+            sublabel={t('descDeviation')}
             value={vdMm != null ? `${vdMm.toFixed(2)} mm` : vd != null ? `${Math.abs(vd).toFixed(0)} px` : '—'}
             delta={null}
             level={vdLevel}
             verdict={vdVerdict}
-            normalLabel="Alineadas < 1 mm"
+            normalLabel={t('alignedThreshold')}
             gauge={vdMmSigned != null ? { value: vdMmSigned, ideal: 0, tol: 1 } : undefined}
           />
         </div>
@@ -731,10 +731,10 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                 <td className="num" style={{ color: 'var(--text-dim)' }}>100 %</td>
                 <td className="num" style={{ color: 'var(--text-dim)' }}>—</td>
                 <td>
-                  {thirdsEval.verdict === 'equilibrado' ? badge('ok',   'Equilibrado')
-                    : thirdsEval.verdict === 'sup'    ? badge('warn', 'Predominio sup.')
-                    : thirdsEval.verdict === 'medio'  ? badge('warn', 'Predominio medio')
-                    : thirdsEval.verdict === 'inf'    ? badge('warn', 'Predominio inf.')
+                  {thirdsEval.verdict === 'equilibrado' ? badge('ok',   t('balanced'))
+                    : thirdsEval.verdict === 'sup'    ? badge('warn', t('predomUpper'))
+                    : thirdsEval.verdict === 'medio'  ? badge('warn', t('predomMid'))
+                    : thirdsEval.verdict === 'inf'    ? badge('warn', t('predomLower'))
                     : badge('muted', '—')}
                 </td>
               </tr>
@@ -818,16 +818,16 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
           </thead>
           <tbody>
-            <BilateralRow label="Anchura palpebral (en–ex)"     b={f.palpebralWidth}    fmt={fmtDist} />
-            <BilateralRow label="Inclinación ojo (vs horiz.)"   b={f.eyeSlant}          fmt={fmtAng} />
-            <BilateralRow label="Distancia pronasal–alar (prn–al)" b={f.pronasalAlar}   fmt={fmtDist} />
-            <BilateralRow label="Distancia stomion–chelion"     b={f.stomionChelion}    fmt={fmtDist} />
+            <BilateralRow label={t('palpebralWidth')}     b={f.palpebralWidth}    fmt={fmtDist} />
+            <BilateralRow label={t('eyeTilt')}   b={f.eyeSlant}          fmt={fmtAng} />
+            <BilateralRow label={t('distPrnAlar')} b={f.pronasalAlar}   fmt={fmtDist} />
+            <BilateralRow label={t('distStomionCheilion')}     b={f.stomionChelion}    fmt={fmtDist} />
             <BilateralRow label="∠ óculo-oto-nasal (t–en–al)"   b={f.oculoOtoNasal}     fmt={fmtAng} />
             <BilateralRow label="∠ naso-ocular externo (al–n–ex)" b={f.nasoOcularExterno} fmt={fmtAng} />
             <BilateralRow label="∠ separación ojo–eje cara"     b={f.eyeSeparationAng}  fmt={fmtAng} />
             <BilateralRow label="∠ naso-bucal (al–sn–ch)"       b={f.nasoBuccalAng}     fmt={fmtAng} />
-            <BilateralRow label="Distancia pupila ↔ eje cara"   b={f.pupilToMidline}    fmt={fmtDist} />
-            <BilateralRow label="Altura pupila–subnasal (pu–sn)" b={f.pupilSubnasal}    fmt={fmtDist} />
+            <BilateralRow label={t('distPupilAxis')}   b={f.pupilToMidline}    fmt={fmtDist} />
+            <BilateralRow label={t('pupilSubnasalHeight')} b={f.pupilSubnasal}    fmt={fmtDist} />
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
@@ -848,9 +848,9 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
           </thead>
           <tbody>
-            <SymmetryRow label="Ocular" pct={sym.ocular} />
-            <SymmetryRow label="Nasal"  pct={sym.nasal} />
-            <SymmetryRow label="Bucal"  pct={sym.bucal} />
+            <SymmetryRow label={t('symOcular')} pct={sym.ocular} />
+            <SymmetryRow label={t('symNasal')}  pct={sym.nasal} />
+            <SymmetryRow label={t('symBucal')}  pct={sym.bucal} />
             <tr style={{ borderTop: '1px solid var(--border)' }}>
               <td><b>GLOBAL</b></td>
               <td className="num"><b>{sym.global != null ? `${sym.global.toFixed(1)} %` : '—'}</b></td>
@@ -859,9 +859,9 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          Umbrales: <b style={{ color: '#22c55e' }}>&gt; 90 %</b> simetría excelente ·
-          <b style={{ color: '#facc15' }}> 80–90 %</b> simetría leve ·
-          <b style={{ color: '#ef4444' }}> &lt; 80 %</b> asimetría marcada.
+          {t('symThresholdsPre')} <b style={{ color: '#22c55e' }}>&gt; 90 %</b> {t('symThresholds1')} ·
+          <b style={{ color: '#facc15' }}> 80–90 %</b> {t('symThresholds2')} ·
+          <b style={{ color: '#ef4444' }}> &lt; 80 %</b> {t('symThresholds3')}.
         </div>
       </div>
     </>
