@@ -484,7 +484,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           {rel == null
             ? badge('muted', t('missingABBpC'))
             : abMm == null || cbMm == null
-              ? badge('muted', 'sin calibrar')
+              ? badge('muted', t('uncalibrated'))
               : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                   {badge(gType === 'normal' ? 'ok' : gType === 'muted' ? 'muted' : 'warn', gInfo.short)}
@@ -537,7 +537,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td>{cpMm != null
                 ? badge(cpLevel, deltaLabel(cpMm, 0, ' mm'))
                 : cp != null
-                  ? badge('muted', 'sin calibrar')
+                  ? badge('muted', t('uncalibrated'))
                   : badge('muted', '—')}</td>
             </tr>
           </tbody>
@@ -642,7 +642,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
     vd == null || vdMm == null ? 'muted' : vdMm < 1 ? 'ok' : vdMm <= 3 ? 'warn' : 'error';
   const vdArrow = vd != null ? (vd > 0 ? '→' : '←') : '';
   const vdVerdict = vd == null ? '—'
-    : vdMm == null ? 'sin calibrar'
+    : vdMm == null ? t('uncalibrated')
     : vdMm < 1 ? 'Alineadas'
     : vdMm <= 3 ? `Leve ${vdArrow}`
     : `Marcada ${vdArrow}`;

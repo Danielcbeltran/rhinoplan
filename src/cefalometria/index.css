@@ -1654,6 +1654,22 @@
   border-radius: 6px 6px 0 0;
 }
 .ceph-app .layers-section[open] > summary { border-bottom: 1px solid var(--border); }
+
+/* Flecha de despliegue para los subgrupos de ANALYSIS LAYERS (igual que
+   .side-group): el marcador nativo se oculta y se dibuja un ▸ que rota 90°
+   cuando el <details> está [open]. Antes faltaba, así que la flecha no
+   reflejaba si la sección estaba desplegada o retraída. */
+.ceph-app .layers-section > summary { position: relative; padding-left: 18px; }
+.ceph-app .layers-section > summary::-webkit-details-marker { display: none; }
+.ceph-app .layers-section > summary::before {
+  content: '▸';
+  position: absolute;
+  left: 4px;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform .15s;
+}
+.ceph-app .layers-section[open] > summary::before { transform: rotate(90deg); }
 .ceph-app .layers-section .section-body {
   padding: 6px 8px 8px;
   display: flex;

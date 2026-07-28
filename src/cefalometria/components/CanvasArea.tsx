@@ -1527,36 +1527,36 @@ export default function CanvasArea(props: Props) {
   // Bloqueo en simulación: sin este aviso, la herramienta parece rota (haces
   // click y no pasa nada) en vez de protegida.
   else if (rhinoSimActive && (tool === 'point' || tool === 'erase' || tool === 'contour'))
-    hint = 'Puntos bloqueados durante la simulación — sal de Rinoplastia para editarlos';
+    hint = t('hintLocked');
   else if (tool === 'none')
-    hint = 'Sin herramienta — solo zoom y desplazamiento · elige una abajo para anotar';
+    hint = t('hintNoTool');
   else if (dragging) {
     const def = POINT_BY_ID[dragging];
-    hint = `Arrastrando: ${def?.name ?? dragging}`;
+    hint = `${t('hintDragging')} ${def ? t('name-'+dragging) : dragging}`;
   } else if (hoverId) {
     const def = POINT_BY_ID[hoverId];
     const meta = pointMeta[hoverId];
-    const conf = meta?.source === 'detected' ? ` · IA ${Math.round(meta.confidence * 100)} %` : '';
-    hint = `${def?.name ?? hoverId} (${hoverId})${conf} — arrastra para reposicionar`;
+    const conf = meta?.source === 'detected' ? ` ${t('hintAiConf')} ${Math.round(meta.confidence * 100)} %` : '';
+    hint = `${def ? t('name-'+hoverId) : hoverId} (${hoverId})${conf} ${t('hintDragReposition')}`;
   } else if (tool === 'point') {
     const def = activePointId ? POINT_BY_ID[activePointId] : null;
     hint = def
-      ? `Click para colocar: ${def.name} (${def.id})${edgeSnapEnabled ? ' · snap a borde' : ''}${viewport.zoom > 1.02 ? ' · arrastra para mover' : ''}`
-      : 'Punto: elige uno de la lista o arrastra uno existente para reposicionarlo';
-  } else if (tool === 'line') hint = linePick ? 'Línea: 2.º punto' : 'Línea: 1.er punto';
+      ? `${t('hintClickPlace')} ${t('name-'+def.id)} (${def.id})${edgeSnapEnabled ? ' '+t('hintSnapEdge') : ''}${viewport.zoom > 1.02 ? ' '+t('hintDragMove') : ''}`
+      : t('hintPointDefault');
+  } else if (tool === 'line') hint = linePick ? t('hintLine2') : t('hintLine1');
   else if (tool === 'angle') {
-    const labels = ['1.er punto', 'vértice', '2.º punto'];
-    hint = `Ángulo: ${labels[anglePick.length]} (${anglePick.length}/3)`;
-  } else if (tool === 'erase') hint = 'Click sobre un punto para borrarlo';
+    const labels = [t('hintAngle1'), t('hintAngleVertex'), t('hintAngle2')];
+    hint = `${t('hintAnglePrefix')} ${labels[anglePick.length]} (${anglePick.length}/3)`;
+  } else if (tool === 'erase') hint = t('hintErase');
   else if (tool === 'calibrate') hint = calibPick.length === 0
-    ? 'Calibración: marca el 1.er punto'
-    : 'Calibración: marca el 2.º punto';
+    ? t('hintCalib1')
+    : t('hintCalib2');
   else if (tool === 'measure') hint = rulerPick
-    ? `Medir: 2.º punto${mmPerPx ? '' : ' · sin calibrar (resultado en px)'}`
-    : 'Medir: marca el 1.er punto de la distancia';
+    ? `${t('hintMeasure2')}${mmPerPx ? '' : ' '+t('hintMeasureUncalib')}`
+    : t('hintMeasure1');
   else if (tool === 'contour') hint = mode === 'perfil'
-    ? 'Contorno: click sobre el borde real añade un ancla de ajuste · arrastra para mover · Borrar para eliminar'
-    : 'Contorno: solo disponible en modo perfil';
+    ? t('hintContourPerfil')
+    : t('hintContourFrontal');
 
   // Herramientas de precisión: siempre cruz fina, aunque haya zoom (el pan se
   // hace con Espacio+arrastre). Solo se muestra la mano para el pan explícito.
@@ -1648,7 +1648,7 @@ export default function CanvasArea(props: Props) {
                 <button onClick={() => zoomBy(1.25)} title="Zoom in (rueda hacia arriba / pellizco)">+</button>
                 <span className="zoom-level">{Math.round(viewport.zoom * 100)} %</span>
                 <button onClick={() => zoomBy(1 / 1.25)} title="Zoom out (rueda hacia abajo / pellizco)">−</button>
-                <button onClick={zoomReset} title="Restaurar 100% sin pan">1:1</button>
+                <button onClick={zoomReset} title={t('restore100')}>1:1</button>
                 <button
                   onClick={toggleFullscreen}
                   title={(isFullscreen || fsFallback) ? 'Salir de pantalla completa' : 'Ver imagen en pantalla completa'}
@@ -1679,7 +1679,7 @@ export default function CanvasArea(props: Props) {
             <button
               className="rotate-controls rc-collapsed"
               onClick={() => setRotateOpen(true)}
-              title="Ajustar la imagen: rotación, inclinación fina, volteo y auto-enderezado"
+              title={t('adjustTitle')}
             >
               {/* Solo el icono (+ el ángulo si lo hay): el nombre completo vive
                   en el `title`. Tapaba demasiada foto en el iPad. */}
@@ -1688,7 +1688,7 @@ export default function CanvasArea(props: Props) {
           ) : (
           <div className="rotate-controls">
             <button className="rc-min" onClick={() => setRotateOpen(false)} title="Minimizar barra de ajuste de imagen">⌄</button>
-            <span className="rc-label">Ajustar</span>
+            <span className="rc-label">{t('adjust')}</span>
             <button onClick={() => setRotation((a) => a - 90)} title="Girar 90° izquierda">⟲</button>
             <button onClick={() => setRotation((a) => a - 1)} title="−1°">−1°</button>
             <input
@@ -1711,12 +1711,12 @@ export default function CanvasArea(props: Props) {
             <span className="rc-unit">°</span>
             <button onClick={() => setRotation((a) => a + 1)} title="+1°">+1°</button>
             <button onClick={() => setRotation((a) => a + 90)} title="Girar 90° derecha">⟳</button>
-            <button onClick={() => setRotation(0)} title="Reset rotación" disabled={rotationAngle === 0}>Reset</button>
+            <button onClick={() => setRotation(0)} title={t('resetRotationTitle')} disabled={rotationAngle === 0}>Reset</button>
             <button
               onClick={onFlipH}
               className={flipH ? 'auto' : ''}
               title="Voltear horizontal (espejo) — canonizar el lado del perfil"
-            >⇄ Voltear</button>
+            >⇄ {t('flip')}</button>
             <button
               onClick={autoStraighten}
               disabled={!canAutoStraighten}
@@ -1726,7 +1726,7 @@ export default function CanvasArea(props: Props) {
                   ? 'Coloca pupilas o cantos internos para auto-enderezar'
                   : 'Coloca Po+Or (Frankfort) o G+Me para auto-enderezar'}
               className={canAutoStraighten ? 'auto' : ''}
-            >Auto</button>
+            >{t('autoBtn')}</button>
           </div>
           )}
 
@@ -1742,7 +1742,7 @@ export default function CanvasArea(props: Props) {
                   ? <><Icon name="eyeOff" size={15} /> Sin herramienta</>
                   : <>
                       <Icon name={TOOLS.find((t) => t.id === tool)!.icon} size={15} />
-                      {TOOLS.find((t) => t.id === tool)!.label}
+                      {t('tool'+tool.charAt(0).toUpperCase()+tool.slice(1))}
                     </>}
               </button>
             ) : (
@@ -1752,23 +1752,26 @@ export default function CanvasArea(props: Props) {
                 onClick={() => setToolsOpen(false)}
                 title="Recoger la barra de herramientas"
               >⌄</button>
-              {TOOLS.map((t) => (
+              {TOOLS.map((tl) => {
+                const tlLabel = t('tool' + tl.id.charAt(0).toUpperCase() + tl.id.slice(1));
+                return (
                 <button
-                  key={t.id}
-                  className={`ct-tool ${tool === t.id ? 'active' : ''}`}
+                  key={tl.id}
+                  className={`ct-tool ${tool === tl.id ? 'active' : ''}`}
                   // Pulsar la herramienta ACTIVA la apaga (estado neutro): así se
                   // puede dejar la foto "en frío" para mirarla o hacer zoom sin
                   // riesgo de anotar algo sin querer.
-                  onClick={() => setTool(tool === t.id ? 'none' : t.id)}
-                  title={tool === t.id
-                    ? `${t.label} — pulsa para desactivar (tecla ${t.hotkey})`
-                    : `${t.label} (tecla ${t.hotkey})`}
-                  aria-pressed={tool === t.id}
+                  onClick={() => setTool(tool === tl.id ? 'none' : tl.id)}
+                  title={tool === tl.id
+                    ? `${tlLabel} — ${t('pressToDisable')} (${t('keyLabel')} ${tl.hotkey})`
+                    : `${tlLabel} (${t('keyLabel')} ${tl.hotkey})`}
+                  aria-pressed={tool === tl.id}
                 >
-                  <Icon name={t.icon} size={18} />
-                  <span className="ct-label">{t.label}</span>
+                  <Icon name={tl.icon} size={18} />
+                  <span className="ct-label">{tlLabel}</span>
                 </button>
-              ))}
+                );
+              })}
               <span className="ct-sep" />
               <button
                 className="ct-tool"
