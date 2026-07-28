@@ -111,7 +111,7 @@ export default function ResultsTable(props: Props) {
       {showPendingNote && (
         <div className="pending-note">
           ⚠ Los puntos no están <b>confirmados</b>. Revísalos y pulsa
-          <b>Confirmar puntos</b> en la barra superior para fijar el análisis.
+          <b>{t('confirmPoints')}</b> en la barra superior para fijar el análisis.
         </div>
       )}
       <div>
@@ -166,7 +166,7 @@ export default function ResultsTable(props: Props) {
 
       {(customLines.length > 0 || customAngles.length > 0 || rulers.length > 0) && (
         <div>
-          <h3>Medidas personalizadas</h3>
+          <h3>{t('customMeasures')}</h3>
           <table className="ceph">
             <tbody>
               {rulers.map((r, i) => {
@@ -333,7 +333,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                     <b>{t('ang-'+m.id)}</b>
                     {needsNk && (
                       <div style={{ fontSize: 10.5, color: 'var(--warn)', fontWeight: 400, marginTop: 2 }}>
-                        Coloca el punto <b>Cuello (Nk)</b> — opcional — desde la lista de puntos.
+                        Coloca el punto <b>{t('neckPoint')}</b> — opcional — desde la lista de puntos.
                       </div>
                     )}
                   </td>
@@ -353,7 +353,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             {/* Ángulo nasofacial — recta–recta (plano facial G–Pog vs dorso N–Pn) */}
             <tr>
               <td title={t('descNasofacial')}>
-                <b>Ángulo nasofacial</b>
+                <b>{t('nasofacialAngle')}</b>
               </td>
               <td className="num">
                 {nfacAngle != null ? `${nfacAngle.toFixed(1)}°` : <span style={{ color: 'var(--muted)' }}>—</span>}
@@ -372,18 +372,18 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
       </div>
 
       <div>
-        <h3>Proyección nasal (Goode) — componentes</h3>
+        <h3>{t('goodeComponents')}</h3>
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th><th className="num">Paciente</th>
-              <th className="num">Normal</th><th>Eval.</th>
+              <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
+              <th className="num">{t('thNormal')}</th><th>{t('thEval')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td title={t('descNPn')}>
-                <b>Longitud nasal</b><br />
+                <b>{t('nasalLength')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   N → Pn
                 </span>
@@ -395,7 +395,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
             <tr>
               <td title={t('descNAC')}>
-                <b>Línea base</b><br />
+                <b>{t('baseLine')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   N → AC (pliegue alar)
                 </span>
@@ -407,7 +407,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
             <tr>
               <td title={t('descGoodePerp')}>
-                <b>Proyección nasal</b><br />
+                <b>{t('nasalProjLabel')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   Perpendicular Pn → N–AC
                 </span>
@@ -424,11 +424,11 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
       </div>
 
       <div>
-        <h3>Relación ala–columnela (eje Ba–Bp)</h3>
+        <h3>{t('alarColumRelation')}</h3>
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th><th className="num">Paciente</th>
+              <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
               <th className="num">Normal</th>
             </tr>
           </thead>
@@ -463,7 +463,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
             <tr>
               <td title={t('descShowColum')}>
-                <b>Show columelar</b><br />
+                <b>{t('showColumelar')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>BC − AB</span>
               </td>
               <td className="num">
@@ -479,7 +479,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         </table>
         <div className="gunter-result" style={{ marginTop: 8 }}>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
-            Clasificación
+            {t('classification')}
           </div>
           {rel == null
             ? badge('muted', t('missingABBpC'))
@@ -498,25 +498,25 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           )}
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.45 }}>
-          Sobre la foto: <b>eje blanco punteado</b> = Ba–Bp (eje longitudinal de
-          la narina); <b>perpendicular rosa</b> = distancia AB del ala al eje;
-          <b> perpendicular amarilla</b> = distancia BC de la columnela al eje.
+          {t('onPhotoNote1')} <b>{t('onPhotoWhiteAxis')}</b> {t('onPhotoNote2')}
+          {' '}<b>{t('onPhotoPink')}</b> {t('onPhotoNote3')}
+          {' '}<b>{t('onPhotoYellow')}</b> {t('onPhotoNote4')}
         </div>
       </div>
 
       <div>
-        <h3>Proyección del mentón</h3>
+        <h3>{t('chinProjection')}</h3>
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th><th className="num">Paciente</th>
-              <th className="num">Normal</th><th>Eval.</th>
+              <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
+              <th className="num">{t('thNormal')}</th><th>{t('thEval')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td title={t('descZeroMeridian')}>
-                <b>Proyección del mentón</b><br />
+                <b>{t('chinProjection')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   {cpFrankfort
                     ? t('zeroMeridianFrankfort')
@@ -545,18 +545,18 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
       </div>
 
       <div>
-        <h3>Plano de Frankfort</h3>
+        <h3>{t('frankfortPlane')}</h3>
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th><th className="num">Paciente</th>
-              <th className="num">Normal</th><th>Eval.</th>
+              <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
+              <th className="num">{t('thNormal')}</th><th>{t('thEval')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td title={t('descFacialFrankfort')}>
-                <b>Inclinación facial vs FH</b><br />
+                <b>{t('facialInclination')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                   ∠(Po–Or, G–Pog) — req. Po, Or, G, Pog
                 </span>
@@ -652,7 +652,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
   return (
     <>
       <div>
-        <h3>Medida clave</h3>
+        <h3>{t('keyMeasure')}</h3>
         <div className="result-cards">
           <MetricCard
             label={t('deviationIntercanthal')}
@@ -669,7 +669,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
 
       {/* --- 1. Medidas globales --- */}
       <div>
-        <h3>Farkas — medidas globales</h3>
+        <h3>{t('farkasGlobal')}</h3>
         <table className="ceph">
           <thead>
             <tr><th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th></tr>
@@ -690,7 +690,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
 
       {/* --- 2. Tercios faciales verticales (tr–g–sn–gn) --- */}
       <div>
-        <h3>Tercios faciales verticales</h3>
+        <h3>{t('secVerticalThirds')}</h3>
         <table className="ceph">
           <thead>
             <tr>
@@ -741,7 +741,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          <b>Tercios:</b> tr (trichion) → línea de cabezas de ceja (cb_d–cb_i) →
+          <b>{t('thirdsLabel')}</b> tr (trichion) → línea de cabezas de ceja (cb_d–cb_i) →
           sn (subnasal) → gn (gnation). El límite superior/medio es la línea
           blanca que une ambas cabezas de ceja. Ideal: cada tercio ≈ 33.3 % de la
           altura facial total. Si la desviación máxima ≤ 4 pts. % →
@@ -751,7 +751,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
 
       {/* --- 2b. Quintos faciales (5 quintos / 6 verticales) --- */}
       <div>
-        <h3>Quintos faciales verticales</h3>
+        <h3>{t('verticalFifths')}</h3>
         {fifths ? (
           <table className="ceph">
             <thead>
@@ -806,7 +806,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
 
       {/* --- 4. Medidas bilaterales (derecha vs izquierda) --- */}
       <div>
-        <h3>Farkas — medidas bilaterales</h3>
+        <h3>{t('farkasBilateral')}</h3>
         <table className="ceph">
           <thead>
             <tr>
@@ -830,14 +830,14 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          La columna <b>Simetría</b> compara magnitud D vs I:
+          La columna <b>{t('symmetryLabel')}</b> compara magnitud D vs I:
           100 % = idénticos, menor = más asimétrico.
         </div>
       </div>
 
       {/* --- 5. Índice de simetría por zona --- */}
       <div>
-        <h3>Índice de simetría facial</h3>
+        <h3>{t('facialSymIndex')}</h3>
         <table className="ceph">
           <thead>
             <tr>

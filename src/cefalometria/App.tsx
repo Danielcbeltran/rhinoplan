@@ -1386,7 +1386,7 @@ export default function App({
         <div className="brand">
           <div className="logo">R</div>
           <div>
-            RhinoPlan Perfilometría
+            RhinoPlan {tt('appTitle')}
             <span className="sub">{tt('appSubtitle')}</span>
           </div>
         </div>

@@ -152,8 +152,8 @@ export default function LayersPanel(p: Props) {
       <summary><Icon name="layers" size={13} /> {t('layersTitle')}</summary>
 
       <div className="global-actions">
-        <button onClick={showAll} title={t('showAll')}><Icon name="eye" size={13} /> Mostrar todo</button>
-        <button onClick={hideAll} title={t('hideAll')}><Icon name="eyeOff" size={13} /> Ocultar todo</button>
+        <button onClick={showAll} title={t('showAll')}><Icon name="eye" size={13} /> {t('showAllLayers')}</button>
+        <button onClick={hideAll} title={t('hideAll')}><Icon name="eyeOff" size={13} /> {t('hideAllLayers')}</button>
       </div>
 
       {/* ============ Puntos ============ */}
