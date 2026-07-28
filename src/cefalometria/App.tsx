@@ -994,7 +994,7 @@ export default function App({
       const m = previas[0];
       setMedicionActualId(m.id);
       patchCurrent(estadoAParche(m, foto.src) as any);
-      showToast(`Medicion del ${new Date(m.fecha).toLocaleDateString()} restaurada`);
+      showToast(`${tt('measurementFrom')} ${new Date(m.fecha).toLocaleDateString()} ${tt('measRestored')}`);
     } else {
       setMedicionActualId(null);
       void loadNewImageSrc(foto.src);
@@ -1490,7 +1490,7 @@ export default function App({
           )}
           {hasImage && current.detectionStatus === 'done' && !current.confirmed && (
             <button className={flowStep === 'confirm' ? 'primary' : ''} onClick={onConfirmPoints}>
-              <Icon name="check" /> Confirmar puntos
+              <Icon name="check" /> {tt('confirmPointsBtn')}
             </button>
           )}
           {current.confirmed && (

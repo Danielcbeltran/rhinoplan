@@ -228,7 +228,7 @@ export default function Toolbar(props: Props) {
 
       <div style={{ marginTop: 'auto' }}>
         <button className="danger" onClick={onResetMarks} disabled={!hasImage}>
-          Borrar todas las marcas
+          {t('clearAllMarksBtn')}
         </button>
       </div>
     </aside>

@@ -196,6 +196,14 @@ const PRECISION_CURSOR =
 
 export default function CanvasArea(props: Props) {
   const t = useT();
+  // Etiquetas que se DIBUJAN sobre el canvas 2D (no son JSX). Se construyen
+  // aquí con t() y se pasan a las funciones de dibujo externas como un objeto,
+  // ya que esas funciones están fuera del componente y no ven el hook.
+  const CL = {
+    nasalLength: t('clNasalLength'), baseNac: t('clBaseNac'), projection: t('clProjection'),
+    goode: t('clGoode'), adequate: t('clAdequate'), under: t('clUnder'), over: t('clOver'),
+    chinProj: t('clChinProj'), uncalib: t('clUncalibShort'), autoContour: t('clAutoContour'), unclassified: t('clUnclassified'),
+  };
   const {
     mode, imageEl, points, setPoints, pointMeta, onMarkPointAsUser,
     onBeforeChange,
@@ -660,7 +668,7 @@ export default function CanvasArea(props: Props) {
     beginLabelFrame(labelScale, uiScale);
     if (mode === 'perfil') {
       drawProfileLines(ctx, points, visibleLines);
-      drawProfileGuides(ctx, canvas, points, visibleLines, mmPerPx, measuresHidden);
+      drawProfileGuides(ctx, canvas, points, visibleLines, mmPerPx, measuresHidden, CL);
       // Contorno real del perfil: detectado (borde piel–fondo) y corregido por
       // los puntos de línea media colocados (pelo/barba se ajustan con Tr, Sl,
       // Pog, Me, etc. — la curva pasa exactamente por cada punto). Se DIBUJA
@@ -714,7 +722,7 @@ export default function CanvasArea(props: Props) {
         }
       }
     } else {
-      drawFrontalGuides(ctx, canvas, points, visibleLines, mmPerPx, measuresHidden);
+      drawFrontalGuides(ctx, canvas, points, visibleLines, mmPerPx, measuresHidden, CL);
     }
 
     for (const cl of customLines) {
@@ -1777,21 +1785,21 @@ export default function CanvasArea(props: Props) {
                 className="ct-tool"
                 onClick={onUndo}
                 disabled={!canUndo}
-                title="Deshacer la última acción (Ctrl+Z)"
+                title={t('undoTitle')}
               >
                 <Icon name="undo" size={18} />
-                <span className="ct-label">Deshacer</span>
+                <span className="ct-label">{t('undoAction')}</span>
               </button>
               <button
                 className="ct-tool"
                 onClick={onRedo}
                 disabled={!canRedo}
-                title="Rehacer (Ctrl+Shift+Z o Ctrl+Y)"
+                title={t('redoTitle')}
               >
                 <span style={{ display: 'inline-flex', transform: 'scaleX(-1)' }}>
                   <Icon name="undo" size={18} />
                 </span>
-                <span className="ct-label">Rehacer</span>
+                <span className="ct-label">{t('redoAction')}</span>
               </button>
             </div>
             )}
@@ -2130,6 +2138,7 @@ function drawProfileGuides(
   visibleLines: Record<string, boolean>,
   mmPerPx: number | null,
   measuresHidden: string[] = [],
+  CL: Record<string, string> = {},
 ) {
   if (visibleLines['zero-meridian']) {
     // Cero meridiano de González-Ulloa: línea por NASIÓN perpendicular al
@@ -2169,9 +2178,9 @@ function drawProfileGuides(
         const cp = chinProjectionSigned(n, pog, pn, po, or);
         const cpMm = cp != null && mmPerPx ? cp * mmPerPx : null;
         const txt = cpMm != null
-          ? `Proyec. mentón: ${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm`
+          ? `${CL.chinProj}: ${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm`
           : cp != null
-            ? `Proyec. mentón: ${cp >= 0 ? '+' : ''}${cp.toFixed(0)} px`
+            ? `${CL.chinProj}: ${cp >= 0 ? '+' : ''}${cp.toFixed(0)} px`
             : '';
         if (txt) drawText(ctx, (pog.x + foot.x) / 2 - 60, Math.min(pog.y, foot.y) - 8, txt,
           cpMm != null && Math.abs(cpMm) <= 2 ? '#86efac' : '#fbbf24');
@@ -2209,19 +2218,19 @@ function drawProfileGuides(
       const projTxt = mmPerPx ? `${(g.projection  * mmPerPx).toFixed(1)} mm` : `${g.projection.toFixed(0)} px`;
       // Gating de etiquetas según LayersPanel
       if (!measuresHidden.includes('distance-labels')) {
-        drawText(ctx, (N.x + Pn.x) / 2 + 10,      (N.y + Pn.y) / 2 - 8,  `Long. nasal: ${lenTxt}`,   '#00FF88', { size: 13, background: true });
-        drawText(ctx, (N.x + AC.x) / 2 - 10,      (N.y + AC.y) / 2 + 18, `Base N–AC: ${baseTxt}`,     '#00AAFF', { size: 13, background: true });
-        drawText(ctx, (Pn.x + g.foot.x) / 2 - 95, (Pn.y + g.foot.y) / 2,  `Proyección: ${projTxt}`,    '#FF8800', { size: 13, background: true });
+        drawText(ctx, (N.x + Pn.x) / 2 + 10,      (N.y + Pn.y) / 2 - 8,  `${CL.nasalLength}: ${lenTxt}`,   '#00FF88', { size: 13, background: true });
+        drawText(ctx, (N.x + AC.x) / 2 - 10,      (N.y + AC.y) / 2 + 18, `${CL.baseNac}: ${baseTxt}`,     '#00AAFF', { size: 13, background: true });
+        drawText(ctx, (Pn.x + g.foot.x) / 2 - 95, (Pn.y + g.foot.y) / 2,  `${CL.projection}: ${projTxt}`,    '#FF8800', { size: 13, background: true });
       }
       // Ratio Goode y veredicto
       if (!measuresHidden.includes('ratio-goode')) {
         const v = goodeVerdict(g.ratio);
-        const verdictTxt = v === 'adecuada' ? 'adecuada'
-          : v === 'subproyectada' ? 'subproyectada'
-          : v === 'sobreproyectada' ? 'sobreproyectada' : '';
+        const verdictTxt = v === 'adecuada' ? CL.adequate
+          : v === 'subproyectada' ? CL.under
+          : v === 'sobreproyectada' ? CL.over : '';
         const verdictColor = v === 'adecuada' ? '#86efac' : '#fbbf24';
         drawText(ctx, N.x - 110, N.y - 14,
-          `Goode: ${g.ratio.toFixed(2)}  ${verdictTxt ? `(${verdictTxt})` : ''}`,
+          `${CL.goode}: ${g.ratio.toFixed(2)}  ${verdictTxt ? `(${verdictTxt})` : ''}`,
           verdictColor, { size: 14, background: true });
       }
     }
@@ -2313,7 +2322,7 @@ function drawProfileGuides(
         const info = gunterInfo(t);
         const showTxt = showMm != null
           ? `${showMm >= 0 ? '+' : ''}${showMm.toFixed(1)} mm`
-          : `${r.showSignedPx >= 0 ? '+' : ''}${r.showSignedPx.toFixed(0)} px (sin calib.)`;
+          : `${r.showSignedPx >= 0 ? '+' : ''}${r.showSignedPx.toFixed(0)} px (${CL.uncalib})`;
         const labelColor = t === 'normal' ? '#86efac' : t === 'muted' ? '#e6edf6' : '#fbbf24';
         // Ubicar la etiqueta cerca del punto más a la izquierda y abajo del bracket
         const yLow = Math.max(r.A.y, r.Cb.y) + 30;
@@ -2322,7 +2331,7 @@ function drawProfileGuides(
           `Show columelar: ${showTxt}`,
           labelColor, { size: 13, background: true });
         drawText(ctx, xLow, yLow + 20,
-          info.short !== '—' ? info.short : 'Sin clasificar',
+          info.short !== '—' ? info.short : CL.unclassified,
           labelColor, { size: 13, background: true });
       }
     }
@@ -2336,6 +2345,7 @@ function drawFrontalGuides(
   visibleLines: Record<string, boolean>,
   mmPerPx: number | null,
   measuresHidden: string[] = [],
+  CL: Record<string, string> = {},
 ) {
   if (visibleLines['thirds']) {
     // Tercios faciales: tr → línea cb_d–cb_i (cejas) → sn → gn
@@ -2435,7 +2445,7 @@ function drawFrontalGuides(
       : '#ef4444';
     const valueTxt = devMm != null
       ? `${devMm.toFixed(1)} mm`
-      : `${devPx.toFixed(0)} px (sin calibrar)`;
+      : `${devPx.toFixed(0)} px (${CL.uncalib})`;
     const sideArrow = xLip! > xEye! ? ' →' : xLip! < xEye! ? ' ←' : '';
     drawText(ctx,
       (xEye! + xLip!) / 2 - 70,
