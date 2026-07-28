@@ -1068,6 +1068,7 @@ export default function App({
     const canvas = exportCanvas();
     if (!canvas) return;
     const imgData = canvas.toDataURL('image/png');
+    const EL = { ok: tt('evalOk'), warn: tt('evalMild'), error: tt('evalHigh') };
     const pdf = new jsPDF({
       orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
       unit: 'mm', format: 'a4',
@@ -1077,10 +1078,10 @@ export default function App({
     const margin = 10;
 
     pdf.setFontSize(16); pdf.setTextColor(20, 30, 60);
-    pdf.text(`RhinoPlan Perfilometría — Informe ${mode === 'perfil' ? 'de perfil' : 'frontal'}`, margin, margin + 4);
+    pdf.text(mode === 'perfil' ? tt('pdfReportProfile') : tt('pdfReportFrontal'), margin, margin + 4);
     pdf.setFontSize(9); pdf.setTextColor(90);
     pdf.text(new Date().toLocaleString(), margin, margin + 10);
-    if (mmPerPx) pdf.text(`Escala: ${(1 / mmPerPx).toFixed(2)} px/mm`, pageW - margin - 50, margin + 10);
+    if (mmPerPx) pdf.text(`${tt('pdfScale')}: ${(1 / mmPerPx).toFixed(2)} px/mm`, pageW - margin - 50, margin + 10);
 
     const maxImgW = pageW - margin * 2;
     const maxImgH = pageH * 0.5 - margin;
@@ -1091,7 +1092,7 @@ export default function App({
 
     let y = margin + 14 + imgH + 8;
     pdf.setFontSize(11); pdf.setTextColor(20, 30, 60);
-    pdf.text('Medidas', margin, y); y += 5;
+    pdf.text(tt('pdfMeasures'), margin, y); y += 5;
     pdf.setFontSize(8); pdf.setTextColor(60);
 
     const writeRow = (cols: string[]) => {
@@ -1102,7 +1103,7 @@ export default function App({
     };
 
     pdf.setFont('helvetica', 'bold');
-    writeRow(['Medida', 'Paciente', 'Normal', 'Δ', 'Eval.']);
+    writeRow([tt('pdfColMeasure'), tt('pdfColPatient'), tt('pdfColNormal'), 'Δ', tt('pdfColEval')]);
     pdf.setFont('helvetica', 'normal');
     pdf.setDrawColor(200); pdf.line(margin, y - 2, pageW - margin, y - 2);
 
@@ -1118,7 +1119,7 @@ export default function App({
       if (changes.length > 0 || (orig && sim)) {
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(20, 30, 60);
-        writeRow(['SIMULACIÓN RINOPLASTIA', '', '', '', '']);
+        writeRow([tt('pdfSimulation'), '', '', '', '']);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(60);
         for (const c of changes) {
@@ -1127,7 +1128,7 @@ export default function App({
         if (orig && sim) {
           // Cabecera tabla original vs proyectado
           pdf.setFont('helvetica', 'bold');
-          writeRow(['  Medida', 'Original', 'Proyectado', 'Δ', '']);
+          writeRow(['  '+tt('pdfColMeasure'), tt('pdfOriginal'), tt('pdfProjected'), 'Δ', '']);
           pdf.setFont('helvetica', 'normal');
           const nlOrig = nasolabialFromSilhouette(orig, current.points.Ls);
           const nlSim  = nasolabialFromSilhouette(sim,  current.points.Ls);
@@ -1143,7 +1144,7 @@ export default function App({
             writeRow(['  ∠ nasofrontal', `${nfOrig.toFixed(1)}°`, `${nfSim.toFixed(1)}°`,
               `${nfSim - nfOrig >= 0 ? '+' : ''}${(nfSim - nfOrig).toFixed(1)}°`, '']);
           }
-          writeRow(['  Proyección nasal', npOrig.toFixed(2), npSim.toFixed(2),
+          writeRow(['  '+tt('pdfGoodeProj'), npOrig.toFixed(2), npSim.toFixed(2),
             `${npSim - npOrig >= 0 ? '+' : ''}${(npSim - npOrig).toFixed(2)}`, '']);
         }
         writeRow(['', '', '', '', '']); // espacio
@@ -1157,56 +1158,56 @@ export default function App({
         const pa = current.points[a], pv = current.points[v], pb = current.points[b];
         const val = (pa && pv && pb) ? angle3pt(pa, pv, pb) : null;
         const lev = evaluate(val, m.ideal, m.tolerance);
-        writeRow([m.label,
+        writeRow([tt('ang-'+m.id),
           val != null ? `${val.toFixed(1)}°` : '—',
           `${m.ideal}° ±${m.tolerance}`,
           val != null ? `${val - m.ideal >= 0 ? '+' : ''}${(val - m.ideal).toFixed(1)}°` : '—',
-          evalLabel(lev)]);
+          evalLabel(lev, EL)]);
       }
       // Ángulo nasofacial (recta–recta: plano facial G–Pog vs dorso N–Pn)
       {
         const nfac = nasofacialAngle(current.points);
-        writeRow(['Ángulo nasofacial',
+        writeRow([tt('pdfNasofacial'),
           nfac != null ? `${nfac.toFixed(1)}°` : '—',
           `${NASOFACIAL_IDEAL}° ±${NASOFACIAL_TOL}`,
           nfac != null ? `${nfac - NASOFACIAL_IDEAL >= 0 ? '+' : ''}${(nfac - NASOFACIAL_IDEAL).toFixed(1)}°` : '—',
-          nfac != null ? evalLabel(evaluate(nfac, NASOFACIAL_IDEAL, NASOFACIAL_TOL)) : '—']);
+          nfac != null ? evalLabel(evaluate(nfac, NASOFACIAL_IDEAL, NASOFACIAL_TOL), EL) : '—']);
       }
       // Rotación de punta vs plano de Frankfort (columela Sn–Cm vs vertical Po–Or)
       {
         const tr = frankfortTipRotation(current.points);
-        writeRow(['Rotación punta (Frankfort)',
+        writeRow([tt('pdfTipRotation'),
           tr != null ? `${tr.toFixed(1)}°` : '—',
           '0–30°',
           tr != null ? `${tr - TIPROT_IDEAL >= 0 ? '+' : ''}${(tr - TIPROT_IDEAL).toFixed(1)}°` : '—',
-          tr != null ? evalLabel(evaluate(tr, TIPROT_IDEAL, TIPROT_TOL)) : '—']);
+          tr != null ? evalLabel(evaluate(tr, TIPROT_IDEAL, TIPROT_TOL), EL) : '—']);
       }
       // Ángulo facial vs Frankfort
       {
         const fhAng = frankfortFacialAngle(current.points);
-        writeRow(['Ángulo facial vs Frankfort',
+        writeRow([tt('pdfFacialFrankfort'),
           fhAng != null ? `${fhAng.toFixed(1)}°` : '—',
           '90° ±5',
           fhAng != null ? `${fhAng - 90 >= 0 ? '+' : ''}${(fhAng - 90).toFixed(1)}°` : '—',
-          fhAng != null ? evalLabel(evaluate(fhAng, 90, 5)) : '—']);
+          fhAng != null ? evalLabel(evaluate(fhAng, 90, 5), EL) : '—']);
       }
       const goode = goodeNasalProjection(current.points);
       if (goode) {
         const lenTxt = mmPerPx ? `${(goode.nasalLength * mmPerPx).toFixed(1)} mm` : `${goode.nasalLength.toFixed(0)} px`;
         const projTxt = mmPerPx ? `${(goode.projection * mmPerPx).toFixed(1)} mm` : `${goode.projection.toFixed(0)} px`;
         const v = goodeVerdict(goode.ratio);
-        const verdictTxt = v === 'adecuada' ? 'Adecuada'
-          : v === 'subproyectada' ? 'Subproyectada'
-          : v === 'sobreproyectada' ? 'Sobreproyectada' : '—';
-        writeRow(['Proyección nasal (Goode)', '', '', '', '']);
-        writeRow(['  Longitud nasal (N–Pn)', lenTxt, '', '', '']);
-        writeRow(['  Proyección (⊥ N–AC)',   projTxt, '', '', '']);
-        writeRow(['  Ratio Goode', goode.ratio.toFixed(2), '0.55 – 0.60',
+        const verdictTxt = v === 'adecuada' ? tt('verdictAdequate')
+          : v === 'subproyectada' ? tt('verdictUnder')
+          : v === 'sobreproyectada' ? tt('verdictOver') : '—';
+        writeRow([tt('pdfGoodeProj'), '', '', '', '']);
+        writeRow([tt('pdfNasalLen'), lenTxt, '', '', '']);
+        writeRow([tt('pdfProjection'), projTxt, '', '', '']);
+        writeRow([tt('pdfGoodeRatio'), goode.ratio.toFixed(2), '0.55 – 0.60',
           `${goode.ratio - 0.575 >= 0 ? '+' : ''}${(goode.ratio - 0.575).toFixed(2)}`,
           verdictTxt]);
       } else {
-        writeRow(['Proyección nasal (Goode)', '—', '0.55 – 0.60', '—',
-          'Faltan N, Pn o AC']);
+        writeRow([tt('pdfGoodeProj'), '—', '0.55 – 0.60', '—',
+          tt('pdfMissingNPnAC')]);
       }
       const rel = alarColumellarRelation(current.points);
       if (rel) {
@@ -1217,39 +1218,39 @@ export default function App({
         const gI = gunterInfo(gT);
         const fmt = (signedPx: number, signedMm: number | null) =>
           signedMm != null ? `${signedMm >= 0 ? '+' : ''}${signedMm.toFixed(1)} mm`
-            : `${signedPx >= 0 ? '+' : ''}${signedPx.toFixed(0)} px (sin calib.)`;
-        writeRow(['Relación ala–columnela (Gunter)', '', '', '', '']);
+            : `${signedPx >= 0 ? '+' : ''}${signedPx.toFixed(0)} px ${tt('pdfUncalib')}`;
+        writeRow([tt('pdfGunterRel'), '', '', '', '']);
         writeRow(['  AB · A → eje Ba–Bp', fmt(rel.abSignedPx, abMmP), '1 – 2 mm', '', '']);
         writeRow(['  BC · C → eje Ba–Bp', fmt(rel.cbSignedPx, cbMmP), '1 – 2 mm', '', '']);
-        writeRow(['  Show columelar',     fmt(rel.showSignedPx, showMmP), '1 – 4 mm', '', gI.short]);
+        writeRow([tt('pdfShowColum'),     fmt(rel.showSignedPx, showMmP), '1 – 4 mm', '', gI.short]);
       } else {
-        writeRow(['Relación ala–columnela (Gunter)', '—', '—', '—', 'Faltan A, Ba, Bp o Cb']);
+        writeRow(['Relación ala–columnela (Gunter)', '—', '—', '—', tt('pdfMissingABBpCb')]);
       }
       const cp = chinProjectionSigned(current.points['N'], current.points['Pog'], current.points['Pn'],
         current.points['Po'], current.points['Or']);
       const cpMm = (cp != null && mmPerPx) ? cp * mmPerPx : null;
-      writeRow(['Proyección mentón (cero merid.)',
+      writeRow([tt('pdfChinProj'),
         cpMm != null ? `${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm`
-        : cp != null ? `${cp >= 0 ? '+' : ''}${cp.toFixed(0)} px (sin calib.)` : '—',
+        : cp != null ? `${cp >= 0 ? '+' : ''}${cp.toFixed(0)} px ${tt('pdfUncalib')}` : '—',
         '0 ±2 mm',
         cpMm != null ? `${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm` : '—',
-        cpMm != null ? evalLabel(evaluate(cpMm, 0, 2)) : '—']);
+        cpMm != null ? evalLabel(evaluate(cpMm, 0, 2), EL) : '—']);
       const t = computeThirds(current.points['Tr'], current.points['G'], current.points['Sn'], current.points['Me']);
       if (t) {
         const writeT = (lab: string, r: number) => writeRow([lab,
           `${(r * 100).toFixed(1)} %`, '33.3 %',
           `${(r * 100 - 33.33) >= 0 ? '+' : ''}${((r * 100) - 33.33).toFixed(1)} %`,
-          evalLabel(evaluate(r * 100, 33.33, 4))]);
-        writeT('Tercio superior (Tr–G)', t.ratios[0]);
-        writeT('Tercio medio (G–Sn)',    t.ratios[1]);
-        writeT('Tercio inferior (Sn–Me)',t.ratios[2]);
+          evalLabel(evaluate(r * 100, 33.33, 4), EL)]);
+        writeT(tt('pdfThirdUpper'), t.ratios[0]);
+        writeT(tt('pdfThirdMid'), t.ratios[1]);
+        writeT(tt('pdfThirdLower'), t.ratios[2]);
       }
     } else {
       const thirds = frontalThirds(current.points);
       if (thirds) {
         const heightsPx = [thirds.upper, thirds.middle, thirds.lower];
         const labels: [string, string, string] = [
-          'Tercio superior (tr–cejas)', 'Tercio medio (cejas–sn)', 'Tercio inferior (sn–gn)',
+          tt('thirdUpperF'), tt('thirdMidF'), tt('thirdLowerF'),
         ];
         labels.forEach((lab, i) => {
           const h = heightsPx[i];
@@ -1258,7 +1259,7 @@ export default function App({
             mm,
             '33.3 %',
             `${(thirds.ratios[i] * 100).toFixed(1)} %`,
-            evalLabel(evaluate(thirds.ratios[i] * 100, 33.33, 4))]);
+            evalLabel(evaluate(thirds.ratios[i] * 100, 33.33, 4), EL)]);
         });
         const tEval = evaluateThirds(thirds.ratios[0], thirds.ratios[1], thirds.ratios[2]);
         writeRow(['  Total tr–gn',
@@ -1273,7 +1274,7 @@ export default function App({
           const wTxt = mmPerPx ? `${(w * mmPerPx).toFixed(1)} mm` : `${w.toFixed(0)} px`;
           writeRow([`Quinto ${lab}`, wTxt, '20 %',
             `${pct.toFixed(1)} %`,
-            evalLabel(evaluate(pct, 20, 2.5))]);
+            evalLabel(evaluate(pct, 20, 2.5), EL)]);
         });
         writeRow(['  Total (lat_d–lat_i)',
           mmPerPx ? `${(fifths.total * mmPerPx).toFixed(1)} mm` : `${fifths.total.toFixed(0)} px`,
@@ -1294,7 +1295,7 @@ export default function App({
       writeRow(['  Anchura interocular ext. (ex_d–ex_i)', fmtPx(fk.interExoCanth), '', '', '']);
       writeRow(['  Anchura bi-auricular (t_d–t_i)',   fmtPx(fk.biauricular), '', '', '']);
       const symEval = (pct: number | null) => pct == null ? '—'
-        : pct >= 90 ? 'OK' : pct >= 80 ? 'Leve' : 'Asim. marcada';
+        : pct >= 90 ? tt('evalOk') : pct >= 80 ? tt('evalMild') : tt('evalAsym');
       // --- Farkas: medidas bilaterales (derecha vs izquierda + % simetría) ---
       const fmtDeg = (deg: number | null) => deg == null ? '—' : `${deg.toFixed(1)}°`;
       const writeBilateral = (label: string, b: { right: number | null; left: number | null }, fmt: (v: number | null) => string) => {
@@ -1330,8 +1331,8 @@ export default function App({
     // --- Nota al pie: la imagen refleja las capas activas; la tabla es completa ---
     const hiddenPts = current.pointsHidden.length;
     const noteParts: string[] = [
-      'La imagen muestra únicamente los elementos activos en el panel "Capas de análisis" al momento de exportar.',
-      'Las tablas incluyen todas las medidas calculadas, independientemente de las capas visibles.',
+      tt('pdfFootnote1'),
+      tt('pdfFootnote2'),
     ];
     if (hiddenPts > 0) {
       noteParts.push(`Puntos ocultos en la imagen: ${current.pointsHidden.join(', ')}.`);
@@ -1825,9 +1826,9 @@ export default function App({
   );
 }
 
-function evalLabel(level: 'ok' | 'warn' | 'error' | 'muted') {
-  if (level === 'ok') return 'OK';
-  if (level === 'warn') return 'Leve';
-  if (level === 'error') return 'Alto';
+function evalLabel(level: 'ok' | 'warn' | 'error' | 'muted', L?: { ok: string; warn: string; error: string }) {
+  if (level === 'ok') return L ? L.ok : 'OK';
+  if (level === 'warn') return L ? L.warn : 'Leve';
+  if (level === 'error') return L ? L.error : 'Alto';
   return '—';
 }

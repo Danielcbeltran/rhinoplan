@@ -487,13 +487,13 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               ? badge('muted', t('uncalibrated'))
               : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                  {badge(gType === 'normal' ? 'ok' : gType === 'muted' ? 'muted' : 'warn', gInfo.short)}
-                  <b style={{ fontSize: 13 }}>{gInfo.name}</b>
+                  {badge(gType === 'normal' ? 'ok' : gType === 'muted' ? 'muted' : 'warn', gType === 'muted' ? gInfo.short : t('gS-'+gType))}
+                  <b style={{ fontSize: 13 }}>{gType === 'muted' ? gInfo.name : t('gN-'+gType)}</b>
                 </div>
               )}
           {gInfo.desc && (
             <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
-              {gInfo.desc}
+              {gType !== 'muted' && t('gD-'+gType) !== 'gD-'+gType ? t('gD-'+gType) : gInfo.desc}
             </div>
           )}
         </div>
