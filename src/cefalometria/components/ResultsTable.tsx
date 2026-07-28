@@ -818,7 +818,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          La columna <b>{t('symmetryLabel')}</b> {t('symColNote')}
+          <b>{t('symmetryLabel')}</b> {t('symColNote')}
         </div>
       </div>
 

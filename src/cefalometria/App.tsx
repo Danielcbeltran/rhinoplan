@@ -1572,7 +1572,7 @@ export default function App({
           {current.detectionStatus === 'done' && (
             <>
               <span style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 2 }}><Icon name="sparkles" size={14} /></span>
-              Detección completa: <b>{detectedCount}</b> punto{detectedCount !== 1 ? 's' : ''} automático{detectedCount !== 1 ? 's' : ''}
+              {tt('detectComplete')} <b>{detectedCount}</b> {detectedCount !== 1 ? tt('detectPointsAuto') : tt('detectPointAuto')}
               {userCount > 0 && <> · <b>{userCount}</b> {userCount !== 1 ? tt('detectAdjusted') : tt('detectAdjustedOne')}</>}
               {current.detectionUsedMirror && <> · <span className="ok-tag">{tt('detectMirror')}</span></>}
               {tt('detectDragHint')}

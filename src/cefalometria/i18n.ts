@@ -524,7 +524,7 @@ const ES: Record<string, string> = {
   thColSymmetry: 'Simetría',
   thColZone: 'Zona',
   thColPctSym: '% Simetría',
-  symColNote: 'compara magnitud D vs I: 100 % = idénticos, menor = más asimétrico.',
+  symColNote: 'compara la magnitud D vs I: 100 % = idénticos, menor = más asimétrico.',
   fifthsNote1: 'Coloca los 6 puntos de los quintos:',
   fifthsNote2: 'Los quintos se delimitan con 6 verticales verdes: contorno lateral D → exocantión D → endocantión D → endocantión I → exocantión I → contorno lateral I. Ideal: cada quinto ≈ 20 % del ancho facial total.',
   thirdsNoteFull: 'tr (trichion) → línea de cabezas de ceja (cb_d–cb_i) → sn (subnasal) → gn (gnation). El límite superior/medio es la línea blanca que une ambas cabezas de ceja. Ideal: cada tercio ≈ 33.3 % de la altura facial total. Si la desviación máxima ≤ 4 pts. % → equilibrado; si no, se identifica el tercio dominante.',
