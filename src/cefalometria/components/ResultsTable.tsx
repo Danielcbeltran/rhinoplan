@@ -429,7 +429,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <thead>
             <tr>
               <th>{t('thMeasure')}</th><th className="num">{t('thPatient')}</th>
-              <th className="num">Normal</th>
+              <th className="num">{t('thNormal')}</th>
             </tr>
           </thead>
           <tbody>
@@ -739,11 +739,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          <b>{t('thirdsLabel')}</b> tr (trichion) → línea de cabezas de ceja (cb_d–cb_i) →
-          sn (subnasal) → gn (gnation). El límite superior/medio es la línea
-          blanca que une ambas cabezas de ceja. Ideal: cada tercio ≈ 33.3 % de la
-          altura facial total. Si la desviación máxima ≤ 4 pts. % →
-          <b> equilibrado</b>; si no, se identifica el tercio dominante.
+          <b>{t('thirdsLabelBold')}</b> {t('thirdsNoteFull')}
         </div>
       </div>
 
@@ -754,8 +750,8 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <table className="ceph">
             <thead>
               <tr>
-                <th>Quinto</th>
-                <th className="num">Anchura</th>
+                <th>{t('thFifth')}</th>
+                <th className="num">{t('thWidth')}</th>
                 <th className="num">% del total</th>
                 <th className="num">Ideal</th>
                 <th>Eval.</th>
@@ -789,15 +785,9 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </table>
         ) : (
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            Coloca los 6 puntos de los quintos: <code>lat_d</code>, <code>ex_d</code>,
-            <code> en_d</code>, <code>en_i</code>, <code>ex_i</code>, <code>lat_i</code>.
+            {t('fifthsNote1')} <code>lat_d</code>, <code>ex_d</code>, <code>en_d</code>, <code>en_i</code>, <code>ex_i</code>, <code>lat_i</code>. {t('fifthsNote2')}
           </div>
         )}
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          Los quintos se delimitan con 6 verticales verdes: contorno lateral D →
-          exocantión D → endocantión D → endocantión I → exocantión I → contorno
-          lateral I. Ideal: cada quinto ≈ 20 % del ancho facial total.
-        </div>
       </div>
 
       {/* Líneas medias verticales: promovido a tarjeta CLAVE al inicio */}
@@ -808,10 +798,10 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <table className="ceph">
           <thead>
             <tr>
-              <th>Medida</th>
-              <th className="num">Derecha</th>
-              <th className="num">Izquierda</th>
-              <th className="num">Simetría</th>
+              <th>{t('thMeasure')}</th>
+              <th className="num">{t('thColRight')}</th>
+              <th className="num">{t('thColLeft')}</th>
+              <th className="num">{t('thColSymmetry')}</th>
             </tr>
           </thead>
           <tbody>
@@ -819,17 +809,16 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             <BilateralRow label={t('eyeTilt')}   b={f.eyeSlant}          fmt={fmtAng} />
             <BilateralRow label={t('distPrnAlar')} b={f.pronasalAlar}   fmt={fmtDist} />
             <BilateralRow label={t('distStomionCheilion')}     b={f.stomionChelion}    fmt={fmtDist} />
-            <BilateralRow label="∠ óculo-oto-nasal (t–en–al)"   b={f.oculoOtoNasal}     fmt={fmtAng} />
-            <BilateralRow label="∠ naso-ocular externo (al–n–ex)" b={f.nasoOcularExterno} fmt={fmtAng} />
-            <BilateralRow label="∠ separación ojo–eje cara"     b={f.eyeSeparationAng}  fmt={fmtAng} />
-            <BilateralRow label="∠ naso-bucal (al–sn–ch)"       b={f.nasoBuccalAng}     fmt={fmtAng} />
+            <BilateralRow label={t('angOculoOto')}   b={f.oculoOtoNasal}     fmt={fmtAng} />
+            <BilateralRow label={t('angNasoOcular')} b={f.nasoOcularExterno} fmt={fmtAng} />
+            <BilateralRow label={t('angEyeSep')}     b={f.eyeSeparationAng}  fmt={fmtAng} />
+            <BilateralRow label={t('angNasoBuccal')}       b={f.nasoBuccalAng}     fmt={fmtAng} />
             <BilateralRow label={t('distPupilAxis')}   b={f.pupilToMidline}    fmt={fmtDist} />
             <BilateralRow label={t('pupilSubnasalHeight')} b={f.pupilSubnasal}    fmt={fmtDist} />
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          La columna <b>{t('symmetryLabel')}</b> compara magnitud D vs I:
-          100 % = idénticos, menor = más asimétrico.
+          La columna <b>{t('symmetryLabel')}</b> {t('symColNote')}
         </div>
       </div>
 
@@ -839,8 +828,8 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
         <table className="ceph">
           <thead>
             <tr>
-              <th>Zona</th>
-              <th className="num">% simetría</th>
+              <th>{t('thColZone')}</th>
+              <th className="num">{t('thColPctSym')}</th>
               <th>Eval.</th>
             </tr>
           </thead>
