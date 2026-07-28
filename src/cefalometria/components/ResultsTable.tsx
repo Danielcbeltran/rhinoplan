@@ -104,7 +104,7 @@ export default function ResultsTable(props: Props) {
   const refB = mode === 'frente' ? points['en_i'] : points['Pn'];
   const refReady = !!(refA && refB);
   const refLabel = mode === 'frente' ? t('distIntercanthal') : t('nasionPronasale');
-  const refHint  = mode === 'frente' ? 'ej. ~31 mm en adultos' : 'longitud nasal del paciente';
+  const refHint  = mode === 'frente' ? t('refHintFrontal') : t('refHintProfile');
 
   return (
     <aside className="results">
@@ -329,11 +329,11 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               const needsNk = m.id === 'cervicoment' && !points['Nk'];
               return (
                 <tr key={m.id}>
-                  <td title={m.desc}>
+                  <td title={t('angdesc-'+m.id) !== 'angdesc-'+m.id ? t('angdesc-'+m.id) : m.desc}>
                     <b>{t('ang-'+m.id)}</b>
                     {needsNk && (
                       <div style={{ fontSize: 10.5, color: 'var(--warn)', fontWeight: 400, marginTop: 2 }}>
-                        Coloca el punto <b>{t('neckPoint')}</b> — opcional — desde la lista de puntos.
+                        {t('placeNeckBefore')} <b>{t('neckPoint')}</b> {t('placeNeckAfter')}
                       </div>
                     )}
                   </td>
@@ -397,7 +397,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td title={t('descNAC')}>
                 <b>{t('baseLine')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
-                  N → AC (pliegue alar)
+                  {t('nAcAlarCrease')}
                 </span>
               </td>
               <td className="num">{goode ? fmtDist(goode.baseLine)
@@ -409,7 +409,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
               <td title={t('descGoodePerp')}>
                 <b>{t('nasalProjLabel')}</b><br />
                 <span style={{ fontSize: 10, color: 'var(--muted)' }}>
-                  Perpendicular Pn → N–AC
+                  {t('perpPnNac')}
                 </span>
               </td>
               <td className="num">{goode ? fmtDist(goode.projection)
@@ -435,8 +435,8 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <tbody>
             <tr>
               <td title={t('descAlarPerp')}>
-                <b>AB</b> · Distancia A → eje Ba–Bp<br />
-                <span style={{ fontSize: 10, color: 'var(--muted)' }}>req. A, Ba, Bp</span>
+                {t('abDistance')}<br />
+                <span style={{ fontSize: 10, color: 'var(--muted)' }}>{t('reqABaBp')}</span>
               </td>
               <td className="num">
                 {rel == null
@@ -449,8 +449,8 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             </tr>
             <tr>
               <td title={t('descColumPerp')}>
-                <b>BC</b> · Distancia C → eje Ba–Bp<br />
-                <span style={{ fontSize: 10, color: 'var(--muted)' }}>req. Cb, Ba, Bp</span>
+                {t('bcDistance')}<br />
+                <span style={{ fontSize: 10, color: 'var(--muted)' }}>{t('reqCbBaBp')}</span>
               </td>
               <td className="num">
                 {rel == null
@@ -577,9 +577,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           </tbody>
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-          La línea Po–Or se dibuja automáticamente en azul claro sobre la foto
-          y sirve como referencia horizontal para evaluar la inclinación general
-          del plano facial.
+          {t('poOrNote')}
         </div>
       </div>
 
