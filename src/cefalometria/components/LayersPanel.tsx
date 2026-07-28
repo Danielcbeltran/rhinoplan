@@ -162,11 +162,11 @@ export default function LayersPanel(p: Props) {
                  ...sectionsOpen,
                  points: (e.target as HTMLDetailsElement).open,
                })}>
-        <summary>Puntos ({modePoints.length - pointsHidden.length}/{modePoints.length})</summary>
+        <summary>{t('pointsGroupTitle')} ({modePoints.length - pointsHidden.length}/{modePoints.length})</summary>
         <div className="section-body">
           <div className="section-actions">
-            <button onClick={allPointsOn}>Mostrar todos</button>
-            <button onClick={allPointsOff}>Ocultar todos</button>
+            <button onClick={allPointsOn}>{t('showAllShort')}</button>
+            <button onClick={allPointsOff}>{t('hideAllShort')}</button>
           </div>
           {modePoints.map((pt) => {
             const visible = isPointVisible(pt.id);
@@ -195,8 +195,8 @@ export default function LayersPanel(p: Props) {
         <summary>{t('linesSection')} ({lines.filter((l) => isLineVisible(l.id)).length}/{lines.length})</summary>
         <div className="section-body">
           <div className="section-actions">
-            <button onClick={allLinesOn}>Mostrar todas</button>
-            <button onClick={allLinesOff}>Ocultar todas</button>
+            <button onClick={allLinesOn}>{t('showAllFem')}</button>
+            <button onClick={allLinesOff}>{t('hideAllFem')}</button>
           </div>
           {lines.map((l) => {
             const visible = isLineVisible(l.id);
@@ -224,8 +224,8 @@ export default function LayersPanel(p: Props) {
           <summary>{t('anglesSection')} ({anglesShown.length}/{angles.length})</summary>
           <div className="section-body">
             <div className="section-actions">
-              <button onClick={allAnglesOn}>Mostrar todos</button>
-              <button onClick={allAnglesOff}>Ocultar todos</button>
+              <button onClick={allAnglesOn}>{t('showAllShort')}</button>
+              <button onClick={allAnglesOff}>{t('hideAllShort')}</button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, lineHeight: 1.4 }}>
               Los ángulos activados se dibujan sobre la foto (y salen así en los
@@ -258,8 +258,8 @@ export default function LayersPanel(p: Props) {
         <summary>{t('measuresSection')} ({measures.length - measuresHidden.length}/{measures.length})</summary>
         <div className="section-body">
           <div className="section-actions">
-            <button onClick={allMeasuresOn}>Mostrar todas</button>
-            <button onClick={allMeasuresOff}>Ocultar todas</button>
+            <button onClick={allMeasuresOn}>{t('showAllFem')}</button>
+            <button onClick={allMeasuresOff}>{t('hideAllFem')}</button>
           </div>
           {measures.map((m) => {
             const visible = isMeasureVisible(m.id);

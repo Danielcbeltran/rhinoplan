@@ -25,6 +25,7 @@ import {
   type ContourCandidates,
 } from '../profileContour';
 import type { PointMeta, Viewport } from '../App';
+import { useT } from '../i18n';
 
 // 'none' = estado NEUTRO: ninguna herramienta armada, tocar la foto no anota
 // nada (solo zoom/pan). Se modela como un valor más de la unión, no como
@@ -194,6 +195,7 @@ const PRECISION_CURSOR =
   "%3C/svg%3E\") 12 12, crosshair";
 
 export default function CanvasArea(props: Props) {
+  const t = useT();
   const {
     mode, imageEl, points, setPoints, pointMeta, onMarkPointAsUser,
     onBeforeChange,
@@ -1579,24 +1581,24 @@ export default function CanvasArea(props: Props) {
           <div className="icon"><Icon name="photo" size={46} /></div>
           <h2>
             {mode === 'perfil'
-              ? 'Modo PERFIL — carga una foto lateral'
-              : 'Modo FRENTE — carga una foto frontal'}
+              ? t('emptyProfile')
+              : t('emptyFrontal')}
           </h2>
           <p>
-            Sube una foto o captúrala con la cámara y pulsa <b>Detectar auto</b>.
-            La IA coloca los puntos automáticamente; luego usa la <b>lupa</b>
-            y <b>zoom (rueda) / pan (Espacio+drag)</b> para ajustar con precisión píxel.
+            {t('emptyHint1')} <b>{t('emptyHintDetect')}</b>.
+            {' '}{t('emptyHint2')} <b>{t('emptyHintLoupe')}</b>
+            {' '}{t('emptyHint3')} <b>{t('emptyHintZoom')}</b> {t('emptyHint4')}
           </p>
           {(onRequestLoad || onRequestCamera) && (
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
               {onRequestLoad && (
                 <button className="primary" style={{ padding: '10px 20px', fontSize: 14 }} onClick={onRequestLoad}>
-                  <Icon name="folder" /> Cargar foto
+                  <Icon name="folder" /> {t('loadPhotoBtn')}
                 </button>
               )}
               {onRequestCamera && (
                 <button style={{ padding: '10px 20px', fontSize: 14 }} onClick={onRequestCamera}>
-                  <Icon name="camera" /> Usar cámara
+                  <Icon name="camera" /> {t('useCameraBtn')}
                 </button>
               )}
             </div>

@@ -1387,23 +1387,23 @@ export default function App({
           <div className="logo">R</div>
           <div>
             RhinoPlan Perfilometría
-            <span className="sub">perfilometría facial — proyección prequirúrgica</span>
+            <span className="sub">{tt('appSubtitle')}</span>
           </div>
         </div>
 
-        <div className="mode-switch" role="tablist" aria-label="Modo de análisis">
+        <div className="mode-switch" role="tablist" aria-label={tt('modeAnalysis')}>
           <button
             role="tab" aria-selected={mode === 'perfil'}
             className={mode === 'perfil' ? 'active' : ''}
             onClick={() => setMode('perfil')}
-            title="Perfilometría lateral (P)"
-          >◐ Perfil</button>
+            title={tt('profileTitle')}
+          >◐ {tt('profileTab')}</button>
           <button
             role="tab" aria-selected={mode === 'frente'}
             className={mode === 'frente' ? 'active' : ''}
             onClick={() => setMode('frente')}
-            title="Análisis frontal (F)"
-          >◉ Frente</button>
+            title={tt('frontalTitle')}
+          >◉ {tt('frontalTab')}</button>
         </div>
 
         <button
@@ -1432,7 +1432,7 @@ export default function App({
               {placedCount}/{totalPoints}
             </span>
           ) : (
-            <span className="progress-chip">Sin imagen</span>
+            <span className="progress-chip">{tt('noImage')}</span>
           )}
 
           {/* Grupo CAPTURA. Un solo botón "primary" en toda la barra: el paso
@@ -1463,7 +1463,7 @@ export default function App({
             style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
             tabIndex={-1} aria-hidden="true"
           />
-          <button onClick={() => setShowCamera(true)}><Icon name="camera" /> Cámara</button>
+          <button onClick={() => setShowCamera(true)}><Icon name="camera" /> {tt('camera')}</button>
 
           {hasImage && <span className="tb-sep" />}
 

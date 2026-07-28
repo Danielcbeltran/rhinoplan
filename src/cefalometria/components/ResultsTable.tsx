@@ -119,7 +119,7 @@ export default function ResultsTable(props: Props) {
         <div className={`calibration-status ${mmPerPx ? 'ok' : ''}`}>
           {mmPerPx
             ? <>Escala: <b>{(1 / mmPerPx).toFixed(2)} px/mm</b> &middot; <b>{mmPerPx.toFixed(4)} mm/px</b></>
-            : <>Sin calibración — distancias en píxeles. Usa la herramienta <b>Calibrar</b> o la calibración predeterminada de abajo.</>
+            : <>{t('noCalibPixels')} <b>{t('calibToolName')}</b> {t('orDefaultCalib')}</>
           }
         </div>
 
@@ -127,7 +127,7 @@ export default function ResultsTable(props: Props) {
           <div className="ref-calib" style={{ marginTop: 8 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
               <span style={{ color: 'var(--text-dim)' }}>
-                Calibración predeterminada — <b>{refLabel}</b>
+                {t('defaultCalibLabel')} <b>{refLabel}</b>
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input
@@ -144,17 +144,17 @@ export default function ResultsTable(props: Props) {
                 <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>mm</span>
                 {refCalibMm != null && (
                   <button style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => setRefCalibMm(null)}>
-                    Quitar
+                    {t('removeBtn')}
                   </button>
                 )}
               </div>
             </label>
             <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, lineHeight: 1.45 }}>
               {!refReady
-                ? <>Coloca primero los puntos <b>{mode === 'frente' ? 'en_d y en_i' : 'N y Pn'}</b> para usar esta calibración.</>
+                ? <>{t('placeFirstPoints')} <b>{mode === 'frente' ? 'en_d y en_i' : 'N y Pn'}</b> {t('toUseCalib')}</>
                 : calibrationManual
-                  ? <>Introduce la medida real de esa distancia. <b>Nota:</b> hay una calibración manual activa que tiene prioridad; quítala para usar esta.</>
-                  : <>Introduce la medida real (mm) de esa distancia en el paciente y la escala se calcula automáticamente.</>}
+                  ? <>{t('enterRealMeasureNote')} <b>{t('manualCalibActive')}</b></>
+                  : <>{t('enterRealMeasure')}</>}
             </div>
           </div>
         )}
@@ -206,8 +206,7 @@ export default function ResultsTable(props: Props) {
           </table>
           {rulers.length > 0 && !mmPerPx && (
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
-              Sin calibración las distancias se muestran en píxeles. Usa la
-              herramienta <b>⇿ Calibrar</b> con una medida conocida para verlas en mm.
+              {t('noCalibPixelsFull')} <b>⇿ {t('calibToolName')}</b> {t('calibWithKnown')}
             </div>
           )}
         </div>
@@ -310,7 +309,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
       </div>
 
       <div>
-        <h3>Ángulos faciales blandos</h3>
+        <h3>{t('softFacialAngles')}</h3>
         <table className="ceph">
           <thead>
             <tr>
