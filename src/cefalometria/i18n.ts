@@ -325,6 +325,11 @@ const ES: Record<string, string> = {
   packaging: 'Empaquetando…',
   confirmCount: 'Confirmar',
   frontalOnlyTag: 'solo frente',
+  guidesSection: 'Guías de análisis',
+  linesGroupTitle: 'Líneas',
+  aestheticLines: 'Líneas estéticas',
+  assistants: 'Asistentes',
+  labelsSection: 'Etiquetas',
 
   // — Sliders de simulación de rinoplastia —
   'rslabel-dorsumFlatten': 'Aplanar dorso',
@@ -656,6 +661,11 @@ const EN: Record<string, string> = {
   packaging: 'Packaging…',
   confirmCount: 'Confirm',
   frontalOnlyTag: 'frontal only',
+  guidesSection: 'Analysis guides',
+  linesGroupTitle: 'Lines',
+  aestheticLines: 'Aesthetic lines',
+  assistants: 'Assistants',
+  labelsSection: 'Labels',
   'rslabel-dorsumFlatten': 'Flatten dorsum',
   'rsdesc-dorsumFlatten': 'straightens the hump toward the N–Pn line',
   'rslabel-dorsum': 'Nasal dorsum',

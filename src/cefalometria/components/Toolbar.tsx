@@ -124,13 +124,13 @@ export default function Toolbar(props: Props) {
       {mode === 'perfil' && lines && lines.length > 0 && (
         <details className="side-group">
           <summary>
-            Líneas estéticas
+            {t('aestheticLines')}
             {visibleLineCount > 0 && <span className="sg-count">{visibleLineCount}</span>}
           </summary>
           <div className="sg-body">
             <div className="lines-toggles" style={{ gridTemplateColumns: '1fr' }}>
               {lines.map((ln) => (
-                <label key={ln.id} title={ln.label}>
+                <label key={ln.id} title={t('line-'+ln.id)}>
                   <input
                     type="checkbox"
                     checked={!!visibleLines[ln.id]}
@@ -140,7 +140,7 @@ export default function Toolbar(props: Props) {
                     display: 'inline-block', width: 10, height: 2,
                     background: ln.color, marginRight: 4,
                   }} />
-                  {ln.label}
+                  {t('line-'+ln.id)}
                 </label>
               ))}
             </div>
@@ -150,13 +150,13 @@ export default function Toolbar(props: Props) {
 
       <details className="side-group">
         <summary>
-          Guías de análisis
+          {t('guidesSection')}
           {visibleGuideCount > 0 && <span className="sg-count">{visibleGuideCount}</span>}
         </summary>
         <div className="sg-body">
           <div className="lines-toggles" style={{ gridTemplateColumns: '1fr' }}>
             {guides.map((g) => (
-              <label key={g.id} title={g.label}>
+              <label key={g.id} title={t('line-'+g.id)}>
                 <input
                   type="checkbox"
                   checked={!!visibleLines[g.id]}
@@ -166,7 +166,7 @@ export default function Toolbar(props: Props) {
                   display: 'inline-block', width: 10, height: 2,
                   background: g.color, marginRight: 4,
                 }} />
-                {g.label}
+                {t('line-'+g.id)}
               </label>
             ))}
           </div>
@@ -174,7 +174,7 @@ export default function Toolbar(props: Props) {
       </details>
 
       <details className="side-group">
-        <summary>Asistentes</summary>
+        <summary>{t('assistants')}</summary>
         <div className="sg-body">
         <div className="lines-toggles" style={{ gridTemplateColumns: '1fr' }}>
           <label title={t('magnifierTitle')}>
@@ -201,14 +201,14 @@ export default function Toolbar(props: Props) {
 
       <details className="side-group">
         <summary>
-          Etiquetas
+          {t('labelsSection')}
           <span className="sg-count">{Math.round(labelScale * 100)} %</span>
         </summary>
         <div className="sg-body">
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}
                  title={t('labelSizeTitle')}>
             <span style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Tamaño del texto</span>
+              <span>{t('labelSize')}</span>
               <b>{Math.round(labelScale * 100)} %</b>
             </span>
             <input
