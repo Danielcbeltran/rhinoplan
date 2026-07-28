@@ -9,6 +9,7 @@ import {
 } from '../rhinoplasty';
 import { angleBetweenLines, type PointsMap } from '../cephalometry';
 import Icon from './Icon';
+import { useT } from '../i18n';
 
 interface Props {
   sim: RhinoplastySim;
@@ -45,6 +46,7 @@ interface Props {
 const REQUIRED_POINTS = ['N', 'Pn', 'Cm', 'Sn'] as const;
 
 export default function RhinoplastyPanel(props: Props) {
+  const t = useT();
   const {
     sim, setSim, showOriginal, setShowOriginal,
     warpPhoto, setWarpPhoto, splitView, setSplitView,
@@ -61,7 +63,7 @@ export default function RhinoplastyPanel(props: Props) {
 
   // Silueta original (sin cambios) y simulada para comparativa. La simulada
   // incluye TAMBIÉN los deformadores libres (mismo empuje smoothstep que el
-  // canvas aplica al tramo), para que "Original vs proyectado" refleje los
+  // canvas aplica al tramo), para que {t('origVsProjected')} refleje los
   // cambios hechos arrastrando y no solo los sliders.
   const original = ready ? originalNasalSilhouette(points) : null;
   const simRaw = ready ? computeSimulatedNose(points, sim, mmPerPx) : null;
@@ -134,7 +136,7 @@ export default function RhinoplastyPanel(props: Props) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             <Icon name="flask" size={15} /> Simulación rinoplastia
           </span>
-          <button className="rhino-close" onClick={onClose} title="Cerrar simulación">✕</button>
+          <button className="rhino-close" onClick={onClose} title={t('rhinoplastyClose')}>✕</button>
         </h3>
         {!ready ? (
           <div className="pending-note" style={{ marginTop: 8 }}>
@@ -178,11 +180,11 @@ export default function RhinoplastyPanel(props: Props) {
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button onClick={onUndo} disabled={!canUndo} style={{ flex: 1 }}
-            title="Deshacer el último cambio de la simulación (sliders o deformadores)">
+            title={t('undoSimTitle')}>
             ↩ Deshacer
           </button>
           <button onClick={onRedo} disabled={!canRedo} style={{ flex: 1 }}
-            title="Rehacer el cambio deshecho">
+            title={t('redoSimTitle')}>
             ↪ Rehacer
           </button>
           <button onClick={resetAll} disabled={changes.length === 0} style={{ flex: 1 }}>
@@ -249,7 +251,7 @@ export default function RhinoplastyPanel(props: Props) {
         </div>
         {editHandles && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
-            <span title="Área de influencia con la que nacen los deformadores nuevos (× del radio base)">
+            <span title={t('brushRadiusTitle')}>
               radio de nuevos deformadores
             </span>
             <input
@@ -278,7 +280,7 @@ export default function RhinoplastyPanel(props: Props) {
                     >✕</button>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
-                    <span title="Radio de influencia (× del radio base)">radio</span>
+                    <span title={t('brushRadius')}>radio</span>
                     <input
                       type="range" min={0.3} max={2} step={0.05} value={rMult}
                       onChange={(e) => onSetHandleRadius(i, parseFloat(e.target.value))}
@@ -376,7 +378,7 @@ export default function RhinoplastyPanel(props: Props) {
                 <td className="num">{fmtDistDelta(nasProjOrig, nasProjSim)}</td>
               </tr>
               <tr>
-                <td>{points.AC ? 'Ratio Goode' : 'Proyec. nasal'}</td>
+                <td>{points.AC ? t('ratioGoode') : t('nasalProj')}</td>
                 <td className="num">{projOrig != null ? projOrig.toFixed(2) : '—'}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>
                   {projSim != null ? projSim.toFixed(2) : '—'}

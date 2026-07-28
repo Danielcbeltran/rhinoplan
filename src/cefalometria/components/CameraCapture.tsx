@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '../i18n';
 
 interface Props {
   onCapture: (dataUrl: string) => void;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function CameraCapture({ onCapture, onClose }: Props) {
+  const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [facing, setFacing] = useState<'user' | 'environment'>('user');
@@ -33,7 +35,7 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
           await videoRef.current.play().catch(() => {});
         }
       } catch (e: any) {
-        setError(e?.message || 'No se pudo acceder a la cámara');
+        setError(e?.message || t('cameraError'));
       }
     }
     start();

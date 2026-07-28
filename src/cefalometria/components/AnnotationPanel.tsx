@@ -8,6 +8,7 @@ import {
   type Dataset,
 } from '../dataset';
 import Icon from './Icon';
+import { useT } from '../i18n';
 
 interface Props {
   mode: Mode;
@@ -31,6 +32,7 @@ function formatBytes(b: number): string {
 }
 
 export default function AnnotationPanel(props: Props) {
+  const t = useT();
   const {
     mode, points, activePointId, setActivePointId,
     confirmedPoints, setConfirmed, setAllConfirmed,
@@ -67,7 +69,7 @@ export default function AnnotationPanel(props: Props) {
   async function saveCurrentCase() {
     setSaveError(null);
     const canvas = canvasRef.current;
-    if (!canvas) { setSaveError('No hay canvas'); return; }
+    if (!canvas) { setSaveError(t('noCanvas')); return; }
     setSaving(true);
     try {
       const res = await saveCaseAndDownload({
@@ -75,7 +77,7 @@ export default function AnnotationPanel(props: Props) {
       });
       setDataset(res.ds);
       if (!res.ok) {
-        setSaveError(res.error ?? 'Error al guardar');
+        setSaveError(res.error ?? t('errorSaving'));
         return;
       }
       if (res.case) {
@@ -118,7 +120,7 @@ export default function AnnotationPanel(props: Props) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             <Icon name="dataset" size={14} /> Modo Anotación
           </span>
-          <button className="rhino-close" onClick={onClose} title="Cerrar modo anotación">✕</button>
+          <button className="rhino-close" onClick={onClose} title={t('closeAnnotation')}>✕</button>
         </h3>
         <div className="ann-intro">
           Corrige los puntos detectados arrastrándolos y confirma cada uno cuando esté
@@ -128,7 +130,7 @@ export default function AnnotationPanel(props: Props) {
       </div>
 
       <div>
-        <h3>Progreso ({mode === 'perfil' ? 'PERFIL' : 'FRENTE'})</h3>
+        <h3>Progreso ({mode === 'perfil' ? t('profileUpper') : t('frontalUpper')})</h3>
         <div className="ann-progress">
           <div className="ann-bar"><div className="ann-bar-fill" style={{ width: `${progress * 100}%` }} /></div>
           <div className="ann-progress-label">
@@ -167,7 +169,7 @@ export default function AnnotationPanel(props: Props) {
                   <button
                     className={`ann-confirm-btn ${isConfirmed ? 'active' : ''}`}
                     onClick={(e) => { e.stopPropagation(); setConfirmed(p.id, !isConfirmed); }}
-                    title={isConfirmed ? 'Quitar confirmación' : 'Confirmar este punto'}
+                    title={isConfirmed ? t('removeConfirm') : t('confirmThisPoint')}
                   >
                     {isConfirmed ? '✓' : 'Confirmar'}
                   </button>
@@ -179,18 +181,18 @@ export default function AnnotationPanel(props: Props) {
       </div>
 
       <div>
-        <h3>Guardar caso</h3>
+        <h3>{t('saveCase')}</h3>
         <button
           className="primary"
           onClick={saveCurrentCase}
           disabled={!allConfirmed || placed.length === 0 || saving}
           style={{ width: '100%' }}
-          title={allConfirmed ? 'Guardar caso y descargar JPG + JSON al PC' : 'Confirma todos los puntos primero'}
+          title={allConfirmed ? t('saveCaseTitle') : t('confirmAllFirst')}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             {saving
               ? <><span className="spinner" /> Guardando y descargando…</>
-              : <><Icon name="save" size={14} /> Guardar caso ({confirmedList.length}/{modePoints.length})</>}
+              : <><Icon name="save" size={14} /> {t('saveCase')} ({confirmedList.length}/{modePoints.length})</>}
           </span>
         </button>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5 }}>
@@ -213,10 +215,10 @@ export default function AnnotationPanel(props: Props) {
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                 <button onClick={exportZip} disabled={exporting} className="primary" style={{ flex: 1 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {exporting ? <><span className="spinner" /> Empaquetando…</> : <><Icon name="download" size={14} /> Exportar dataset (ZIP)</>}
+                    {exporting ? <><span className="spinner" /> {t('packaging')}</> : <><Icon name="download" size={14} /> Exportar dataset (ZIP)</>}
                   </span>
                 </button>
-                <button onClick={handleClearDataset} className="danger" title="Borrar el índice del navegador (no borra los archivos en disco)" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <button onClick={handleClearDataset} className="danger" title={t('clearIndexTitle')} style={{ display: 'inline-flex', alignItems: 'center' }}>
                   <Icon name="trash" size={15} />
                 </button>
               </div>
@@ -231,7 +233,7 @@ export default function AnnotationPanel(props: Props) {
                       <span className="ac-id">{c.id}</span>
                       <span className="ac-pts">{c.points.length} pts</span>
                       <span className="ac-date">{new Date(c.timestamp).toLocaleString()}</span>
-                      <button onClick={() => handleDeleteCase(c.id)} title="Eliminar del índice">✕</button>
+                      <button onClick={() => handleDeleteCase(c.id)} title={t('removeFromIndex')}>✕</button>
                     </li>
                   ))}
                 </ul>
