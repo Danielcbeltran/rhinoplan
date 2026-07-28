@@ -15,12 +15,14 @@ import App from './App';
 import type { CephProps } from './bridge';
 import { LangContext, type Lang } from './i18n';
 
-const SUPPORTED: Lang[] = ['es', 'en', 'fr', 'pt', 'de', 'it', 'tr'];
-
 export default function Entry(props: CephProps) {
-  // Normaliza el idioma recibido de la app principal a uno soportado.
+  // El módulo solo tiene diccionarios completos en español e inglés. Para el
+  // resto de idiomas de la app (fr, pt, de, it, tr) se usa INGLÉS como idioma
+  // del módulo — no español —, que es el idioma común en cirugía y en el curso
+  // internacional. Regla: español solo si el idioma es explícitamente 'es';
+  // cualquier otro caso → inglés.
   const raw = (props.lang || 'es').slice(0, 2).toLowerCase();
-  const lang: Lang = (SUPPORTED as string[]).includes(raw) ? (raw as Lang) : 'es';
+  const lang: Lang = raw === 'es' ? 'es' : 'en';
 
   return (
     <LangContext.Provider value={lang}>
