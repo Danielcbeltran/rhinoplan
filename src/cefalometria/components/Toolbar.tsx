@@ -180,21 +180,21 @@ export default function Toolbar(props: Props) {
           <label title={t('magnifierTitle')}>
             <input type="checkbox" checked={magnifierEnabled}
               onChange={(e) => setMagnifierEnabled(e.target.checked)} />
-            <Icon name="magnifier" size={14} /> Lupa al colocar
+            <Icon name="magnifier" size={14} /> {t('loupeOnPlace')}
           </label>
           <label title={t('edgeSnapTitle')}>
             <input type="checkbox" checked={edgeSnapEnabled}
               onChange={(e) => setEdgeSnapEnabled(e.target.checked)} />
-            <Icon name="magnet" size={14} /> Snap a borde
+            <Icon name="magnet" size={14} /> {t('snapToEdge')}
           </label>
           <label title={t('guidesTitle')}>
             <input type="checkbox" checked={templateVisible}
               onChange={(e) => setTemplateVisible(e.target.checked)} />
-            <Icon name="ghost" size={14} /> Plantilla guía
+            <Icon name="ghost" size={14} /> {t('guideTemplate')}
           </label>
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.4 }}>
-          Rueda del ratón = zoom · Espacio + drag = pan
+          {t('zoomPanHint')}
         </div>
         </div>
       </details>
@@ -219,7 +219,7 @@ export default function Toolbar(props: Props) {
             />
           </label>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.4 }}>
-            Afecta a medidas, ángulos y nombres de puntos sobre la imagen.
+            {t('labelSizeNote')}
           </div>
         </div>
       </details>

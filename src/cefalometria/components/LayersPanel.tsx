@@ -228,9 +228,7 @@ export default function LayersPanel(p: Props) {
               <button onClick={allAnglesOff}>{t('hideAllShort')}</button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, lineHeight: 1.4 }}>
-              Los ángulos activados se dibujan sobre la foto (y salen así en los
-              exports). Las tablas — en pantalla y en el PDF — siempre incluyen
-              todas las medidas.
+              {t('anglesDrawNote')}
             </div>
             {angles.map((a) => {
               const on = isAngleShown(a.id);
