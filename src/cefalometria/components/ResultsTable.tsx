@@ -840,7 +840,7 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
             <tr style={{ borderTop: '1px solid var(--border)' }}>
               <td><b>GLOBAL</b></td>
               <td className="num"><b>{sym.global != null ? `${sym.global.toFixed(1)} %` : '—'}</b></td>
-              <td>{symBadge(sym.global, true)}</td>
+              <td>{symBadge(sym.global, true, { excellent: t('symExcellent'), mild: t('symMild'), marked: t('symMarked'), ok: t('symOkShort'), asym: t('symAsymShort') })}</td>
             </tr>
           </tbody>
         </table>
@@ -886,20 +886,21 @@ function BilateralRow({
 }
 
 function SymmetryRow({ label, pct }: { label: string; pct: number | null }) {
+  const t = useT();
   return (
     <tr>
       <td>{label}</td>
       <td className="num">{pct != null ? `${pct.toFixed(1)} %` : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
-      <td>{symBadge(pct)}</td>
+      <td>{symBadge(pct, false, { excellent: t('symExcellent'), mild: t('symMild'), marked: t('symMarked'), ok: t('symOkShort'), asym: t('symAsymShort') })}</td>
     </tr>
   );
 }
 
-function symBadge(pct: number | null, bigText = false) {
+function symBadge(pct: number | null, bigText = false, SL?: { excellent: string; mild: string; marked: string; ok: string; asym: string }) {
   const lvl = symmetryLevel(pct);
   if (pct == null) return badge('muted', '—');
   const text = bigText
-    ? (lvl === 'ok' ? 'Excelente' : lvl === 'warn' ? 'Leve' : 'Marcada')
-    : (lvl === 'ok' ? 'OK' : lvl === 'warn' ? 'Leve' : 'Asim.');
+    ? (lvl === 'ok' ? (SL?.excellent ?? 'Excelente') : lvl === 'warn' ? (SL?.mild ?? 'Leve') : (SL?.marked ?? 'Marcada'))
+    : (lvl === 'ok' ? (SL?.ok ?? 'OK') : lvl === 'warn' ? (SL?.mild ?? 'Leve') : (SL?.asym ?? 'Asim.'));
   return badge(lvl, text);
 }

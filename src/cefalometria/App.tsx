@@ -1573,11 +1573,11 @@ export default function App({
             <>
               <span style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 2 }}><Icon name="sparkles" size={14} /></span>
               Detección completa: <b>{detectedCount}</b> punto{detectedCount !== 1 ? 's' : ''} automático{detectedCount !== 1 ? 's' : ''}
-              {userCount > 0 && <> · <b>{userCount}</b> ajustado{userCount !== 1 ? 's' : ''} manualmente</>}
-              {current.detectionUsedMirror && <> · <span className="ok-tag">detectado con imagen espejada</span></>}
-              · Arrastra los puntos para corregir su posición.
-              {!current.confirmed && <> Cuando estén bien, pulsa <b>Confirmar puntos</b>.</>}
-              {current.confirmed && <> <span className="ok-tag">✓ Confirmados</span></>}
+              {userCount > 0 && <> · <b>{userCount}</b> {userCount !== 1 ? tt('detectAdjusted') : tt('detectAdjustedOne')}</>}
+              {current.detectionUsedMirror && <> · <span className="ok-tag">{tt('detectMirror')}</span></>}
+              {tt('detectDragHint')}
+              {!current.confirmed && <> {tt('detectWhenReady')} <b>{tt('confirmPointsBtn')}</b>.</>}
+              {current.confirmed && <> <span className="ok-tag">{tt('detectConfirmed')}</span></>}
               {current.detectionWarning && (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#fdba74' }}>⚠ {current.detectionWarning}</div>
               )}
