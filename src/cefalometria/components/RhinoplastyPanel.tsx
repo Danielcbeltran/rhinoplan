@@ -161,7 +161,7 @@ export default function RhinoplastyPanel(props: Props) {
             return (
               <div key={s.id} className={`rhino-slider ${isZero ? 'inactive' : 'active'}`}>
                 <div className="rs-header">
-                  <span className="rs-label">{s.label}{s.frontalOnly && <span className="rs-tag">solo frente</span>}</span>
+                  <span className="rs-label">{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
                   <span className="rs-value">
                     {val >= 0 && val !== 0 ? '+' : ''}{val.toFixed(s.step < 1 ? 1 : 0)}{s.unit ? ' ' + s.unit : ''}
                   </span>
@@ -173,7 +173,7 @@ export default function RhinoplastyPanel(props: Props) {
                   onChange={(e) => updateSlider(s.id, parseFloat(e.target.value))}
                   disabled={!ready}
                 />
-                <div className="rs-desc">{s.desc}</div>
+                <div className="rs-desc">{t('rsdesc-'+s.id) !== 'rsdesc-'+s.id ? t('rsdesc-'+s.id) : s.desc}</div>
               </div>
             );
           })}
