@@ -1262,7 +1262,7 @@ export default function App({
             evalLabel(evaluate(thirds.ratios[i] * 100, 33.33, 4), EL)]);
         });
         const tEval = evaluateThirds(thirds.ratios[0], thirds.ratios[1], thirds.ratios[2]);
-        writeRow(['  Total tr–gn',
+        writeRow([tt('pdfTotalTrGn'),
           mmPerPx ? `${(thirds.total * mmPerPx).toFixed(1)} mm` : `${thirds.total.toFixed(0)} px`,
           '100 %', '—', tEval.text]);
       }
@@ -1272,11 +1272,11 @@ export default function App({
           const w = fifths.widths[i];
           const pct = fifths.ratios[i] * 100;
           const wTxt = mmPerPx ? `${(w * mmPerPx).toFixed(1)} mm` : `${w.toFixed(0)} px`;
-          writeRow([`Quinto ${lab}`, wTxt, '20 %',
+          writeRow([`${tt('pdfFifth')} ${lab}`, wTxt, '20 %',
             `${pct.toFixed(1)} %`,
             evalLabel(evaluate(pct, 20, 2.5), EL)]);
         });
-        writeRow(['  Total (lat_d–lat_i)',
+        writeRow([tt('pdfTotalLat'),
           mmPerPx ? `${(fifths.total * mmPerPx).toFixed(1)} mm` : `${fifths.total.toFixed(0)} px`,
           '100 %', '—', '—']);
       }
@@ -1284,16 +1284,16 @@ export default function App({
       const fk = farkasMeasurements(current.points);
       const fmtPx = (px: number | null) => px == null ? '—'
         : mmPerPx ? `${(px * mmPerPx).toFixed(1)} mm` : `${px.toFixed(0)} px`;
-      writeRow(['Farkas — Medidas globales', '', '', '', '']);
-      writeRow(['  Altura fisiognómica (tr–gn)', fmtPx(fk.faceHeight), '', '', '']);
-      writeRow(['  Altura nasal media (n–sn)',    fmtPx(fk.noseHeightMid), '', '', '']);
-      writeRow(['  Altura nasal (n–prn)',         fmtPx(fk.noseHeight), '', '', '']);
-      writeRow(['  Altura mucosa bucal (sto–gn)', fmtPx(fk.mouthHeight), '', '', '']);
-      writeRow(['  Anchura nasal (al_d–al_i)',    fmtPx(fk.noseWidth), '', '', '']);
-      writeRow(['  Anchura bucal (ch_d–ch_i)',    fmtPx(fk.mouthWidth), '', '', '']);
-      writeRow(['  Anchura intercantal (en_d–en_i)',  fmtPx(fk.interEndoCanth), '', '', '']);
-      writeRow(['  Anchura interocular ext. (ex_d–ex_i)', fmtPx(fk.interExoCanth), '', '', '']);
-      writeRow(['  Anchura bi-auricular (t_d–t_i)',   fmtPx(fk.biauricular), '', '', '']);
+      writeRow([tt('pdfFarkasGlobal'), '', '', '', '']);
+      writeRow([tt('pdfPhysioHeight'), fmtPx(fk.faceHeight), '', '', '']);
+      writeRow([tt('pdfMidNasalHeight'),    fmtPx(fk.noseHeightMid), '', '', '']);
+      writeRow([tt('pdfNasalHeight'),         fmtPx(fk.noseHeight), '', '', '']);
+      writeRow([tt('pdfBuccalMucosaHeight'), fmtPx(fk.mouthHeight), '', '', '']);
+      writeRow([tt('pdfNasalWidth'),    fmtPx(fk.noseWidth), '', '', '']);
+      writeRow([tt('pdfBuccalWidth'),    fmtPx(fk.mouthWidth), '', '', '']);
+      writeRow([tt('pdfIntercanthalWidth'),  fmtPx(fk.interEndoCanth), '', '', '']);
+      writeRow([tt('pdfInterocularWidth'), fmtPx(fk.interExoCanth), '', '', '']);
+      writeRow([tt('pdfBiauricularWidth'),   fmtPx(fk.biauricular), '', '', '']);
       const symEval = (pct: number | null) => pct == null ? '—'
         : pct >= 90 ? tt('evalOk') : pct >= 80 ? tt('evalMild') : tt('evalAsym');
       // --- Farkas: medidas bilaterales (derecha vs izquierda + % simetría) ---
@@ -1307,24 +1307,24 @@ export default function App({
           symEval(pct)]);
       };
       pdf.setFont('helvetica', 'bold');
-      writeRow(['Farkas — Medidas bilaterales', 'Derecha', 'Izquierda', 'Sim.', 'Eval.']);
+      writeRow([tt('pdfFarkasBilateral'), tt('pdfColRight'), tt('pdfColLeft'), tt('thColSymmetry'), tt('pdfColEval')]);
       pdf.setFont('helvetica', 'normal');
-      writeBilateral('Anchura palpebral (en–ex)',      fk.palpebralWidth,    fmtPx);
-      writeBilateral('Inclinación ojo (vs horiz.)',    fk.eyeSlant,          fmtDeg);
-      writeBilateral('Dist. pronasal–alar (prn–al)',   fk.pronasalAlar,      fmtPx);
-      writeBilateral('Dist. stomion–chelion (sto–ch)', fk.stomionChelion,    fmtPx);
-      writeBilateral('Áng. óculo-oto-nasal (t–en–al)', fk.oculoOtoNasal,     fmtDeg);
-      writeBilateral('Áng. naso-ocular ext. (al–n–ex)',fk.nasoOcularExterno, fmtDeg);
-      writeBilateral('Áng. separación ojo–eje cara',   fk.eyeSeparationAng,  fmtDeg);
-      writeBilateral('Áng. naso-bucal (al–sn–ch)',     fk.nasoBuccalAng,     fmtDeg);
-      writeBilateral('Dist. pupila–eje cara',          fk.pupilToMidline,    fmtPx);
-      writeBilateral('Altura pupila–subnasal (pu–sn)', fk.pupilSubnasal,     fmtPx);
+      writeBilateral(tt('pdfPalpebralWidth'), fk.palpebralWidth, fmtPx);
+      writeBilateral(tt('pdfEyeTilt'), fk.eyeSlant, fmtDeg);
+      writeBilateral(tt('pdfPrnAlar'), fk.pronasalAlar, fmtPx);
+      writeBilateral(tt('pdfStomionCheilion'), fk.stomionChelion, fmtPx);
+      writeBilateral(tt('pdfAngOculoOto'), fk.oculoOtoNasal, fmtDeg);
+      writeBilateral(tt('pdfAngNasoOcular'), fk.nasoOcularExterno, fmtDeg);
+      writeBilateral(tt('pdfAngEyeSep'), fk.eyeSeparationAng, fmtDeg);
+      writeBilateral(tt('pdfAngNasoBuccal'), fk.nasoBuccalAng, fmtDeg);
+      writeBilateral(tt('pdfPupilAxis'), fk.pupilToMidline, fmtPx);
+      writeBilateral(tt('pdfPupilSubnasal'), fk.pupilSubnasal, fmtPx);
       // --- Farkas: índice de simetría ---
       const sym = farkasSymmetryIndex(fk);
-      writeRow(['Farkas — Simetría facial', '', '', '', '']);
-      writeRow(['  Zona ocular', sym.ocular != null ? `${sym.ocular.toFixed(1)} %` : '—', '> 90 %', '', symEval(sym.ocular)]);
-      writeRow(['  Zona nasal',  sym.nasal  != null ? `${sym.nasal.toFixed(1)} %`  : '—', '> 90 %', '', symEval(sym.nasal)]);
-      writeRow(['  Zona bucal',  sym.bucal  != null ? `${sym.bucal.toFixed(1)} %`  : '—', '> 90 %', '', symEval(sym.bucal)]);
+      writeRow([tt('pdfFarkasSymmetry'), '', '', '', '']);
+      writeRow([tt('pdfZoneOcular'), sym.ocular != null ? `${sym.ocular.toFixed(1)} %` : '—', '> 90 %', '', symEval(sym.ocular)]);
+      writeRow([tt('pdfZoneNasal'),  sym.nasal  != null ? `${sym.nasal.toFixed(1)} %`  : '—', '> 90 %', '', symEval(sym.nasal)]);
+      writeRow([tt('pdfZoneBuccal'),  sym.bucal  != null ? `${sym.bucal.toFixed(1)} %`  : '—', '> 90 %', '', symEval(sym.bucal)]);
       writeRow(['  GLOBAL',      sym.global != null ? `${sym.global.toFixed(1)} %` : '—', '> 90 %', '', symEval(sym.global)]);
     }
 
