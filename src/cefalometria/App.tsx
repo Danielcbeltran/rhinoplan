@@ -360,6 +360,10 @@ export default function App({
     rhinoLastPushRef.current = 0;
   }
   // Modo anotación
+  // Herramienta interna de captura de dataset (para entrenar el modelo de
+  // detección). No tiene uso clínico, así que se oculta a los cirujanos.
+  // Para reactivarla (p. ej. para capturar más casos), poner en true.
+  const SHOW_ANNOTATION = false;
   const [annotationModeActive, setAnnotationModeActive] = useState(false);
   const [datasetCount, setDatasetCount] = useState(() => loadDataset().cases.length);
   // Refrescar contador cada vez que se abre/cierra el panel o se monta el componente
@@ -1508,7 +1512,7 @@ export default function App({
               <Icon name="flask" /> {rhinoSimActive ? tt('rhinoplastyClose') : tt('rhinoplasty')}
             </button>
           )}
-          {!rhinoSimActive && (
+          {SHOW_ANNOTATION && !rhinoSimActive && (
             <button
               className={annotationModeActive ? 'primary confirm' : ''}
               onClick={() => setAnnotationModeActive(!annotationModeActive)}
@@ -1671,7 +1675,7 @@ export default function App({
           topbarHidden={topbarHidden}
           onToggleTopbar={() => setTopbarHidden((v) => !v)}
         />
-        {annotationModeActive ? (
+        {SHOW_ANNOTATION && annotationModeActive ? (
           <AnnotationPanel
             mode={mode}
             points={current.points}
