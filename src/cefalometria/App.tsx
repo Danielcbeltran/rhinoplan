@@ -932,7 +932,7 @@ export default function App({
 
   function onConfirmPoints() {
     patchCurrent({ confirmed: true });
-    showToast('✓ Puntos confirmados');
+    showToast(tt('pointsConfirmed'));
   }
   function onUnconfirm()     { patchCurrent({ confirmed: false }); }
 
@@ -1410,8 +1410,8 @@ export default function App({
         <button
           className="theme-toggle"
           onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-          title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+          title={theme === 'dark' ? tt('themeToLight') : tt('themeToDark')}
+          aria-label={theme === 'dark' ? tt('themeToLight') : tt('themeToDark')}
         >
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
         </button>
@@ -1496,7 +1496,7 @@ export default function App({
           )}
           {current.confirmed && (
             <button onClick={onUnconfirm} title={tt('stepCorrect')}>
-              <Icon name="pencil" /> Editar puntos
+              <Icon name="pencil" /> {tt('editPoints')}
             </button>
           )}
           {mode === 'perfil' && hasImage && !annotationModeActive && (

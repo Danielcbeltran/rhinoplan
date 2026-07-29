@@ -118,38 +118,36 @@ export default function AnnotationPanel(props: Props) {
       <div>
         <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-            <Icon name="dataset" size={14} /> Modo Anotación
+            <Icon name="dataset" size={14} /> {t('annModeTitle')}
           </span>
           <button className="rhino-close" onClick={onClose} title={t('closeAnnotation')}>✕</button>
         </h3>
         <div className="ann-intro">
-          Corrige los puntos detectados arrastrándolos y confirma cada uno cuando esté
-          exactamente en la posición correcta. Al guardar, se descargarán
-          automáticamente <code>caso_NNN.jpg</code> y <code>caso_NNN.json</code> a tu PC.
+          {t('annIntro')} <code>caso_NNN.jpg</code> &amp; <code>caso_NNN.json</code> {t('annIntroEnd')}
         </div>
       </div>
 
       <div>
-        <h3>Progreso ({mode === 'perfil' ? t('profileUpper') : t('frontalUpper')})</h3>
+        <h3>{t('annProgress')} ({mode === 'perfil' ? t('profileUpper') : t('frontalUpper')})</h3>
         <div className="ann-progress">
           <div className="ann-bar"><div className="ann-bar-fill" style={{ width: `${progress * 100}%` }} /></div>
           <div className="ann-progress-label">
-            <b>{confirmedList.length}</b>/{modePoints.length} confirmados
-            <span style={{ color: 'var(--muted)', marginLeft: 6 }}>· {placed.length} colocados</span>
+            <b>{confirmedList.length}</b>/{modePoints.length} {t('annConfirmed')}
+            <span style={{ color: 'var(--muted)', marginLeft: 6 }}>· {placed.length} {t('annPlaced')}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button onClick={confirmAllPlaced} disabled={placed.length === 0} style={{ flex: 1 }}>
-            ✓ Confirmar todos los colocados
+            {t('annConfirmAll')}
           </button>
           <button onClick={resetAllConfirmed} disabled={confirmedList.length === 0}>
-            ↻ Reset
+            {t('annReset')}
           </button>
         </div>
       </div>
 
       <div>
-        <h3>Puntos a anotar</h3>
+        <h3>{t('annPointsToAnnotate')}</h3>
         <ul className="ann-list">
           {modePoints.map((p) => {
             const isPlaced = !!points[p.id];
@@ -171,7 +169,7 @@ export default function AnnotationPanel(props: Props) {
                     onClick={(e) => { e.stopPropagation(); setConfirmed(p.id, !isConfirmed); }}
                     title={isConfirmed ? t('removeConfirm') : t('confirmThisPoint')}
                   >
-                    {isConfirmed ? '✓' : 'Confirmar'}
+                    {isConfirmed ? '✓' : t('annConfirmBtn')}
                   </button>
                 )}
               </li>

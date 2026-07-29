@@ -118,7 +118,7 @@ export default function ResultsTable(props: Props) {
         <h3>{t('calibration')}</h3>
         <div className={`calibration-status ${mmPerPx ? 'ok' : ''}`}>
           {mmPerPx
-            ? <>Escala: <b>{(1 / mmPerPx).toFixed(2)} px/mm</b> &middot; <b>{mmPerPx.toFixed(4)} mm/px</b></>
+            ? <>{t('scaleLabel')} <b>{(1 / mmPerPx).toFixed(2)} px/mm</b> &middot; <b>{mmPerPx.toFixed(4)} mm/px</b></>
             : <>{t('noCalibPixels')} <b>{t('calibToolName')}</b> {t('orDefaultCalib')}</>
           }
         </div>
