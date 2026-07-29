@@ -203,7 +203,18 @@ export default function CanvasArea(props: Props) {
     nasalLength: t('clNasalLength'), baseNac: t('clBaseNac'), projection: t('clProjection'),
     goode: t('clGoode'), adequate: t('clAdequate'), under: t('clUnder'), over: t('clOver'),
     chinProj: t('clChinProj'), uncalib: t('clUncalibShort'), autoContour: t('clAutoContour'), unclassified: t('clUnclassified'),
+    contourDetected: t('clContourDetected'), contourAnchored: t('clContourAnchored'),
+    nostrilAxis: t('clNostrilAxis'), limitUpMid: t('clLimitUpMid'),
+    thirdUpper: t('clThirdUpper'), thirdMid: t('clThirdMid'), thirdLower: t('clThirdLower'),
+    refOcular: t('clRefOcular'), refNasal: t('clRefNasal'), refBuccal: t('clRefBuccal'),
+    midlineDeviation: t('clMidlineDeviation'), submentalPlane: t('clSubmentalPlane'), showColumLabel: t('clShowColumLabel'),
+    gunterShort: { normal: t('gS-normal'), I: t('gS-I'), II: t('gS-II'), III: t('gS-III'), IV: t('gS-IV'), V: t('gS-V'), VI: t('gS-VI') } as Record<string,string>,
   };
+  // Etiquetas de líneas dibujadas sobre la foto: id -> traducción.
+  const LL: Record<string, string> = {};
+  for (const ln of [...linesForMode('perfil'), ...linesForMode('frente')]) {
+    LL[ln.id] = t('line-' + ln.id);
+  }
   const {
     mode, imageEl, points, setPoints, pointMeta, onMarkPointAsUser,
     onBeforeChange,
@@ -667,7 +678,7 @@ export default function CanvasArea(props: Props) {
     if (!canvas) return;
     beginLabelFrame(labelScale, uiScale);
     if (mode === 'perfil') {
-      drawProfileLines(ctx, points, visibleLines);
+      drawProfileLines(ctx, points, visibleLines, LL);
       drawProfileGuides(ctx, canvas, points, visibleLines, mmPerPx, measuresHidden, CL);
       // Contorno real del perfil: detectado (borde piel–fondo) y corregido por
       // los puntos de línea media colocados (pelo/barba se ajustan con Tr, Sl,
@@ -695,7 +706,7 @@ export default function CanvasArea(props: Props) {
         const anchored = contourAnchors.length > 0
           || MIDLINE_LBL.some((id) => points[id] && pointMeta[id]?.source === 'user');
         drawText(ctx, 10, canvas.height - 12,
-          anchored ? 'Contorno ajustado a puntos' : 'Contorno detectado',
+          anchored ? CL.contourAnchored : CL.contourDetected,
           '#2DE6C8', { size: 11, background: true });
         // Anclas libres de ajuste: rombos teal (arrastrables con la herramienta
         // Contorno). Ocultables independientemente de la línea del contorno.
@@ -2120,6 +2131,7 @@ function drawProfileLines(
   ctx: CanvasRenderingContext2D,
   points: Partial<Record<PointId, Pt>>,
   visibleLines: Record<string, boolean>,
+  LL: Record<string, string> = {},
 ) {
   for (const ln of linesForMode('perfil')) {
     if (!visibleLines[ln.id]) continue;
@@ -2127,7 +2139,7 @@ function drawProfileLines(
     if (!a || !b) continue;
     // Líneas estéticas principales del perfil: 3 px con contorno + etiqueta con fondo
     drawLine(ctx, a, b, ln.color, 3, ln.dashed);
-    drawLineLabel(ctx, a, b, ln.label, ln.color);
+    drawLineLabel(ctx, a, b, LL[ln.id] || ln.label, ln.color);
   }
 }
 
@@ -2138,7 +2150,7 @@ function drawProfileGuides(
   visibleLines: Record<string, boolean>,
   mmPerPx: number | null,
   measuresHidden: string[] = [],
-  CL: Record<string, string> = {},
+  CL: any = {},
 ) {
   if (visibleLines['zero-meridian']) {
     // Cero meridiano de González-Ulloa: línea por NASIÓN perpendicular al
@@ -2281,7 +2293,7 @@ function drawProfileGuides(
         drawLine(ctx, axisStart, axisEnd, '#ffffff', 2, true);
         // Etiqueta del eje, cerca de Bp
         const lblPt = { x: r.Bp.x + ux * (extend + 6), y: r.Bp.y + uy * (extend + 6) };
-        drawText(ctx, lblPt.x, lblPt.y, 'Eje narina', '#ffffff', { size: 11, background: true });
+        drawText(ctx, lblPt.x, lblPt.y, CL.nostrilAxis, '#ffffff', { size: 11, background: true });
       }
 
       // 2) Perpendiculares desde A y desde Cb al eje (rosa / amarillo)
@@ -2328,10 +2340,10 @@ function drawProfileGuides(
         const yLow = Math.max(r.A.y, r.Cb.y) + 30;
         const xLow = Math.max(8, Math.min(canvas.width - 280, Math.min(r.A.x, r.Cb.x) - 30));
         drawText(ctx, xLow, yLow,
-          `Show columelar: ${showTxt}`,
+          `${CL.showColumLabel}: ${showTxt}`,
           labelColor, { size: 13, background: true });
         drawText(ctx, xLow, yLow + 20,
-          info.short !== '—' ? info.short : CL.unclassified,
+          info.short !== '—' ? (CL.gunterShort?.[t] ?? info.short) : CL.unclassified,
           labelColor, { size: 13, background: true });
       }
     }
@@ -2345,7 +2357,7 @@ function drawFrontalGuides(
   visibleLines: Record<string, boolean>,
   mmPerPx: number | null,
   measuresHidden: string[] = [],
-  CL: Record<string, string> = {},
+  CL: any = {},
 ) {
   if (visibleLines['thirds']) {
     // Tercios faciales: tr → línea cb_d–cb_i (cejas) → sn → gn
@@ -2360,13 +2372,13 @@ function drawFrontalGuides(
     if (cbD && cbI) {
       drawExtendedLine(ctx, canvas, cbD, cbI, '#FFFFFF', 2, false);
       const labelY = Math.max(16, Math.min(cbD.y, cbI.y) - 8);
-      drawText(ctx, 10, labelY, 'Límite T. Superior / T. Medio', '#FFFFFF', { size: 12, background: true });
+      drawText(ctx, 10, labelY, CL.limitUpMid, '#FFFFFF', { size: 12, background: true });
     }
     if (tr && browMid && sn && me) {
       const xLabel = Math.max(20, Math.min(canvas.width - 80, (tr.x + me.x) / 2 - 100));
-      drawText(ctx, xLabel, (tr.y + browMid.y) / 2, 'Tercio superior (tr–cejas)', '#bfdbfe', { size: 12, background: true });
-      drawText(ctx, xLabel, (browMid.y + sn.y) / 2, 'Tercio medio (cejas–sn)',    '#bfdbfe', { size: 12, background: true });
-      drawText(ctx, xLabel, (sn.y + me.y) / 2,      'Tercio inferior (sn–gn)',    '#bfdbfe', { size: 12, background: true });
+      drawText(ctx, xLabel, (tr.y + browMid.y) / 2, CL.thirdUpper, '#bfdbfe', { size: 12, background: true });
+      drawText(ctx, xLabel, (browMid.y + sn.y) / 2, CL.thirdMid,    '#bfdbfe', { size: 12, background: true });
+      drawText(ctx, xLabel, (sn.y + me.y) / 2,      CL.thirdLower,    '#bfdbfe', { size: 12, background: true });
     }
   }
   if (visibleLines['fifths']) {
@@ -2407,9 +2419,9 @@ function drawFrontalGuides(
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       drawText(ctx, mid.x - 30, mid.y - 8, label, color, { size: 11, background: true });
     };
-    drawRef(points['ex_d'], points['ex_i'], '#fb923c', 'Ref. ocular (ex_d–ex_i)');
-    drawRef(points['al_d'], points['al_i'], '#fdba74', 'Ref. nasal (al_d–al_i)');
-    drawRef(points['ch_d'], points['ch_i'], '#34d399', 'Ref. bucal (ch_d–ch_i)');
+    drawRef(points['ex_d'], points['ex_i'], '#fb923c', CL.refOcular);
+    drawRef(points['al_d'], points['al_i'], '#fdba74', CL.refNasal);
+    drawRef(points['ch_d'], points['ch_i'], '#34d399', CL.refBuccal);
   }
   // ----- Líneas medias VERTICALES (atraviesan toda la imagen) -----
   const xEye = intercanthalMidpointX(points);
@@ -2450,7 +2462,7 @@ function drawFrontalGuides(
     drawText(ctx,
       (xEye! + xLip!) / 2 - 70,
       yCon + 24,
-      `Desviación líneas medias: ${valueTxt}${sideArrow}`,
+      `${CL.midlineDeviation}: ${valueTxt}${sideArrow}`,
       devColor, { size: 13, background: true });
   }
 

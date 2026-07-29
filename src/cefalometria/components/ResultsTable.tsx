@@ -110,8 +110,8 @@ export default function ResultsTable(props: Props) {
     <aside className="results">
       {showPendingNote && (
         <div className="pending-note">
-          ⚠ Los puntos no están <b>confirmados</b>. Revísalos y pulsa
-          <b>{t('confirmPoints')}</b> en la barra superior para fijar el análisis.
+          {t('pendingNote1')} <b>{t('pendingNoteConfirmed')}</b>{t('pendingNote2')}
+          <b>{t('confirmPoints')}</b> {t('pendingNote3')}
         </div>
       )}
       <div>
@@ -643,9 +643,9 @@ function FrontalResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
   const vdArrow = vd != null ? (vd > 0 ? '→' : '←') : '';
   const vdVerdict = vd == null ? '—'
     : vdMm == null ? t('uncalibrated')
-    : vdMm < 1 ? 'Alineadas'
-    : vdMm <= 3 ? `Leve ${vdArrow}`
-    : `Marcada ${vdArrow}`;
+        : vdMm < 1 ? t('vdAligned')
+        : vdMm <= 3 ? `${t('vdMild')} ${vdArrow}`
+        : `${t('vdMarked')} ${vdArrow}`;
 
   return (
     <>
