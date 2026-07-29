@@ -310,6 +310,13 @@ function RhinoPlannerMain(){
   const TOOLS=getTools(t);
   const DEFAULT_COLORS=getDefaultColors(t);
   const VIEWS=getViews(t);
+  // Si el idioma cambia con la app abierta, refresca las etiquetas de los
+  // colores por defecto (resección, injertos, suturas) al nuevo idioma,
+  // conservando el hex y los colores personalizados que el usuario haya añadido.
+  useEffect(()=>{
+    setColors(prev=>prev.map((c,i)=>i<DEFAULT_COLORS.length?{...c,label:DEFAULT_COLORS[i].label}:c));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[lang]);
   const[token,setToken]=useState(()=>{try{return localStorage.getItem("rhinoplan_token")||null;}catch(e){return null;}});
   const[authUser,setAuthUser]=useState(()=>{try{const u=localStorage.getItem("rhinoplan_user");return u?JSON.parse(u):null;}catch(e){return null;}});
   const[tier,setTier]=useState("free");const[trialDays,setTrialDays]=useState(0);
@@ -354,7 +361,13 @@ function RhinoPlannerMain(){
   const[patient,setPatient]=useState({...EMPTY_PAT});const[patientId,setPatientId]=useState(null);
   const[showModal,setShowModal]=useState(false);const[activeView,setActiveView]=useState("frontal");
   const[tool,setTool]=useState("pen");const[color,setColor]=useState("#CC1111");const[size,setSize]=useState(3);const[opacity,setOpacity]=useState(1);
-  const[colors,setColors]=useState(()=>{try{const s=window.localStorage.getItem("rhinoplan_colors");return s?JSON.parse(s):[...DEFAULT_COLORS];}catch(e){return[...DEFAULT_COLORS];}});
+  const[colors,setColors]=useState(()=>{try{const s=window.localStorage.getItem("rhinoplan_colors");if(!s)return[...DEFAULT_COLORS];const saved=JSON.parse(s);
+    // Los primeros colores son los "por defecto" (resección, injertos, suturas):
+    // sus etiquetas deben seguir el idioma actual, no quedar congeladas en el
+    // idioma con que se guardaron. Se refresca el label por posición conservando
+    // el hex (por si el usuario lo cambió) y se respetan los colores extra.
+    return saved.map((c,i)=>i<DEFAULT_COLORS.length?{...c,label:DEFAULT_COLORS[i].label}:c);
+  }catch(e){return[...DEFAULT_COLORS];}});
   const[showColorEditor,setShowColorEditor]=useState(false);
   function saveColors(c){
     setColors(c);
