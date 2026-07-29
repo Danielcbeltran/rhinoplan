@@ -32,9 +32,14 @@ interface Props {
 function badge(level: 'ok' | 'warn' | 'error' | 'muted', text: string) {
   return <span className={`badge ${level}`}>{text}</span>;
 }
-function deltaLabel(val: number, ideal: number, unit: string, decimals = 1) {
-  const d = val - ideal;
-  const sign = d >= 0 ? '+' : '−';
+function deltaLabel(val: number, ideal: number, unit: string, decimals = 1, tol = 0) {
+  // Desviación respecto al BORDE del rango normal (ideal ± tol), no al promedio:
+  //  - dentro del rango  -> 0 (la medida es normal, no "se sale" nada)
+  //  - por encima del máx -> cuánto excede el límite superior (positivo)
+  //  - por debajo del mín -> cuánto falta bajo el límite inferior (negativo)
+  const hi = ideal + tol, lo = ideal - tol;
+  const d = val > hi ? val - hi : val < lo ? val - lo : 0;
+  const sign = d > 0 ? '+' : d < 0 ? '−' : '';
   return `${sign}${Math.abs(d).toFixed(decimals)}${unit}`;
 }
 
@@ -276,7 +281,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <MetricCard
             label={t('mkNasolabial')} sublabel="Cm–Sn–Ls"
             value={nlAngle != null ? `${nlAngle.toFixed(1)}°` : '—'}
-            delta={nlAngle != null ? deltaLabel(nlAngle, 100, '°') : null}
+            delta={nlAngle != null ? deltaLabel(nlAngle, 100, '°', 1, 10) : null}
             level={nlLevel} verdict={verdict(nlAngle, nlLevel)}
             normalLabel={t('mkNasolabialNormal')}
             gauge={{ value: nlAngle, ideal: 100, tol: 10 }}
@@ -284,7 +289,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <MetricCard
             label={t('mkNasofrontal')} sublabel="G–N–Pn"
             value={nfrAngle != null ? `${nfrAngle.toFixed(1)}°` : '—'}
-            delta={nfrAngle != null ? deltaLabel(nfrAngle, 125, '°') : null}
+            delta={nfrAngle != null ? deltaLabel(nfrAngle, 125, '°', 1, 8) : null}
             level={nfrLevel} verdict={verdict(nfrAngle, nfrLevel)}
             normalLabel={t('mkNasofrontalNormal')}
             gauge={{ value: nfrAngle, ideal: 125, tol: 8 }}
@@ -292,7 +297,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <MetricCard
             label={t('mkGoode')} sublabel={t('mkGoodeSub')}
             value={goode ? goode.ratio.toFixed(2) : '—'}
-            delta={goode ? deltaLabel(goode.ratio, 0.575, '', 2) : null}
+            delta={goode ? deltaLabel(goode.ratio, 0.575, '', 2, 0.025) : null}
             level={goodeLevel} verdict={goode ? goodeText : '—'}
             normalLabel={t('mkGoodeNormal')}
             gauge={{ value: goode ? goode.ratio : null, ideal: 0.575, tol: 0.025 }}
@@ -300,7 +305,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
           <MetricCard
             label={t('mkTipRot')} sublabel={t('mkTipRotSub')}
             value={tipRot != null ? `${tipRot.toFixed(1)}°` : '—'}
-            delta={tipRot != null ? deltaLabel(tipRot, TIPROT_IDEAL, '°') : null}
+            delta={tipRot != null ? deltaLabel(tipRot, TIPROT_IDEAL, '°', 1, TIPROT_TOL) : null}
             level={tipRotLevel} verdict={verdict(tipRot, tipRotLevel)}
             normalLabel={t('mkTipRotNormal')}
             gauge={{ value: tipRot, ideal: TIPROT_IDEAL, tol: TIPROT_TOL }}
@@ -345,7 +350,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                     <RangeGauge value={value} ideal={m.ideal} tol={m.tolerance} />
                   </td>
                   <td>{value != null
-                    ? badge(level, deltaLabel(value, m.ideal, '°'))
+                    ? badge(level, deltaLabel(value, m.ideal, '°', 1, m.tolerance))
                     : badge('muted', '—')}</td>
                 </tr>
               );
@@ -363,7 +368,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                 <RangeGauge value={nfacAngle} ideal={NASOFACIAL_IDEAL} tol={NASOFACIAL_TOL} />
               </td>
               <td>{nfacAngle != null
-                ? badge(nfacLevel, deltaLabel(nfacAngle, NASOFACIAL_IDEAL, '°'))
+                ? badge(nfacLevel, deltaLabel(nfacAngle, NASOFACIAL_IDEAL, '°', 1, NASOFACIAL_TOL))
                 : badge('muted', '—')}</td>
             </tr>
             {/* Rotación de punta (Frankfort) se muestra como tarjeta CLAVE arriba */}
@@ -535,7 +540,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                 <RangeGauge value={cpMm} ideal={0} tol={2} />
               </td>
               <td>{cpMm != null
-                ? badge(cpLevel, deltaLabel(cpMm, 0, ' mm'))
+                ? badge(cpLevel, deltaLabel(cpMm, 0, ' mm', 1, 2))
                 : cp != null
                   ? badge('muted', t('uncalibrated'))
                   : badge('muted', '—')}</td>
@@ -571,7 +576,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                 <RangeGauge value={fhAngle} ideal={90} tol={5} />
               </td>
               <td>{fhAngle != null
-                ? badge(fhLevel, deltaLabel(fhAngle, 90, '°'))
+                ? badge(fhLevel, deltaLabel(fhAngle, 90, '°', 1, 5))
                 : badge('muted', '—')}</td>
             </tr>
           </tbody>
@@ -602,7 +607,7 @@ function ProfileResults({ points, mmPerPx }: { points: Partial<Record<PointId, P
                     <RangeGauge value={pct} ideal={33.33} tol={4} />
                   </td>
                   <td>{pct != null
-                    ? badge(level, deltaLabel(pct, 33.33, ' %'))
+                    ? badge(level, deltaLabel(pct, 33.33, ' %', 1, 4))
                     : badge('muted', '—')}</td>
                 </tr>
               );

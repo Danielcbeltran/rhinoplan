@@ -1073,6 +1073,13 @@ export default function App({
     if (!canvas) return;
     const imgData = canvas.toDataURL('image/png');
     const EL = { ok: tt('evalOk'), warn: tt('evalMild'), error: tt('evalHigh') };
+    // Δ = desviación respecto al BORDE del rango normal (ideal ± tol), no al
+    // promedio: 0 si está dentro del rango; si se sale, cuánto excede el límite.
+    const edgeDelta = (val: number, ideal: number, tol: number, unit: string, dec = 1) => {
+      const hi = ideal + tol, lo = ideal - tol;
+      const d = val > hi ? val - hi : val < lo ? val - lo : 0;
+      return `${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d).toFixed(dec)}${unit}`;
+    };
     const pdf = new jsPDF({
       orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
       unit: 'mm', format: 'a4',
@@ -1165,7 +1172,7 @@ export default function App({
         writeRow([tt('ang-'+m.id),
           val != null ? `${val.toFixed(1)}°` : '—',
           `${m.ideal}° ±${m.tolerance}`,
-          val != null ? `${val - m.ideal >= 0 ? '+' : ''}${(val - m.ideal).toFixed(1)}°` : '—',
+          val != null ? edgeDelta(val, m.ideal, m.tolerance, '°') : '—',
           evalLabel(lev, EL)]);
       }
       // Ángulo nasofacial (recta–recta: plano facial G–Pog vs dorso N–Pn)
@@ -1174,7 +1181,7 @@ export default function App({
         writeRow([tt('pdfNasofacial'),
           nfac != null ? `${nfac.toFixed(1)}°` : '—',
           `${NASOFACIAL_IDEAL}° ±${NASOFACIAL_TOL}`,
-          nfac != null ? `${nfac - NASOFACIAL_IDEAL >= 0 ? '+' : ''}${(nfac - NASOFACIAL_IDEAL).toFixed(1)}°` : '—',
+          nfac != null ? edgeDelta(nfac, NASOFACIAL_IDEAL, NASOFACIAL_TOL, '°') : '—',
           nfac != null ? evalLabel(evaluate(nfac, NASOFACIAL_IDEAL, NASOFACIAL_TOL), EL) : '—']);
       }
       // Rotación de punta vs plano de Frankfort (columela Sn–Cm vs vertical Po–Or)
@@ -1183,7 +1190,7 @@ export default function App({
         writeRow([tt('pdfTipRotation'),
           tr != null ? `${tr.toFixed(1)}°` : '—',
           '0–30°',
-          tr != null ? `${tr - TIPROT_IDEAL >= 0 ? '+' : ''}${(tr - TIPROT_IDEAL).toFixed(1)}°` : '—',
+          tr != null ? edgeDelta(tr, TIPROT_IDEAL, TIPROT_TOL, '°') : '—',
           tr != null ? evalLabel(evaluate(tr, TIPROT_IDEAL, TIPROT_TOL), EL) : '—']);
       }
       // Ángulo facial vs Frankfort
@@ -1192,7 +1199,7 @@ export default function App({
         writeRow([tt('pdfFacialFrankfort'),
           fhAng != null ? `${fhAng.toFixed(1)}°` : '—',
           '90° ±5',
-          fhAng != null ? `${fhAng - 90 >= 0 ? '+' : ''}${(fhAng - 90).toFixed(1)}°` : '—',
+          fhAng != null ? edgeDelta(fhAng, 90, 5, '°') : '—',
           fhAng != null ? evalLabel(evaluate(fhAng, 90, 5), EL) : '—']);
       }
       const goode = goodeNasalProjection(current.points);
@@ -1207,7 +1214,7 @@ export default function App({
         writeRow([tt('pdfNasalLen'), lenTxt, '', '', '']);
         writeRow([tt('pdfProjection'), projTxt, '', '', '']);
         writeRow([tt('pdfGoodeRatio'), goode.ratio.toFixed(2), '0.55 – 0.60',
-          `${goode.ratio - 0.575 >= 0 ? '+' : ''}${(goode.ratio - 0.575).toFixed(2)}`,
+          edgeDelta(goode.ratio, 0.575, 0.025, '', 2),
           verdictTxt]);
       } else {
         writeRow([tt('pdfGoodeProj'), '—', '0.55 – 0.60', '—',
@@ -1237,13 +1244,13 @@ export default function App({
         cpMm != null ? `${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm`
         : cp != null ? `${cp >= 0 ? '+' : ''}${cp.toFixed(0)} px ${tt('pdfUncalib')}` : '—',
         '0 ±2 mm',
-        cpMm != null ? `${cpMm >= 0 ? '+' : ''}${cpMm.toFixed(1)} mm` : '—',
+        cpMm != null ? edgeDelta(cpMm, 0, 2, ' mm') : '—',
         cpMm != null ? evalLabel(evaluate(cpMm, 0, 2), EL) : '—']);
       const t = computeThirds(current.points['Tr'], current.points['G'], current.points['Sn'], current.points['Me']);
       if (t) {
         const writeT = (lab: string, r: number) => writeRow([lab,
           `${(r * 100).toFixed(1)} %`, '33.3 %',
-          `${(r * 100 - 33.33) >= 0 ? '+' : ''}${((r * 100) - 33.33).toFixed(1)} %`,
+          edgeDelta(r * 100, 33.33, 4, ' %'),
           evalLabel(evaluate(r * 100, 33.33, 4), EL)]);
         writeT(tt('pdfThirdUpper'), t.ratios[0]);
         writeT(tt('pdfThirdMid'), t.ratios[1]);
