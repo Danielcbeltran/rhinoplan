@@ -553,8 +553,12 @@ function RhinoPlannerMain(){
     try{
       const rows=await supaFetch("user_settings?user_id=eq."+usr.id+"&select=colores",tk);
       if(rows&&rows.length&&Array.isArray(rows[0].colores)&&rows[0].colores.length){
-        setColors(rows[0].colores);
-        try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(rows[0].colores));}catch(e){}
+        // Igual que al leer de localStorage: las etiquetas de los colores por
+        // defecto siguen el idioma actual (no el idioma con que se guardaron en
+        // la BD); los colores personalizados del usuario se respetan.
+        const synced=rows[0].colores.map((c,i)=>i<DEFAULT_COLORS.length?{...c,label:DEFAULT_COLORS[i].label}:c);
+        setColors(synced);
+        try{window.localStorage.setItem("rhinoplan_colors",JSON.stringify(synced));}catch(e){}
       }
     }catch(e){}
   }
