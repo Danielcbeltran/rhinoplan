@@ -181,27 +181,27 @@ export default function RhinoplastyPanel(props: Props) {
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button onClick={onUndo} disabled={!canUndo} style={{ flex: 1 }}
             title={t('undoSimTitle')}>
-            ↩ Deshacer
+            {t('rpUndo')}
           </button>
           <button onClick={onRedo} disabled={!canRedo} style={{ flex: 1 }}
             title={t('redoSimTitle')}>
-            ↪ Rehacer
+            {t('rpRedo')}
           </button>
           <button onClick={resetAll} disabled={changes.length === 0} style={{ flex: 1 }}>
-            ↻ Restablecer
+            {t('rpReset')}
           </button>
         </div>
       </div>
 
       <div>
-        <h3>Vista</h3>
+        <h3>{t('rpViewSection')}</h3>
         <label className="rhino-toggle">
           <input
             type="checkbox"
             checked={showOriginal}
             onChange={(e) => setShowOriginal(e.target.checked)}
           />
-          Mostrar perfil original (línea tenue)
+          {t('rpShowOriginal')}
         </label>
         <label className="rhino-toggle">
           <input
@@ -209,7 +209,7 @@ export default function RhinoplastyPanel(props: Props) {
             checked={warpPhoto}
             onChange={(e) => setWarpPhoto(e.target.checked)}
           />
-          Deformar la fotografía
+          {t('rpDeformPhoto')}
         </label>
         <label className="rhino-toggle">
           <input
@@ -217,7 +217,7 @@ export default function RhinoplastyPanel(props: Props) {
             checked={showSimLine}
             onChange={(e) => setShowSimLine(e.target.checked)}
           />
-          Mostrar línea de simulación (verde)
+          {t('rpShowSimLine')}
         </label>
         <label className="rhino-toggle">
           <input
@@ -225,7 +225,7 @@ export default function RhinoplastyPanel(props: Props) {
             checked={splitView}
             onChange={(e) => setSplitView(e.target.checked)}
           />
-          Vista dividida antes/después (divisor)
+          {t('rpSplitView')}
         </label>
         <label className="rhino-toggle">
           <input
@@ -233,7 +233,7 @@ export default function RhinoplastyPanel(props: Props) {
             checked={editHandles}
             onChange={(e) => setEditHandles(e.target.checked)}
           />
-          <Icon name="move" size={14} /> Editar deformadores libres (arrastrar sobre la foto)
+          <Icon name="move" size={14} /> {t('rpEditDeformers')}
         </label>
         <label className="rhino-toggle">
           <input
@@ -241,18 +241,15 @@ export default function RhinoplastyPanel(props: Props) {
             checked={showHandles}
             onChange={(e) => setShowHandles(e.target.checked)}
           />
-          <Icon name="eye" size={14} /> Mostrar deformadores (las flechas ámbar)
+          <Icon name="eye" size={14} /> {t('rpShowDeformers')}
         </label>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.45 }}>
-          Editar activado: arrastrar sobre la foto crea un empuje local; arrastra
-          la empuñadura ámbar para reajustarlo. Desactivado: arrastrar desplaza
-          la foto ampliada como siempre (Espacio+arrastre también desplaza).
-          Ocultar las flechas no quita su efecto sobre la foto.
+          {t('rpEditNote')}
         </div>
         {editHandles && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
             <span title={t('brushRadiusTitle')}>
-              radio de nuevos deformadores
+              {t('rpNewDeformerRadius')}
             </span>
             <input
               type="range" min={0.3} max={2} step={0.05} value={newHandleRadius}
@@ -272,7 +269,7 @@ export default function RhinoplastyPanel(props: Props) {
                 <div key={i} style={{ padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                     <span style={{ color: '#f59e0b', display: 'inline-flex' }}><Icon name="move" size={13} /></span>
-                    <span style={{ flex: 1 }}>Deformador {i + 1} · {lenTxt}</span>
+                    <span style={{ flex: 1 }}>{t('rpDeformer')} {i + 1} · {lenTxt}</span>
                     <button
                       onClick={() => onRemoveHandle(i)}
                       title={`Eliminar deformador ${i + 1}`}
@@ -280,7 +277,7 @@ export default function RhinoplastyPanel(props: Props) {
                     >✕</button>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
-                    <span title={t('brushRadius')}>radio</span>
+                    <span title={t('brushRadius')}>{t('rpRadius')}</span>
                     <input
                       type="range" min={0.3} max={2} step={0.05} value={rMult}
                       onChange={(e) => onSetHandleRadius(i, parseFloat(e.target.value))}
@@ -292,29 +289,29 @@ export default function RhinoplastyPanel(props: Props) {
               );
             })}
             <button onClick={onResetHandles} style={{ marginTop: 4, width: '100%' }}>
-              ✕ Quitar todos ({handles.length})
+              {t('rpRemoveAll')} ({handles.length})
             </button>
           </div>
         )}
       </div>
 
       <div>
-        <h3>Original vs proyectado</h3>
+        <h3>{t('rpOrigVsProj')}</h3>
         {!ready ? (
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>—</div>
         ) : (
           <table className="ceph">
             <thead>
               <tr>
-                <th>Medida</th>
-                <th className="num">Original</th>
-                <th className="num">Proyectado</th>
+                <th>{t('rpThMeasure')}</th>
+                <th className="num">{t('rpThOriginal')}</th>
+                <th className="num">{t('rpThProjected')}</th>
                 <th className="num">Δ</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>∠ nasolabial</td>
+                <td>{t('rpAngNasolabial')}</td>
                 <td className="num">{nasolabialOrig != null ? `${nasolabialOrig.toFixed(1)}°` : '—'}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>
                   {nasolabialSim != null ? `${nasolabialSim.toFixed(1)}°` : '—'}
@@ -326,7 +323,7 @@ export default function RhinoplastyPanel(props: Props) {
                 </td>
               </tr>
               <tr>
-                <td>∠ nasofrontal</td>
+                <td>{t('rpAngNasofrontal')}</td>
                 <td className="num">{nasofrontalOrig != null ? `${nasofrontalOrig.toFixed(1)}°` : '—'}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>
                   {nasofrontalSim != null ? `${nasofrontalSim.toFixed(1)}°` : '—'}
@@ -339,7 +336,7 @@ export default function RhinoplastyPanel(props: Props) {
               </tr>
               <tr>
                 <td title="Ángulo N–Pn–Sn: la cuña que forma la punta nasal, con vértice en Pn. Menor = punta más afilada; mayor = más roma.">
-                  ∠ de punta (N–Pn–Sn)
+                  {t('rpAngTip')}
                 </td>
                 <td className="num">{tipAngOrig != null ? `${tipAngOrig.toFixed(1)}°` : '—'}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>
@@ -353,7 +350,7 @@ export default function RhinoplastyPanel(props: Props) {
               </tr>
               <tr>
                 <td title="Rotación de la punta: ángulo entre la columela (Sn–Cm) y el plano de Frankfort (Po–Or). Requiere Po y Or colocados. Normal 0–30°.">
-                  Rotación punta (Frankfort)
+                  {t('rpTipRotation')}
                 </td>
                 <td className="num">{tipRotFrankOrig != null ? `${tipRotFrankOrig.toFixed(1)}°` : '—'}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>
@@ -366,13 +363,13 @@ export default function RhinoplastyPanel(props: Props) {
                 </td>
               </tr>
               <tr>
-                <td>Largo nariz (N–Pn)</td>
+                <td>{t('rpNasalLength')}</td>
                 <td className="num">{fmtDist(noseLenOrig)}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>{fmtDist(noseLenSim)}</td>
                 <td className="num">{fmtDistDelta(noseLenOrig, noseLenSim)}</td>
               </tr>
               <tr>
-                <td>Proyec. nasal (AC–Pn)</td>
+                <td>{t('rpNasalProj')}</td>
                 <td className="num">{fmtDist(nasProjOrig)}</td>
                 <td className="num" style={{ color: 'var(--ok-strong)' }}>{fmtDist(nasProjSim)}</td>
                 <td className="num">{fmtDistDelta(nasProjOrig, nasProjSim)}</td>
@@ -405,10 +402,10 @@ export default function RhinoplastyPanel(props: Props) {
       </div>
 
       <div>
-        <h3>Cambios aplicados</h3>
+        <h3>{t('rpChangesApplied')}</h3>
         {changes.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            Sin cambios. Mueve los sliders para simular.
+            {t('rpNoChanges')}
           </div>
         ) : (
           <ul className="rhino-changes">
@@ -423,9 +420,7 @@ export default function RhinoplastyPanel(props: Props) {
       </div>
 
       <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
-        Simulación geométrica — modela el nuevo perfil esperado tras la cirugía
-        basándose en los desplazamientos de los puntos blandos. Es <b>orientativa</b>
-        y debe complementarse con la planificación quirúrgica del cirujano.
+        {t('rpGeomNote1')} <b>{t('rpGeomNoteBold')}</b> {t('rpGeomNote2')}
       </div>
     </aside>
   );
