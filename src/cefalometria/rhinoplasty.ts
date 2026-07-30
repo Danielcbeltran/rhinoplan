@@ -415,7 +415,13 @@ export interface WarpControl { x: number; y: number; dx: number; dy: number; r?:
 
 /** `radius` es un MULTIPLICADOR del radio base (handleRadius): 1 = por defecto,
  *  0.5 = mitad de área de influencia (retoque fino), 2 = doble. Ausente = 1. */
-export interface RhinoHandle { from: Pt; to: Pt; radius?: number }
+export interface RhinoHandle {
+  from: Pt; to: Pt; radius?: number;
+  /** Bloqueado tras soltarlo: el arrastre sobre la foto lo ignora, para que
+   *  al crear/editar deformadores cercanos no se agarre este sin querer.
+   *  Se desbloquea con el candado de su fila en el panel. */
+  locked?: boolean;
+}
 
 /** Radio de influencia de los deformadores y del campo, derivado del tamaño
  *  del tramo nasal (misma fórmula que buildNoseWarpField: 0.12×). Antes era

@@ -1190,6 +1190,7 @@ export default function CanvasArea(props: Props) {
   function nearestHandleGrip(pt: Pt, threshold = 18): number {
     let best = -1, bd = threshold * threshold;
     rhinoHandles.forEach((h, i) => {
+      if (h.locked) return;   // bloqueados: no se pueden re-agarrar desde la foto
       for (const q of [h.to, h.from]) {
         const d = (q.x - pt.x) ** 2 + (q.y - pt.y) ** 2;
         if (d < bd) { bd = d; best = i; }
@@ -1329,6 +1330,10 @@ export default function CanvasArea(props: Props) {
     function onUp() {
       onMove.flush();
       justDraggedRef.current = true;
+      // Al soltar, el deformador queda BLOQUEADO: el arrastre sobre la foto
+      // ya no lo agarra (evita re-mover uno anterior al trabajar cerca).
+      // Se desbloquea con el candado de su fila en el panel.
+      setRhinoHandles((prev) => prev.map((h, i) => (i === idx ? { ...h, locked: true } : h)));
       setDraggingHandle(null);
     }
     window.addEventListener('pointermove', onMove);
@@ -2947,7 +2952,7 @@ function drawWarpedNoseMesh(
   // triángulo; 20 durante un arrastre activo (fluidez en iPad; al soltar se
   // redibuja a calidad completa). El coste sigue siendo bajo porque se mapea
   // desde el recorte cacheado, no desde la foto completa.
-  const G = fast ? 20 : 40;
+  const G = fast ? 13 : 40;
   const nx = G + 1;
   const sx = (x1 - x0) / G, sy = (y1 - y0) / G;
   const vx = new Float32Array(nx * nx), vy = new Float32Array(nx * nx);
@@ -3151,6 +3156,9 @@ function drawRhinoplastySplit(
 function drawRhinoHandle(ctx: CanvasRenderingContext2D, h: RhinoHandle, influenceR?: number | null) {
   const color = '#f59e0b';
   ctx.save();
+  // Bloqueado: se dibuja atenuado y sin el círculo de influencia — comunica
+  // "aplicado y fijo"; el candado del panel lo desbloquea.
+  if (h.locked) { ctx.globalAlpha = 0.45; influenceR = null; }
   if (influenceR != null && influenceR > 0) {
     ctx.setLineDash([6, 6]);
     ctx.lineWidth = 1.2;

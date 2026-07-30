@@ -1716,6 +1716,8 @@ export default function App({
               pushRhinoHistory(true);   // acción puntual: apila siempre
               setRhinoHandles((prev) => prev.filter((_, k) => k !== i));
             }}
+            onToggleHandleLock={(i) =>
+              setRhinoHandles((prev) => prev.map((h, k) => (k === i ? { ...h, locked: !h.locked } : h)))}
             onResetHandles={() => {
               pushRhinoHistory(true);
               setRhinoHandles([]);

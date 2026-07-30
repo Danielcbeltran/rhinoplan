@@ -24,6 +24,7 @@ interface Props {
   setShowSimLine: (b: boolean) => void;
   handles: RhinoHandle[];
   onRemoveHandle: (i: number) => void;
+  onToggleHandleLock: (i: number) => void;
   onResetHandles: () => void;
   /** Fija el multiplicador de radio de influencia del deformador i (×0.3–×2). */
   onSetHandleRadius: (i: number, r: number) => void;
@@ -50,7 +51,7 @@ export default function RhinoplastyPanel(props: Props) {
   const {
     sim, setSim, showOriginal, setShowOriginal,
     warpPhoto, setWarpPhoto, splitView, setSplitView,
-    showSimLine, setShowSimLine, handles, onRemoveHandle, onResetHandles,
+    showSimLine, setShowSimLine, handles, onRemoveHandle, onToggleHandleLock, onResetHandles,
     onSetHandleRadius, editHandles, setEditHandles,
     showHandles, setShowHandles, newHandleRadius, setNewHandleRadius,
     onUndo, canUndo, onRedo, canRedo,
@@ -271,8 +272,13 @@ export default function RhinoplastyPanel(props: Props) {
                     <span style={{ color: '#f59e0b', display: 'inline-flex' }}><Icon name="move" size={13} /></span>
                     <span style={{ flex: 1 }}>{t('rpDeformer')} {i + 1} · {lenTxt}</span>
                     <button
+                      onClick={() => onToggleHandleLock(i)}
+                      title={h.locked ? t('rpLockTitle') : t('rpUnlockedTitle')}
+                      style={{ padding: '1px 8px', fontSize: 12 }}
+                    >{h.locked ? '🔒' : '🔓'}</button>
+                    <button
                       onClick={() => onRemoveHandle(i)}
-                      title={`Eliminar deformador ${i + 1}`}
+                      title={`${t('rpRemoveHandle')} ${i + 1}`}
                       style={{ padding: '1px 8px', fontSize: 12 }}
                     >✕</button>
                   </div>
