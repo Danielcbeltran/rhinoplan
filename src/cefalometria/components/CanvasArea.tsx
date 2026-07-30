@@ -631,7 +631,7 @@ export default function CanvasArea(props: Props) {
             }
           }
         }
-        drawRhinoplastySplit(ctx, canvas, orig, sim, dividerX, rhinoShowOriginal, denseOrig, denseSim, rhinoSplitView, rhinoShowSimLine);
+        drawRhinoplastySplit(ctx, canvas, orig, sim, dividerX, rhinoShowOriginal, denseOrig, denseSim, rhinoSplitView, rhinoShowSimLine, { projection: t('rpProjection'), original: t('rpOriginalFaint') });
         // Radio base de los deformadores para el círculo de influencia (mismo
         // cálculo que usa el warp: tramo denso si existe, si no la silueta).
         handleBaseR = handleRadius(denseOrig ?? [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn]);
@@ -3028,6 +3028,7 @@ function drawRhinoplastySplit(
   denseSim?: Pt[] | null,
   splitView = true,
   showSimLine = true,
+  labels: { projection: string; original: string } = { projection: 'PROJECTION', original: 'Original' },
 ) {
   const origPts: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn];
   const simPts:  Pt[] = [sim.N,  ...sim.dorsal,  sim.Pn,  sim.Cm,  sim.Sn];
@@ -3076,10 +3077,10 @@ function drawRhinoplastySplit(
         ctx.fillStyle = '#86efac'; ctx.fill();
       }
       ctx.restore();
-      drawText(ctx, canvas.width - 130, 26, 'PROYECCIÓN', '#86efac', { size: 13, background: true });
+      drawText(ctx, canvas.width - 130, 26, labels.projection, '#86efac', { size: 13, background: true });
     }
     if (showOriginal) {
-      drawText(ctx, 14, 26, 'Original (tenue)', 'rgba(255,255,255,0.9)', { size: 12, background: true });
+      drawText(ctx, 14, 26, labels.original, 'rgba(255,255,255,0.9)', { size: 12, background: true });
     }
     return;
   }

@@ -134,26 +134,26 @@ export default function RhinoplastyPanel(props: Props) {
       <div>
         <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-            <Icon name="flask" size={15} /> Simulación rinoplastia
+            <Icon name="flask" size={15} /> {t('rpTitle')}
           </span>
           <button className="rhino-close" onClick={onClose} title={t('rhinoplastyClose')}>✕</button>
         </h3>
         {!ready ? (
           <div className="pending-note" style={{ marginTop: 8 }}>
-            ⚠ Faltan puntos nasales: <b>{missing.join(', ')}</b>.<br />
-            Coloca los puntos (manual o con detección automática) para activar la simulación.
+            {t('rpMissingNasal')} <b>{missing.join(', ')}</b>.<br />
+            {t('rpMissingNasalEnd')}
           </div>
         ) : (
           <div className="calibration-status ok" style={{ marginTop: 8 }}>
-            ✓ Puntos nasales listos. {mmPerPx
-              ? <>Escala: <b>{(1 / mmPerPx).toFixed(2)} px/mm</b></>
-              : <>Sin calibración: los mm asumen <b>1 mm ≈ 5 px</b>. Calibra para precisión.</>}
+            {t('rpNasalReady')} {mmPerPx
+              ? <>{t('rpScaleLabel')} <b>{(1 / mmPerPx).toFixed(2)} px/mm</b></>
+              : <>{t('rpNoCalibSim')} <b>1 mm ≈ 5 px</b>{t('rpNoCalibSimEnd')}</>}
           </div>
         )}
       </div>
 
       <div>
-        <h3>Controles</h3>
+        <h3>{t('rpControls')}</h3>
         <div className="rhino-sliders">
           {RHINO_SLIDERS.map((s) => {
             const val = sim[s.id];
