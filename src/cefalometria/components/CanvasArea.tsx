@@ -1328,7 +1328,12 @@ export default function CanvasArea(props: Props) {
       if (pt) setRhinoHandles((prev) => prev.map((h, i) => (i === idx ? { ...h, to: pt } : h)));
     });
     function onUp() {
-      onMove.flush();
+      // SIN flush: si el dibujo iba retrasado respecto al dedo (frames caros
+      // en iPad), aplicar aquí el último pointermove pendiente producía un
+      // "salto" a una deformación mayor que la vista. Descartándolo, el
+      // resultado final es EXACTAMENTE lo último dibujado en pantalla —
+      // lo que ves es lo que queda.
+      onMove.cancel();
       justDraggedRef.current = true;
       // Al soltar, el deformador queda BLOQUEADO: el arrastre sobre la foto
       // ya no lo agarra (evita re-mover uno anterior al trabajar cerca).
@@ -2952,7 +2957,7 @@ function drawWarpedNoseMesh(
   // triángulo; 20 durante un arrastre activo (fluidez en iPad; al soltar se
   // redibuja a calidad completa). El coste sigue siendo bajo porque se mapea
   // desde el recorte cacheado, no desde la foto completa.
-  const G = fast ? 13 : 40;
+  const G = fast ? 10 : 40;
   const nx = G + 1;
   const sx = (x1 - x0) / G, sy = (y1 - y0) / G;
   const vx = new Float32Array(nx * nx), vy = new Float32Array(nx * nx);
