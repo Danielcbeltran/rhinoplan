@@ -418,14 +418,17 @@ export interface WarpControl { x: number; y: number; dx: number; dy: number; r?:
 export interface RhinoHandle { from: Pt; to: Pt; radius?: number }
 
 /** Radio de influencia de los deformadores y del campo, derivado del tamaño
- *  del tramo nasal (misma fórmula que buildNoseWarpField). */
+ *  del tramo nasal (misma fórmula que buildNoseWarpField: 0.12×). Antes era
+ *  0.18× y los deformadores alcanzaban mejilla/labio con multiplicador ×1;
+ *  ahora el área por defecto es la misma que la del campo del contorno y el
+ *  usuario la amplía explícitamente con el multiplicador si la necesita. */
 export function handleRadius(seg: Pt[]): number {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const p of seg) {
     if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
     if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
   }
-  return Math.max(30, Math.max(maxX - minX, maxY - minY) * 0.18);
+  return Math.max(30, Math.max(maxX - minX, maxY - minY) * 0.12);
 }
 
 /** Convierte deformadores a controles de campo (para los alejados del borde).
@@ -487,7 +490,12 @@ export function splitHandlesBySegment(
 ): { near: RhinoHandle[]; far: RhinoHandle[] } {
   const near: RhinoHandle[] = [], far: RhinoHandle[] = [];
   for (const h of handles) {
-    const lim = R * (h.radius ?? 1) * 0.8;
+    // Umbral = el radio COMPLETO del deformador: si su círculo alcanza el
+    // borde, se funde al segmento (línea y foto se mueven juntas); si no lo
+    // alcanza, va como campo aditivo interior con cero contacto con el
+    // contorno. Antes era 0.8× y un deformador que rozaba el borde movía la
+    // foto sin mover la línea.
+    const lim = R * (h.radius ?? 1) * 1.0;
     let d2min = Infinity;
     for (const p of seg) {
       const d2 = (p.x - h.from.x) * (p.x - h.from.x) + (p.y - h.from.y) * (p.y - h.from.y);
@@ -558,28 +566,46 @@ export function buildNoseWarpField(
 }
 
 /** Desplazamiento interpolado en (x, y).
- *  IDW singular (w = 1/(d²+ε)) → exacto sobre los controles (el borde de la
- *  foto aterriza EXACTAMENTE en la silueta objetivo) · atenuación smoothstep
- *  con la distancia NORMALIZADA mínima a los controles → cero garantizado a
- *  partir del radio. Cada control puede llevar radio propio (c.r); sin él usa
- *  el R global del campo — con todos los radios por defecto el resultado es
- *  idéntico a la fórmula original (u = d/R). */
+ *  DOS capas sumadas:
+ *  1) CONTORNO (controles sin radio propio): IDW singular (w = 1/(d²+ε)) →
+ *     exacto sobre los controles (el borde de la foto aterriza EXACTAMENTE en
+ *     la silueta objetivo) · atenuación smoothstep con la distancia
+ *     normalizada mínima → cero garantizado a partir del radio R del campo.
+ *  2) DEFORMADORES LIBRES (controles con radio propio c.r): campo ADITIVO
+ *     independiente — cada uno empuja (dx,dy)·smoothstep(1 − d/r), el MISMO
+ *     kernel que applyHandlesToSegment aplica a la línea verde, así foto y
+ *     línea coinciden. Aditivo = preciso (el centro se mueve exactamente lo
+ *     arrastrado, sin diluirse en el promedio IDW del contorno) y local
+ *     estricto (cero fuera de su radio, nada se mueve donde no debe). */
 export function evalWarpAt(field: NoseWarpField, x: number, y: number): Pt {
   let uMin2 = Infinity, wSum = 0, dxSum = 0, dySum = 0;
+  let hx = 0, hy = 0;                      // capa aditiva de deformadores
   for (const c of field.controls) {
-    const cr = c.r ?? field.R;
     const d2 = (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y);
-    const u2 = d2 / (cr * cr);             // distancia² normalizada al radio del control
+    if (c.r != null) {
+      // Deformador libre: kernel smoothstep propio, aditivo.
+      if (d2 < c.r * c.r) {
+        const t = 1 - Math.sqrt(d2) / c.r;
+        const k = t * t * (3 - 2 * t);
+        hx += c.dx * k; hy += c.dy * k;
+      }
+      continue;
+    }
+    // Control del contorno: IDW + falloff global.
+    const u2 = d2 / (field.R * field.R);   // distancia² normalizada al radio del campo
     if (u2 < uMin2) uMin2 = u2;
     if (u2 < 4) {                          // solo controles cercanos pesan
       const w = 1 / (d2 + 4);
       wSum += w; dxSum += w * c.dx; dySum += w * c.dy;
     }
   }
-  if (uMin2 >= 1 || wSum < 1e-9) return { x: 0, y: 0 };
-  const t = 1 - Math.sqrt(uMin2);
-  const fall = t * t * (3 - 2 * t);        // smoothstep → 0 en el radio
-  return { x: (dxSum / wSum) * fall, y: (dySum / wSum) * fall };
+  let cx = 0, cy = 0;
+  if (uMin2 < 1 && wSum > 1e-9) {
+    const t = 1 - Math.sqrt(uMin2);
+    const fall = t * t * (3 - 2 * t);      // smoothstep → 0 en el radio
+    cx = (dxSum / wSum) * fall; cy = (dySum / wSum) * fall;
+  }
+  return { x: cx + hx, y: cy + hy };
 }
 
 // Re-export helper para conveniencia

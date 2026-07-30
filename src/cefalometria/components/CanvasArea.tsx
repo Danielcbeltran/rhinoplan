@@ -2941,10 +2941,13 @@ function drawWarpedNoseMesh(
   const crop = _meshCrop;
   const offX = x0 - qx0, offY = y0 - qy0;   // origen del bbox dentro del recorte
 
-  // Rejilla ADAPTATIVA: 26 celdas/eje en reposo (el campo v2 es exacto en el
-  // borde); 13 durante un arrastre activo (¼ de triángulos → fluidez en iPad;
-  // al soltar se redibuja a calidad completa).
-  const G = fast ? 13 : 26;
+  // Rejilla ADAPTATIVA: 40 celdas/eje en reposo — celdas más pequeñas siguen
+  // mejor el campo donde cambia rápido (alrededor de un deformador de radio
+  // corto) y reducen el faceteado/blur de la aproximación lineal por
+  // triángulo; 20 durante un arrastre activo (fluidez en iPad; al soltar se
+  // redibuja a calidad completa). El coste sigue siendo bajo porque se mapea
+  // desde el recorte cacheado, no desde la foto completa.
+  const G = fast ? 20 : 40;
   const nx = G + 1;
   const sx = (x1 - x0) / G, sy = (y1 - y0) / G;
   const vx = new Float32Array(nx * nx), vy = new Float32Array(nx * nx);
