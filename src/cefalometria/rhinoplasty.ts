@@ -513,7 +513,11 @@ export function splitHandlesBySegment(
 }
 
 export interface NoseWarpField {
-  controls: WarpControl[];
+  /** Polilínea ORDENADA del contorno con su desplazamiento por vértice —
+   *  se evalúa por proyección paramétrica (no como controles sueltos). */
+  contour: WarpControl[];
+  /** Deformadores libres interiores (capa aditiva, radio propio en r). */
+  handles: WarpControl[];
   R: number;                                       // radio de influencia (px)
   bbox: { x0: number; y0: number; x1: number; y1: number };
 }
@@ -526,28 +530,31 @@ export function buildNoseWarpField(
   const n = Math.min(denseOrig.length, denseSim.length);
   if (n < 3) return null;
 
-  // Submuestrear a ~72 controles móviles (denso → fidelidad al borde incluso
-  // donde el delta cambia rápido: punta rotada, radix)
-  const step = Math.max(1, Math.floor(n / 72));
-  const controls: WarpControl[] = [];
+  // Submuestrear la POLILÍNEA del contorno (~120 vértices — sigue de cerca
+  // la curvatura de la punta). El orden se conserva: la evaluación proyecta
+  // sobre los segmentos e interpola el desplazamiento A LO LARGO de la curva,
+  // así el borde aterriza exacto en TODOS sus puntos, no solo en los
+  // vértices (adiós al festón/muescas del esquema por controles sueltos).
+  const step = Math.max(1, Math.floor(n / 120));
+  const contour: WarpControl[] = [];
   for (let i = 0; i < n; i += step) {
-    controls.push({
+    contour.push({
       x: denseOrig[i].x, y: denseOrig[i].y,
       dx: denseSim[i].x - denseOrig[i].x, dy: denseSim[i].y - denseOrig[i].y,
     });
   }
   const lastI = n - 1;
   if ((lastI % step) !== 0) {
-    controls.push({
+    contour.push({
       x: denseOrig[lastI].x, y: denseOrig[lastI].y,
       dx: denseSim[lastI].x - denseOrig[lastI].x, dy: denseSim[lastI].y - denseOrig[lastI].y,
     });
   }
-  controls.push(...extra);
+  const handles = extra;
 
   // Tamaño de la nariz → radio de influencia (más allá, NADA se mueve)
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const c of controls) {
+  for (const c of [...contour, ...handles]) {
     if (c.x < minX) minX = c.x; if (c.x > maxX) maxX = c.x;
     if (c.y < minY) minY = c.y; if (c.y > maxY) maxY = c.y;
   }
@@ -563,53 +570,61 @@ export function buildNoseWarpField(
   // controles `extra` (deformadores con radio ampliado) — fuera del bbox el
   // mesh no se evalúa y su influencia quedaría cortada en seco.
   let pad = R;
-  for (const c of controls) if (c.r != null && c.r > pad) pad = c.r;
+  for (const c of handles) if (c.r != null && c.r > pad) pad = c.r;
 
   return {
-    controls, R,
+    contour, handles, R,
     bbox: { x0: minX - pad, y0: minY - pad, x1: maxX + pad, y1: maxY + pad },
   };
 }
 
-/** Desplazamiento interpolado en (x, y).
- *  DOS capas sumadas:
- *  1) CONTORNO (controles sin radio propio): IDW singular (w = 1/(d²+ε)) →
- *     exacto sobre los controles (el borde de la foto aterriza EXACTAMENTE en
- *     la silueta objetivo) · atenuación smoothstep con la distancia
- *     normalizada mínima → cero garantizado a partir del radio R del campo.
- *  2) DEFORMADORES LIBRES (controles con radio propio c.r): campo ADITIVO
- *     independiente — cada uno empuja (dx,dy)·smoothstep(1 − d/r), el MISMO
- *     kernel que applyHandlesToSegment aplica a la línea verde, así foto y
- *     línea coinciden. Aditivo = preciso (el centro se mueve exactamente lo
- *     arrastrado, sin diluirse en el promedio IDW del contorno) y local
- *     estricto (cero fuera de su radio, nada se mueve donde no debe). */
+/** Desplazamiento interpolado en (x, y). DOS capas sumadas:
+ *  1) CONTORNO — proyección PARAMÉTRICA sobre la polilínea: se busca el
+ *     segmento más cercano, se interpola LINEALMENTE el desplazamiento a lo
+ *     largo del segmento (exacto sobre TODA la curva, no solo en los
+ *     vértices) y se atenúa con smoothstep de la distancia PERPENDICULAR.
+ *     El esquema anterior (controles sueltos + falloff a la distancia del
+ *     control más cercano) hacía decaer el campo ENTRE controles → festón
+ *     periódico ("muescas") a lo largo del borde. Con la proyección, el
+ *     festón es imposible por construcción: el borde de la foto aterriza
+ *     exacto sobre la silueta objetivo en todos sus puntos.
+ *  2) DEFORMADORES LIBRES — capa aditiva, kernel smoothstep propio por
+ *     deformador (mismo kernel que applyHandlesToSegment sobre la línea). */
 export function evalWarpAt(field: NoseWarpField, x: number, y: number): Pt {
-  let uMin2 = Infinity, wSum = 0, dxSum = 0, dySum = 0;
-  let hx = 0, hy = 0;                      // capa aditiva de deformadores
-  for (const c of field.controls) {
-    const d2 = (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y);
-    if (c.r != null) {
-      // Deformador libre: kernel smoothstep propio, aditivo.
-      if (d2 < c.r * c.r) {
-        const t = 1 - Math.sqrt(d2) / c.r;
-        const k = t * t * (3 - 2 * t);
-        hx += c.dx * k; hy += c.dy * k;
-      }
-      continue;
-    }
-    // Control del contorno: IDW + falloff global.
-    const u2 = d2 / (field.R * field.R);   // distancia² normalizada al radio del campo
-    if (u2 < uMin2) uMin2 = u2;
-    if (u2 < 4) {                          // solo controles cercanos pesan
-      const w = 1 / (d2 + 4);
-      wSum += w; dxSum += w * c.dx; dySum += w * c.dy;
+  // — Capa 1: contorno por proyección paramétrica —
+  let cx = 0, cy = 0;
+  const C = field.contour;
+  let bestD2 = Infinity, bestDx = 0, bestDy = 0;
+  for (let i = 0; i < C.length - 1; i++) {
+    const a = C[i], b = C[i + 1];
+    const abx = b.x - a.x, aby = b.y - a.y;
+    const len2 = abx * abx + aby * aby;
+    let t = len2 > 1e-9 ? ((x - a.x) * abx + (y - a.y) * aby) / len2 : 0;
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    const px = a.x + abx * t, py = a.y + aby * t;
+    const dxp = x - px, dyp = y - py;
+    const d2 = dxp * dxp + dyp * dyp;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      bestDx = a.dx + (b.dx - a.dx) * t;
+      bestDy = a.dy + (b.dy - a.dy) * t;
     }
   }
-  let cx = 0, cy = 0;
-  if (uMin2 < 1 && wSum > 1e-9) {
-    const t = 1 - Math.sqrt(uMin2);
-    const fall = t * t * (3 - 2 * t);      // smoothstep → 0 en el radio
-    cx = (dxSum / wSum) * fall; cy = (dySum / wSum) * fall;
+  if (bestD2 < field.R * field.R) {
+    const t = 1 - Math.sqrt(bestD2) / field.R;
+    const fall = t * t * (3 - 2 * t);              // smoothstep → 0 en R
+    cx = bestDx * fall; cy = bestDy * fall;
+  }
+  // — Capa 2: deformadores libres, aditivos —
+  let hx = 0, hy = 0;
+  for (const c of field.handles) {
+    const r = c.r ?? field.R;
+    const d2 = (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y);
+    if (d2 < r * r) {
+      const t = 1 - Math.sqrt(d2) / r;
+      const k = t * t * (3 - 2 * t);
+      hx += c.dx * k; hy += c.dy * k;
+    }
   }
   return { x: cx + hx, y: cy + hy };
 }
