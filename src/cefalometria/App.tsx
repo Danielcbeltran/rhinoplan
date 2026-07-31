@@ -3,7 +3,7 @@ import Icon from './components/Icon';
 import jsPDF from 'jspdf';
 import Toolbar from './components/Toolbar';
 import CanvasArea, {
-  type Tool, type CustomLine, type CustomAngle, type Calibration, type Ruler,
+  type Tool, type CustomLine, type CustomAngle, type Calibration, type Ruler, type FreeAngle,
 } from './components/CanvasArea';
 import ResultsTable from './components/ResultsTable';
 import CameraCapture from './components/CameraCapture';
@@ -57,6 +57,7 @@ interface ModeState {
   customLines: CustomLine[];
   customAngles: CustomAngle[];
   rulers: Ruler[];
+  freeAngles: FreeAngle[];
   contourAnchors: Pt[];        // anclas libres para ajustar el contorno (pelo/barba)
   calibration: Calibration | null;
   refCalibMm: number | null;   // calibración por distancia anatómica (intercantal / N–Pn)
@@ -129,7 +130,7 @@ function initialState(mode: Mode): ModeState {
     confirmedPoints: {},
     customLines: [],
     customAngles: [],
-    rulers: [],
+    rulers: [], freeAngles: [],
     contourAnchors: [],
     calibration: null,
     refCalibMm: null,
@@ -568,6 +569,7 @@ export default function App({
         ? { ...cur.calibration, p1: tf(cur.calibration.p1), p2: tf(cur.calibration.p2) }
         : null;
       const newRulers = cur.rulers.map((r) => ({ p1: tf(r.p1), p2: tf(r.p2) }));
+      const newFreeAngles = (cur.freeAngles ?? []).map((a) => ({ p1: tf(a.p1), p2: tf(a.p2), p3: tf(a.p3) }));
       const newContourAnchors = cur.contourAnchors.map(tf);
 
       return {
@@ -577,7 +579,7 @@ export default function App({
           rotationAngle: newAngle,
           points: newPoints,
           calibration: newCal,
-          rulers: newRulers,
+          rulers: newRulers, freeAngles: newFreeAngles,
           contourAnchors: newContourAnchors,
           viewport: { zoom: 1, panX: 0, panY: 0 }, // recentrar
         },
@@ -601,6 +603,7 @@ export default function App({
         ? { ...cur.calibration, p1: fx(cur.calibration.p1), p2: fx(cur.calibration.p2) }
         : null;
       const newRulers = cur.rulers.map((r) => ({ p1: fx(r.p1), p2: fx(r.p2) }));
+      const newFreeAngles = (cur.freeAngles ?? []).map((a) => ({ p1: fx(a.p1), p2: fx(a.p2), p3: fx(a.p3) }));
       const newContourAnchors = cur.contourAnchors.map(fx);
       return {
         ...prev,
@@ -609,7 +612,7 @@ export default function App({
           flipH: !cur.flipH,
           points: newPoints,
           calibration: newCal,
-          rulers: newRulers,
+          rulers: newRulers, freeAngles: newFreeAngles,
           contourAnchors: newContourAnchors,
           viewport: { zoom: 1, panX: 0, panY: 0 },
         },
@@ -706,6 +709,13 @@ export default function App({
       const cur = prev[mode];
       const next = typeof value === 'function' ? value(cur.rulers) : value;
       return { ...prev, [mode]: { ...cur, rulers: next } };
+    });
+  }
+  function setFreeAngles(value: React.SetStateAction<FreeAngle[]>) {
+    setModeStates((prev) => {
+      const cur = prev[mode];
+      const next = typeof value === 'function' ? value(cur.freeAngles ?? []) : value;
+      return { ...prev, [mode]: { ...cur, freeAngles: next } };
     });
   }
   function setContourAnchors(value: React.SetStateAction<Pt[]>) {
@@ -955,7 +965,7 @@ export default function App({
     patchCurrent({
       imageSrc: src, originalSize: null,
       points: {}, pointMeta: {}, confirmedPoints: {},
-      customLines: [], customAngles: [], rulers: [], contourAnchors: [], calibration: null,
+      customLines: [], customAngles: [], rulers: [], freeAngles: [], contourAnchors: [], calibration: null,
       confirmed: false, detectionStatus: 'idle', detectionError: null,
     });
   }
@@ -1639,6 +1649,7 @@ export default function App({
           customLines={current.customLines} setCustomLines={setCustomLines}
           customAngles={current.customAngles} setCustomAngles={setCustomAngles}
           rulers={current.rulers} setRulers={setRulers}
+          freeAngles={current.freeAngles ?? []} setFreeAngles={setFreeAngles}
           contourAnchors={current.contourAnchors} setContourAnchors={setContourAnchors}
           contourCandidates={contourCandidates}
           visibleLines={current.visibleLines}

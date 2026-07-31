@@ -38,6 +38,11 @@ export interface CustomAngle { a: PointId; v: PointId; b: PointId; }
 export interface Calibration { p1: Pt; p2: Pt; mm: number; }
 /** Medición de distancia libre entre dos puntos arbitrarios de la imagen. */
 export interface Ruler { p1: Pt; p2: Pt; }
+/** Ángulo medido con 3 clicks LIBRES (p2 = vértice). Pensado para medir sobre
+ *  la foto PROYECTADA en simulación, donde los puntos anatómicos están
+ *  congelados en su posición original y un ángulo entre ellos mediría la
+ *  anatomía previa, no el resultado simulado. */
+export interface FreeAngle { p1: Pt; p2: Pt; p3: Pt }
 
 type ImageLike = HTMLImageElement | HTMLCanvasElement;
 
@@ -66,6 +71,8 @@ interface Props {
   setCustomAngles: React.Dispatch<React.SetStateAction<CustomAngle[]>>;
   rulers: Ruler[];
   setRulers: React.Dispatch<React.SetStateAction<Ruler[]>>;
+  freeAngles: FreeAngle[];
+  setFreeAngles: React.Dispatch<React.SetStateAction<FreeAngle[]>>;
   contourAnchors: Pt[];
   setContourAnchors: React.Dispatch<React.SetStateAction<Pt[]>>;
   contourCandidates: ContourCandidates | null;
@@ -220,7 +227,7 @@ export default function CanvasArea(props: Props) {
     onBeforeChange,
     tool, setTool, onUndo, canUndo, onRedo, canRedo, activePointId, setActivePointId,
     customLines, setCustomLines, customAngles, setCustomAngles,
-    rulers, setRulers,
+    rulers, setRulers, freeAngles, setFreeAngles,
     contourAnchors, setContourAnchors,
     contourCandidates,
     visibleLines, pointsHidden, anglesShown, measuresHidden,
@@ -245,6 +252,7 @@ export default function CanvasArea(props: Props) {
   const [draggingAnchor, setDraggingAnchor] = useState<number | null>(null);
   // Deformadores libres del modo simulación
   const [draggingHandle, setDraggingHandle] = useState<number | null>(null);
+  const [freeAnglePick, setFreeAnglePick] = useState<Pt[]>([]);
   const [pendingHandleFrom, setPendingHandleFrom] = useState<Pt | null>(null);
   const handlesLenRef = useRef(0);
   const [dragging, setDragging] = useState<PointId | null>(null);
@@ -662,7 +670,7 @@ export default function CanvasArea(props: Props) {
     // el fin de un arrastre/ráfaga re-dibuja la malla del warp a calidad completa
     draggingHandle, draggingAnchor, draggingDivider, simSettled,
     pointsHidden, anglesShown, measuresHidden,
-    rulers, rulerPick, anchoredContour, contourAnchors,
+    rulers, rulerPick, freeAngles, freeAnglePick, anchoredContour, contourAnchors,
     redrawOverlay,
   ]);
 
@@ -770,6 +778,29 @@ export default function CanvasArea(props: Props) {
       const d = distance(r.p1, r.p2);
       drawMidLabel(ctx, r.p1, r.p2,
         mmPerPx ? `${(d * mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, RULER_COLOR);
+    }
+    // Ángulos LIBRES (medidos en simulación sobre la proyección)
+    for (const fa of freeAngles) {
+      drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 2, false);
+      drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 2, false);
+      drawCross(ctx, fa.p1, RULER_COLOR, 9);
+      drawCross(ctx, fa.p2, RULER_COLOR, 12);
+      drawCross(ctx, fa.p3, RULER_COLOR, 9);
+      drawText(ctx, fa.p2.x + 12, fa.p2.y - 12,
+        `${angleAtVertex(fa.p1, fa.p2, fa.p3).toFixed(1)}°`, RULER_COLOR,
+        { size: 13, background: true });
+    }
+    if (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0) {
+      for (const p of freeAnglePick) drawCross(ctx, p, RULER_COLOR, 12);
+      if (freeAnglePick.length >= 2)
+        drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 2, false);
+      if (cursorImgPt) {
+        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 2, true);
+        if (freeAnglePick.length === 2)
+          drawText(ctx, freeAnglePick[1].x + 12, freeAnglePick[1].y - 12,
+            `${angleAtVertex(freeAnglePick[0], freeAnglePick[1], cursorImgPt).toFixed(1)}°`,
+            RULER_COLOR, { size: 13, background: true });
+      }
     }
     // Primer punto ya marcado, esperando el segundo: cruz + línea elástica al cursor
     if (tool === 'measure' && rulerPick) {
@@ -1169,7 +1200,8 @@ export default function CanvasArea(props: Props) {
     // ampliada como siempre. Agarrar uno existente lo re-apunta; arrastrar en
     // zona libre crea uno nuevo (origen→destino). Un click simple (sin
     // arrastre) sigue colocando el punto activo.
-    if (rhinoSimActive && rhinoEditHandles && mode === 'perfil') {
+    if (rhinoSimActive && rhinoEditHandles && mode === 'perfil'
+        && tool !== 'measure' && tool !== 'angle' && tool !== 'erase') {
       const hi = nearestHandleGrip(pt, 20);
       if (hi >= 0) {
         setDraggingHandle(hi);
@@ -1440,6 +1472,13 @@ export default function CanvasArea(props: Props) {
         return;
       }
       // ¿Una medición? (clic cerca de su recta)
+      const fi = freeAngles.findIndex((a) =>
+        distToSegment(pt, a.p1, a.p2) <= 10 || distToSegment(pt, a.p2, a.p3) <= 10);
+      if (fi >= 0) {
+        onBeforeChange();
+        setFreeAngles((prev) => prev.filter((_, i) => i !== fi));
+        return;
+      }
       const ri = rulers.findIndex((r) => distToSegment(pt, r.p1, r.p2) <= 10);
       if (ri >= 0) { onBeforeChange(); setRulers((prev) => prev.filter((_, i) => i !== ri)); }
       return;
@@ -1453,6 +1492,19 @@ export default function CanvasArea(props: Props) {
       return;
     }
     if (tool === 'angle') {
+      if (rhinoSimActive) {
+        // Simulación: ángulo LIBRE con 3 clicks (p2 = vértice) — se mide
+        // sobre la foto proyectada tal como se ve. Los puntos anatómicos
+        // están congelados en su posición original, así que la variante por
+        // puntos mediría la anatomía previa, no el resultado simulado.
+        const next = [...freeAnglePick, pt];
+        if (next.length === 3) {
+          onBeforeChange();
+          setFreeAngles((prev) => [...prev, { p1: next[0], p2: next[1], p3: next[2] }]);
+          setFreeAnglePick([]);
+        } else setFreeAnglePick(next);
+        return;
+      }
       const id = nearestPoint(pt);
       if (!id) return;
       const next = [...anglePick, id];
@@ -1466,7 +1518,7 @@ export default function CanvasArea(props: Props) {
     if (tool === 'calibrate') {
       if (calibPick.length === 0) { setCalibPick([pt]); return; }
       const p1 = calibPick[0], p2 = pt;
-      const mmStr = window.prompt('Distancia real entre los 2 puntos (mm):', '10');
+      const mmStr = window.prompt(t('calibPromptMm'), '10');
       const mm = mmStr ? parseFloat(mmStr) : NaN;
       if (mm > 0 && isFinite(mm)) { onBeforeChange(); setCalibration({ p1, p2, mm }); }
       setCalibPick([]);
@@ -1491,7 +1543,7 @@ export default function CanvasArea(props: Props) {
     }
   }
 
-  useEffect(() => { setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); }, [tool, mode]);
+  useEffect(() => { setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); setFreeAnglePick([]); }, [tool, mode]);
 
   // ============ Zoom controls ============
   // Zoom hacia el centro del viewport — sin desplazamiento.
@@ -1555,7 +1607,7 @@ export default function CanvasArea(props: Props) {
   else if (spacePressed) hint = 'Modo pan — arrastra para mover';
   // Bloqueo en simulación: sin este aviso, la herramienta parece rota (haces
   // click y no pasa nada) en vez de protegida.
-  else if (rhinoSimActive && (tool === 'point' || tool === 'erase' || tool === 'contour'))
+  else if (rhinoSimActive && (tool === 'point' || tool === 'contour'))
     hint = t('hintLocked');
   else if (tool === 'none')
     hint = t('hintNoTool');
@@ -1574,8 +1626,9 @@ export default function CanvasArea(props: Props) {
       : t('hintPointDefault');
   } else if (tool === 'line') hint = linePick ? t('hintLine2') : t('hintLine1');
   else if (tool === 'angle') {
+    const n = rhinoSimActive ? freeAnglePick.length : anglePick.length;
     const labels = [t('hintAngle1'), t('hintAngleVertex'), t('hintAngle2')];
-    hint = `${t('hintAnglePrefix')} ${labels[anglePick.length]} (${anglePick.length}/3)`;
+    hint = `${t('hintAnglePrefix')} ${labels[n]} (${n}/3)`;
   } else if (tool === 'erase') hint = t('hintErase');
   else if (tool === 'calibrate') hint = calibPick.length === 0
     ? t('hintCalib1')
@@ -3152,6 +3205,15 @@ function drawRhinoplastySplit(
   if (showSimLine && dividerX < canvas.width - 110) {
     drawText(ctx, canvas.width - 130, 26, 'SIMULACIÓN', '#86efac', { size: 13, background: true });
   }
+}
+
+/** Ángulo (°) en el vértice v entre los rayos v→p1 y v→p3, en [0, 180]. */
+function angleAtVertex(p1: Pt, v: Pt, p3: Pt): number {
+  const a1 = Math.atan2(p1.y - v.y, p1.x - v.x);
+  const a2 = Math.atan2(p3.y - v.y, p3.x - v.x);
+  let d = Math.abs(a1 - a2) * 180 / Math.PI;
+  if (d > 180) d = 360 - d;
+  return d;
 }
 
 /** Deformador libre de la simulación: anillo en el origen, flecha al destino
