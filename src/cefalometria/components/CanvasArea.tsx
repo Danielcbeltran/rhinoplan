@@ -110,7 +110,6 @@ interface Props {
   rhinoEditHandles: boolean;
   /** Mostrar las flechas ámbar de los deformadores (el warp se aplica igual).
    *  Con el modo edición activo se dibujan siempre — no se edita a ciegas. */
-  rhinoShowHandles: boolean;
   /** Multiplicador de radio con el que se crean los deformadores NUEVOS. */
   rhinoNewHandleRadius: number;
   /** Vista dividida antes/después con divisor arrastrable. Apagada = foto
@@ -237,7 +236,7 @@ export default function CanvasArea(props: Props) {
     rotationAngle, setRotation, flipH, onFlipH, autoStraighten, canAutoStraighten, autoStraightenMethod,
     originalSize,
     rhinoSimActive, rhinoSim, rhinoShowOriginal, rhinoWarpPhoto,
-    rhinoHandles, setRhinoHandles, rhinoEditHandles, rhinoShowHandles,
+    rhinoHandles, setRhinoHandles, rhinoEditHandles,
     rhinoNewHandleRadius, rhinoSplitView, rhinoShowSimLine,
     rhinoDividerRatio, setRhinoDividerRatio,
     onRequestLoad, onRequestCamera,
@@ -647,9 +646,11 @@ export default function CanvasArea(props: Props) {
       // El divisor solo en vista dividida
       if (rhinoSplitView) drawBeforeAfterDivider(ctx, canvas, dividerX);
       // Deformadores libres: flecha origen→destino con empuñadura. Ocultables
-      // desde el panel; en modo edición se muestran SIEMPRE (junto con su
-      // círculo de influencia — radio base × multiplicador del deformador).
-      if (rhinoShowHandles || rhinoEditHandles) {
+      // Los deformadores se ven cuando el modo EDICIÓN está activo (junto con
+      // su círculo de influencia — radio base × multiplicador). Fuera de
+      // edición no se dibujan: su efecto sobre la foto sigue aplicado, pero
+      // las flechas estorbarían al valorar el resultado.
+      if (rhinoEditHandles) {
         for (const h of rhinoHandles) {
           drawRhinoHandle(ctx, h,
             rhinoEditHandles && handleBaseR != null ? handleBaseR * (h.radius ?? 1) : null);
@@ -666,7 +667,7 @@ export default function CanvasArea(props: Props) {
     tool, anglePick, linePick, calibPick, activePointId, dragging, hoverId, mmPerPx, canvasRef,
     cursorImgPt, magnifierEnabled, templateVisible, labelScale, rotationAngle, originalSize,
     rhinoSimActive, rhinoSim, rhinoShowOriginal, rhinoWarpPhoto, rhinoHandles, rhinoDividerRatio, rhinoSplitView, rhinoShowSimLine,
-    rhinoEditHandles, rhinoShowHandles,
+    rhinoEditHandles,
     // el fin de un arrastre/ráfaga re-dibuja la malla del warp a calidad completa
     draggingHandle, draggingAnchor, draggingDivider, simSettled,
     pointsHidden, anglesShown, measuresHidden,

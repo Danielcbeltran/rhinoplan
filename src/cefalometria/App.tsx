@@ -285,7 +285,6 @@ export default function App({
   // DESPLAZA la imagen ampliada como siempre; encendido, crea/edita deformadores.
   const [rhinoEditHandles, setRhinoEditHandles] = useState(false);
   // Visibilidad de las flechas ámbar (el warp se sigue aplicando ocultas)
-  const [rhinoShowHandles, setRhinoShowHandles] = useState(true);
   // Radio (multiplicador) con el que se CREAN los nuevos deformadores
   const [rhinoNewHandleRadius, setRhinoNewHandleRadius] = useState(1);
   // Vista dividida antes/después con divisor arrastrable. Por defecto APAGADA:
@@ -1678,7 +1677,6 @@ export default function App({
           rhinoHandles={rhinoHandles}
           setRhinoHandles={setRhinoHandlesTracked}
           rhinoEditHandles={rhinoEditHandles}
-          rhinoShowHandles={rhinoShowHandles}
           rhinoNewHandleRadius={rhinoNewHandleRadius}
           rhinoSplitView={rhinoSplitView}
           rhinoShowSimLine={rhinoShowSimLine}
@@ -1737,8 +1735,6 @@ export default function App({
               setRhinoHandlesTracked((prev) => prev.map((h, k) => (k === i ? { ...h, radius: r } : h)))}
             editHandles={rhinoEditHandles}
             setEditHandles={setRhinoEditHandles}
-            showHandles={rhinoShowHandles}
-            setShowHandles={setRhinoShowHandles}
             newHandleRadius={rhinoNewHandleRadius}
             setNewHandleRadius={setRhinoNewHandleRadius}
             onUndo={undoRhino}

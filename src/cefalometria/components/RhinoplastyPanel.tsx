@@ -30,8 +30,6 @@ interface Props {
   onSetHandleRadius: (i: number, r: number) => void;
   editHandles: boolean;
   setEditHandles: (b: boolean) => void;
-  showHandles: boolean;
-  setShowHandles: (b: boolean) => void;
   /** Radio (multiplicador) con el que se crearán los deformadores nuevos. */
   newHandleRadius: number;
   setNewHandleRadius: (r: number) => void;
@@ -53,7 +51,7 @@ export default function RhinoplastyPanel(props: Props) {
     warpPhoto, setWarpPhoto, splitView, setSplitView,
     showSimLine, setShowSimLine, handles, onRemoveHandle, onToggleHandleLock, onResetHandles,
     onSetHandleRadius, editHandles, setEditHandles,
-    showHandles, setShowHandles, newHandleRadius, setNewHandleRadius,
+    newHandleRadius, setNewHandleRadius,
     onUndo, canUndo, onRedo, canRedo,
     points, mmPerPx, onClose,
   } = props;
@@ -235,14 +233,6 @@ export default function RhinoplastyPanel(props: Props) {
             onChange={(e) => setEditHandles(e.target.checked)}
           />
           <Icon name="move" size={14} /> {t('rpEditDeformers')}
-        </label>
-        <label className="rhino-toggle">
-          <input
-            type="checkbox"
-            checked={showHandles}
-            onChange={(e) => setShowHandles(e.target.checked)}
-          />
-          <Icon name="eye" size={14} /> {t('rpShowDeformers')}
         </label>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.45 }}>
           {t('rpEditNote')}
