@@ -564,8 +564,32 @@ function RhinoPlannerMain(){
   }
   useEffect(()=>{if(token&&authUser){try{const payload=JSON.parse(atob(token.split(".")[1]));if(payload.exp&&payload.exp*1000<Date.now()){refreshSession();return;}}catch(e){logout();return;}loadPacientes(token);loadUserTemplates(token);checkPro(token,authUser);loadColors(token,authUser);}},[]);
 
-  async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc",tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
+  // Lista de pacientes LIGERA: pide solo las columnas que la lista pinta.
+  // Sin `select=`, PostgREST devolvía todas las columnas — incluidas
+  // `anotaciones`, `cefalometria` y sobre todo `fotos` (base64), que pesan
+  // cientos de KB por paciente. Con 12 pacientes eran varios MB solo para
+  // mostrar una lista de nombres, de ahí la demora al abrir la app en
+  // dispositivos con red lenta. Los campos pesados se cargan al ABRIR el
+  // paciente (ver abrirPaciente).
+  const PACIENTE_LIST_COLS = "id,nombre,documento,tipo_doc,fecha,created_at";
+  async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc&select="+PACIENTE_LIST_COLS,tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
   async function savePaciente(overrideCefalo){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),cefalometria:JSON.stringify(overrideCefalo&&overrideCefalo.mediciones?overrideCefalo:cefalometria),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  /** Abre un paciente de la lista: la lista es ligera (sin plan/fotos/cefalo),
+   *  así que aquí se trae la fila COMPLETA y luego se vuelca al editor.
+   *  Si la fila ya viene completa (p.ej. tras guardar) se usa tal cual. */
+  const [abriendoPacId,setAbriendoPacId]=useState(null);
+  async function abrirPaciente(p){
+    if(p && p.anotaciones!==undefined){loadPacienteData(p);return;}
+    setAbriendoPacId(p.id);
+    try{
+      const rows=await supaFetch("pacientes?id=eq."+p.id+"&limit=1",token);
+      const full=Array.isArray(rows)&&rows.length?rows[0]:null;
+      loadPacienteData(full||p);
+    }catch(e){
+      console.error(e);
+      alert(t.loadPatientError);
+    }finally{setAbriendoPacId(null);}
+  }
   function loadPacienteData(p){setPatient({nombre:p.nombre||"",documento:p.documento||"",tipoDoc:p.tipo_doc||"CC",edad:p.edad||"",sexo:p.sexo||"F",fecha:p.fecha||new Date().toISOString().slice(0,10),cirujano:p.cirujano||"",notas:p.notas||""});setPatientId(p.id);let pl;try{const parsed=p.anotaciones?JSON.parse(p.anotaciones):null;if(parsed&&parsed.pre){pl=parsed;}else if(parsed){pl={pre:parsed,post:{...EMPTY_ANN}};}else{pl={...EMPTY_PLAN};}}catch(e){pl={...EMPTY_PLAN};}
     try{const pn=pl._notes;setPlanNotes({pre:pn?.pre||"",post:pn?.post||""});}catch(e){setPlanNotes({pre:"",post:""});}
     if(pl._notes)delete pl._notes;
@@ -886,7 +910,7 @@ function RhinoPlannerMain(){
           <button onClick={()=>{nuevoPaciente();setShowPacList(false);setPacSearch("");setShowModal(true);}} style={{background:"#5B8DB822",border:"1px solid #5B8DB8",color:"#5B8DB8",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:11}}>{`+ ${t.newPatient}`}</button>
         </div>
         <input value={pacSearch} onChange={e=>setPacSearch(e.target.value)} placeholder={t.searchPatients} style={{width:"100%",background:"#111",border:"1px solid #354A62",borderRadius:6,color:"#C8DCF0",padding:"9px 12px",fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:12,fontFamily:"inherit"}}/>
-        {(()=>{const q=pacSearch.toLowerCase();const filtered=pacientes.filter(p=>(p.nombre||"").toLowerCase().includes(q)||(p.documento||"").toLowerCase().includes(q));return filtered.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>{t.noPatients}</div>:filtered.map(p=>(<div key={p.id} onClick={()=>{loadPacienteData(p);setPacSearch("");}} style={{...tplCard,cursor:"pointer"}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||t.noName}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}</div></div>));})()}
+        {(()=>{const q=pacSearch.toLowerCase();const filtered=pacientes.filter(p=>(p.nombre||"").toLowerCase().includes(q)||(p.documento||"").toLowerCase().includes(q));return filtered.length===0?<div style={{color:"#666",fontSize:13,textAlign:"center",padding:20}}>{t.noPatients}</div>:filtered.map(p=>(<div key={p.id} onClick={()=>{if(abriendoPacId)return;abrirPaciente(p);setPacSearch("");}} style={{...tplCard,cursor:abriendoPacId?"progress":"pointer",opacity:abriendoPacId&&abriendoPacId!==p.id?0.5:1}}><div style={{color:"#C8DCF0",fontWeight:600,fontSize:14}}>{p.nombre||t.noName}</div><div style={{color:"#888",fontSize:11,marginTop:3}}>{p.tipo_doc} {p.documento} · {p.fecha}{abriendoPacId===p.id?" · "+t.loading:""}</div></div>));})()}
       </div></div>)}
 
       {/* ═══ FOTOS MODAL ═══ */}

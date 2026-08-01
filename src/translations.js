@@ -4,6 +4,8 @@
 
 export const translations = {
   es: {
+    loading: "Cargando…",
+    loadPatientError: "No se pudo abrir el paciente. Revisa tu conexión e inténtalo de nuevo.",
     // Tools
     select: "Seleccionar",
     pen: "Lápiz",
@@ -201,6 +203,8 @@ export const translations = {
   },
 
   en: {
+    loading: "Loading…",
+    loadPatientError: "Could not open the patient. Check your connection and try again.",
     select: "Select",
     pen: "Pen",
     line: "Line",
@@ -380,6 +384,8 @@ export const translations = {
   },
 
   fr: {
+    loading: "Chargement…",
+    loadPatientError: "Impossible d'ouvrir le patient. Vérifiez votre connexion et réessayez.",
     select: "Sélectionner",
     pen: "Crayon",
     line: "Ligne",
@@ -559,6 +565,8 @@ export const translations = {
   },
 
   pt: {
+    loading: "Carregando…",
+    loadPatientError: "Não foi possível abrir o paciente. Verifique sua conexão e tente novamente.",
     select: "Selecionar",
     pen: "Lápis",
     line: "Linha",
@@ -744,6 +752,8 @@ export const translations = {
   },
 
   de: {
+    loading: "Lädt…",
+    loadPatientError: "Patient konnte nicht geöffnet werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     select: "Auswählen",
     pen: "Stift",
     line: "Linie",
@@ -923,6 +933,8 @@ export const translations = {
   },
 
   it: {
+    loading: "Caricamento…",
+    loadPatientError: "Impossibile aprire il paziente. Controlla la connessione e riprova.",
     select: "Seleziona",
     pen: "Penna",
     line: "Linea",
@@ -1102,6 +1114,8 @@ export const translations = {
   },
 
   tr: {
+    loading: "Yükleniyor…",
+    loadPatientError: "Hasta açılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
     select: "Seç",
     pen: "Kalem",
     line: "Çizgi",
