@@ -298,6 +298,19 @@ export default function CanvasArea(props: Props) {
   // redibuja al cambiar el viewport → el texto se rasteriza siempre a la
   // resolución física de la pantalla.
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  /** Punto vivo del puntero para la PREVISUALIZACIÓN de medición (línea
+   *  elástica y grados en curso). Va en un ref, no en estado: cada muestra
+   *  del Apple Pencil (~120 Hz) provocaba un re-render de React que repintaba
+   *  el canvas entero (foto + contorno + puntos + capas), y en iPad eso no
+   *  llega a tiempo → la línea se quedaba retrasada respecto al lápiz.
+   *  Ahora la previsualización se pinta sola sobre el overlay. */
+  const livePreviewRef = useRef<Pt | null>(null);
+  /** Estado de la medición en curso, espejado en refs para poder dibujar la
+   *  previsualización desde un rAF sin depender del ciclo de React. */
+  const previewStateRef = useRef<{
+    tool: Tool; rulerPick: Pt | null; freeAnglePick: Pt[];
+    mmPerPx: number | null; simActive: boolean;
+  }>({ tool: 'none', rulerPick: null, freeAnglePick: [], mmPerPx: null, simActive: false });
   // drawAnnotations se recrea en cada render (cierra sobre el estado); el ref
   // permite llamarla desde callbacks estables (redrawOverlay, exportación).
   const drawAnnotationsRef = useRef<((ctx: CanvasRenderingContext2D) => void) | null>(null);
@@ -330,8 +343,35 @@ export default function CanvasArea(props: Props) {
     octx.rect(0, 0, canvas.width, canvas.height);
     octx.clip();
     drawAnnotationsRef.current?.(octx);
+    drawLivePreview(octx);
     octx.restore();
   }, [canvasRef]);
+
+  /** Previsualización de la medición en curso, dibujada DIRECTAMENTE sobre el
+   *  overlay (sin estado de React). Replica el estilo de las mediciones
+   *  confirmadas para que lo que ves mientras mides sea lo que queda. */
+  const drawLivePreview = useCallback((octx: CanvasRenderingContext2D) => {
+    const cur = livePreviewRef.current;
+    if (!cur) return;
+    const st = previewStateRef.current;
+    const C = '#a3e635';
+    if (st.tool === 'measure' && st.rulerPick) {
+      drawTick(octx, st.rulerPick, C, 8);
+      drawLine(octx, st.rulerPick, cur, C, 1.2, false);
+      const d = Math.hypot(cur.x - st.rulerPick.x, cur.y - st.rulerPick.y);
+      drawOffsetLabel(octx, st.rulerPick, cur,
+        st.mmPerPx ? `${(d * st.mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, C);
+    } else if (st.tool === 'angle' && st.simActive && st.freeAnglePick.length > 0) {
+      const pk = st.freeAnglePick;
+      for (const p of pk) drawTick(octx, p, C, 8);
+      if (pk.length >= 2) drawLine(octx, pk[1], pk[0], C, 1.2, false);
+      drawLine(octx, pk[pk.length - 1], cur, C, 1.2, false);
+      if (pk.length === 2)
+        drawText(octx, pk[1].x + 12, pk[1].y - 12,
+          `${angleAtVertex(pk[0], pk[1], cur).toFixed(1)}°`, C,
+          { size: 13, background: true });
+    }
+  }, []);
 
   // Zoom/pan confirmados por ESTADO (rueda, pan con arrastre, commit del
   // pinch): redibujar para rasterizar nítido en la nueva escala. El pinch en
@@ -791,30 +831,19 @@ export default function CanvasArea(props: Props) {
         `${angleAtVertex(fa.p1, fa.p2, fa.p3).toFixed(1)}°`, RULER_COLOR,
         { size: 13, background: true });
     }
+    // Puntos ya marcados del ángulo en curso; el rayo vivo al cursor y los
+    // grados en tiempo real los pinta drawLivePreview sobre el overlay.
     if (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0) {
       for (const p of freeAnglePick) drawTick(ctx, p, RULER_COLOR, 8);
       if (freeAnglePick.length >= 2)
         drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 1.2, false);
-      if (cursorImgPt) {
-        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 1.2, false);
-        if (freeAnglePick.length === 2)
-          drawText(ctx, freeAnglePick[1].x + 12, freeAnglePick[1].y - 12,
-            `${angleAtVertex(freeAnglePick[0], freeAnglePick[1], cursorImgPt).toFixed(1)}°`,
-            RULER_COLOR, { size: 13, background: true });
-      }
     }
     // Primer punto ya marcado, esperando el segundo: cruz + línea elástica al cursor
+    // El primer punto marcado se dibuja aquí; la línea elástica al cursor la
+    // pinta drawLivePreview sobre el OVERLAY (sin re-render → sin lag con el
+    // Apple Pencil), así que aquí no se repite.
     if (tool === 'measure' && rulerPick) {
       drawTick(ctx, rulerPick, RULER_COLOR, 8);
-      if (cursorImgPt) {
-        // Línea CONTINUA también en la previsualización: la discontinua
-        // fragmentaba visualmente el trazo justo mientras se busca el
-        // segundo punto, que es cuando más precisión se necesita.
-        drawLine(ctx, rulerPick, cursorImgPt, RULER_COLOR, 1.2, false);
-        const d = distance(rulerPick, cursorImgPt);
-        drawOffsetLabel(ctx, rulerPick, cursorImgPt,
-          mmPerPx ? `${(d * mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, RULER_COLOR);
-      }
     }
 
     const hiddenPointSet = new Set(pointsHidden);
@@ -1244,6 +1273,35 @@ export default function CanvasArea(props: Props) {
   const hoverPosRef = useRef<{ x: number; y: number } | null>(null);
   function onPointerMoveCanvas(e: React.PointerEvent<HTMLCanvasElement>) {
     if (dragging || panning || pinchingRef.current) return;
+    // Con una medición en curso, la previsualización se pinta SOLO en el
+    // overlay: sin setState → sin re-render → sin repintar la foto entera.
+    // Es lo que mantiene la línea pegada al Apple Pencil (~120 Hz) en iPad.
+    const measuring = (tool === 'measure' && rulerPick != null)
+      || (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0);
+    if (measuring) {
+      // Apple Pencil emite a ~120 Hz y el navegador agrupa las muestras en un
+      // solo evento: getCoalescedEvents() da acceso a todas. Para una línea
+      // elástica solo interesa la ÚLTIMA (la posición real de la punta ahora),
+      // que es más reciente que la del evento contenedor.
+      let cx = e.clientX, cy = e.clientY;
+      const ne = e.nativeEvent as PointerEvent;
+      if (typeof ne.getCoalescedEvents === 'function') {
+        const co = ne.getCoalescedEvents();
+        if (co.length) { cx = co[co.length - 1].clientX; cy = co[co.length - 1].clientY; }
+      }
+      const pt = getImagePtFromClient(cx, cy);
+      livePreviewRef.current = pt ?? null;
+      previewStateRef.current = {
+        tool, rulerPick, freeAnglePick, mmPerPx, simActive: rhinoSimActive,
+      };
+      if (!hoverRafRef.current) {
+        hoverRafRef.current = requestAnimationFrame(() => {
+          hoverRafRef.current = 0;
+          redrawOverlay();
+        });
+      }
+      return;
+    }
     hoverPosRef.current = { x: e.clientX, y: e.clientY };
     if (hoverRafRef.current) return;
     hoverRafRef.current = requestAnimationFrame(() => {
@@ -1255,14 +1313,15 @@ export default function CanvasArea(props: Props) {
       // Sin herramienta / con puntos bloqueados no se resalta nada: el hover
       // prometía "arrastra para reposicionar", que ahí sería mentira.
       setHoverId(pointsLocked ? null : nearestPoint(pt, 14));
-      const consumed = (tool === 'point' && magnifierEnabled)
-        || (tool === 'measure' && rulerPick != null);
+      const consumed = tool === 'point' && magnifierEnabled;
       setCursorImgPt(consumed ? pt : null);
     });
   }
 
   function onPointerLeaveCanvas() {
     hoverPosRef.current = null;   // descarta el rAF de hover pendiente
+    livePreviewRef.current = null;
+    redrawOverlay();
     setHoverId(null);
     setCursorImgPt(null);
   }
@@ -1501,6 +1560,7 @@ export default function CanvasArea(props: Props) {
         // sobre la foto proyectada tal como se ve. Los puntos anatómicos
         // están congelados en su posición original, así que la variante por
         // puntos mediría la anatomía previa, no el resultado simulado.
+        livePreviewRef.current = null;   // la marca ya es definitiva
         const next = [...freeAnglePick, pt];
         if (next.length === 3) {
           onBeforeChange();
@@ -1529,6 +1589,7 @@ export default function CanvasArea(props: Props) {
       return;
     }
     if (tool === 'measure') {
+      livePreviewRef.current = null;   // la marca ya es definitiva
       if (!rulerPick) { setRulerPick(pt); return; }
       onBeforeChange();
       setRulers((prev) => [...prev, { p1: rulerPick, p2: pt }]);
@@ -1547,7 +1608,7 @@ export default function CanvasArea(props: Props) {
     }
   }
 
-  useEffect(() => { setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); setFreeAnglePick([]); }, [tool, mode]);
+  useEffect(() => { setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); setFreeAnglePick([]); livePreviewRef.current = null; }, [tool, mode]);
 
   // ============ Zoom controls ============
   // Zoom hacia el centro del viewport — sin desplazamiento.
