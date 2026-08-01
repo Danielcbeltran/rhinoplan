@@ -773,7 +773,7 @@ export default function CanvasArea(props: Props) {
     // ============ Mediciones de distancia libres (herramienta Medir) ============
     const RULER_COLOR = '#a3e635'; // lima — distintivo, no usado en medidas clínicas
     for (const r of rulers) {
-      drawLine(ctx, r.p1, r.p2, RULER_COLOR, 1.5, false);
+      drawLine(ctx, r.p1, r.p2, RULER_COLOR, 1.2, false);
       drawTick(ctx, r.p1, RULER_COLOR);
       drawTick(ctx, r.p2, RULER_COLOR);
       const d = distance(r.p1, r.p2);
@@ -782,8 +782,8 @@ export default function CanvasArea(props: Props) {
     }
     // Ángulos LIBRES (medidos en simulación sobre la proyección)
     for (const fa of freeAngles) {
-      drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 1.5, false);
-      drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 1.5, false);
+      drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 1.2, false);
+      drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 1.2, false);
       drawTick(ctx, fa.p1, RULER_COLOR);
       drawTick(ctx, fa.p2, RULER_COLOR, 8);   // vértice algo mayor
       drawTick(ctx, fa.p3, RULER_COLOR);
@@ -794,9 +794,9 @@ export default function CanvasArea(props: Props) {
     if (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0) {
       for (const p of freeAnglePick) drawTick(ctx, p, RULER_COLOR, 8);
       if (freeAnglePick.length >= 2)
-        drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 1.5, false);
+        drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 1.2, false);
       if (cursorImgPt) {
-        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 1.5, false);
+        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 1.2, false);
         if (freeAnglePick.length === 2)
           drawText(ctx, freeAnglePick[1].x + 12, freeAnglePick[1].y - 12,
             `${angleAtVertex(freeAnglePick[0], freeAnglePick[1], cursorImgPt).toFixed(1)}°`,
@@ -810,7 +810,7 @@ export default function CanvasArea(props: Props) {
         // Línea CONTINUA también en la previsualización: la discontinua
         // fragmentaba visualmente el trazo justo mientras se busca el
         // segundo punto, que es cuando más precisión se necesita.
-        drawLine(ctx, rulerPick, cursorImgPt, RULER_COLOR, 1.5, false);
+        drawLine(ctx, rulerPick, cursorImgPt, RULER_COLOR, 1.2, false);
         const d = distance(rulerPick, cursorImgPt);
         drawOffsetLabel(ctx, rulerPick, cursorImgPt,
           mmPerPx ? `${(d * mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, RULER_COLOR);
@@ -3133,17 +3133,17 @@ function drawRhinoplastySplit(
     if (showSimLine) {
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.85)';
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 3;
       ctx.strokeStyle = '#4ade80';
-      ctx.lineWidth = 3.2;
+      ctx.lineWidth = 1.8;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       strokePath(denseSim, simPts);
       for (const p of simPts) {
         ctx.shadowBlur = 0;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#0b1220'; ctx.fill();
         ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#0b1220'; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
         ctx.fillStyle = '#86efac'; ctx.fill();
       }
       ctx.restore();
@@ -3162,7 +3162,7 @@ function drawRhinoplastySplit(
     ctx.rect(0, 0, dividerX, canvas.height);
     ctx.clip();
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
-    ctx.shadowBlur = 5;
+    ctx.shadowBlur = 3;
     ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
@@ -3171,7 +3171,7 @@ function drawRhinoplastySplit(
     // Marcadores
     for (const p of origPts) {
       ctx.shadowBlur = 0;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
       ctx.fillStyle = '#0b1220'; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff'; ctx.fill();
@@ -3186,17 +3186,17 @@ function drawRhinoplastySplit(
     ctx.rect(dividerX, 0, canvas.width - dividerX, canvas.height);
     ctx.clip();
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
-    ctx.shadowBlur = 5;
+    ctx.shadowBlur = 3;
     ctx.strokeStyle = '#4ade80';
-    ctx.lineWidth = 3.2;
+    ctx.lineWidth = 1.8;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     strokePath(denseSim, simPts);
     for (const p of simPts) {
       ctx.shadowBlur = 0;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#0b1220'; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#0b1220'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
       ctx.fillStyle = '#86efac'; ctx.fill();
     }
     ctx.restore();
