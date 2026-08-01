@@ -785,14 +785,14 @@ export default function CanvasArea(props: Props) {
       drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 1.5, false);
       drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 1.5, false);
       drawTick(ctx, fa.p1, RULER_COLOR);
-      drawTick(ctx, fa.p2, RULER_COLOR, 4);   // vértice algo mayor
+      drawTick(ctx, fa.p2, RULER_COLOR, 8);   // vértice algo mayor
       drawTick(ctx, fa.p3, RULER_COLOR);
       drawText(ctx, fa.p2.x + 12, fa.p2.y - 12,
         `${angleAtVertex(fa.p1, fa.p2, fa.p3).toFixed(1)}°`, RULER_COLOR,
         { size: 13, background: true });
     }
     if (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0) {
-      for (const p of freeAnglePick) drawTick(ctx, p, RULER_COLOR, 4);
+      for (const p of freeAnglePick) drawTick(ctx, p, RULER_COLOR, 8);
       if (freeAnglePick.length >= 2)
         drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 1.5, false);
       if (cursorImgPt) {
@@ -805,7 +805,7 @@ export default function CanvasArea(props: Props) {
     }
     // Primer punto ya marcado, esperando el segundo: cruz + línea elástica al cursor
     if (tool === 'measure' && rulerPick) {
-      drawTick(ctx, rulerPick, RULER_COLOR, 4);
+      drawTick(ctx, rulerPick, RULER_COLOR, 8);
       if (cursorImgPt) {
         // Línea CONTINUA también en la previsualización: la discontinua
         // fragmentaba visualmente el trazo justo mientras se busca el
@@ -3211,16 +3211,28 @@ function drawRhinoplastySplit(
   }
 }
 
-/** Marca de extremo DISCRETA para mediciones: punto pequeño con halo oscuro.
- *  Sustituye a la cruz de 20-28 px, que tapaba la anatomía justo donde se
- *  está midiendo — al valorar un perfil la marca no debe competir con el
- *  borde que se mide. */
-function drawTick(ctx: CanvasRenderingContext2D, p: Pt, color: string, r = 3) {
+/** Marca de extremo para mediciones: cruz FINA de brazos cortos.
+ *  La cruz señala el punto exacto (el cruce de los trazos queda visible, a
+ *  diferencia de un círculo relleno que tapa justo el píxel medido), pero
+ *  con trazo de 1 px y brazos de ~6 px en vez de los 2-4 px y 20-28 px de
+ *  la cruz general — así no compite con el borde anatómico que se mide.
+ *  Un hueco central de 1.5 px deja ver la piel en el punto exacto. */
+function drawTick(ctx: CanvasRenderingContext2D, p: Pt, color: string, size = 6) {
+  const gap = 1.5;   // hueco central: el píxel medido queda a la vista
   ctx.save();
-  ctx.beginPath(); ctx.arc(p.x, p.y, r + 1.2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fill();
-  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = color; ctx.fill();
+  ctx.lineCap = 'butt';
+  const seg = (draw: () => void, w: number, col: string) => {
+    ctx.strokeStyle = col; ctx.lineWidth = w;
+    ctx.beginPath(); draw(); ctx.stroke();
+  };
+  const arms = () => {
+    ctx.moveTo(p.x - size, p.y); ctx.lineTo(p.x - gap, p.y);
+    ctx.moveTo(p.x + gap, p.y); ctx.lineTo(p.x + size, p.y);
+    ctx.moveTo(p.x, p.y - size); ctx.lineTo(p.x, p.y - gap);
+    ctx.moveTo(p.x, p.y + gap); ctx.lineTo(p.x, p.y + size);
+  };
+  seg(arms, 2.5, 'rgba(0,0,0,0.65)');   // halo fino: legible sobre piel clara
+  seg(arms, 1, color);                  // trazo de 1 px
   ctx.restore();
 }
 
