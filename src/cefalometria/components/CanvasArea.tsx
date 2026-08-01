@@ -773,30 +773,30 @@ export default function CanvasArea(props: Props) {
     // ============ Mediciones de distancia libres (herramienta Medir) ============
     const RULER_COLOR = '#a3e635'; // lima — distintivo, no usado en medidas clínicas
     for (const r of rulers) {
-      drawLine(ctx, r.p1, r.p2, RULER_COLOR, 2, false);
-      drawCross(ctx, r.p1, RULER_COLOR, 10);
-      drawCross(ctx, r.p2, RULER_COLOR, 10);
+      drawLine(ctx, r.p1, r.p2, RULER_COLOR, 1.5, false);
+      drawTick(ctx, r.p1, RULER_COLOR);
+      drawTick(ctx, r.p2, RULER_COLOR);
       const d = distance(r.p1, r.p2);
-      drawMidLabel(ctx, r.p1, r.p2,
+      drawOffsetLabel(ctx, r.p1, r.p2,
         mmPerPx ? `${(d * mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, RULER_COLOR);
     }
     // Ángulos LIBRES (medidos en simulación sobre la proyección)
     for (const fa of freeAngles) {
-      drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 2, false);
-      drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 2, false);
-      drawCross(ctx, fa.p1, RULER_COLOR, 9);
-      drawCross(ctx, fa.p2, RULER_COLOR, 12);
-      drawCross(ctx, fa.p3, RULER_COLOR, 9);
+      drawLine(ctx, fa.p2, fa.p1, RULER_COLOR, 1.5, false);
+      drawLine(ctx, fa.p2, fa.p3, RULER_COLOR, 1.5, false);
+      drawTick(ctx, fa.p1, RULER_COLOR);
+      drawTick(ctx, fa.p2, RULER_COLOR, 4);   // vértice algo mayor
+      drawTick(ctx, fa.p3, RULER_COLOR);
       drawText(ctx, fa.p2.x + 12, fa.p2.y - 12,
         `${angleAtVertex(fa.p1, fa.p2, fa.p3).toFixed(1)}°`, RULER_COLOR,
         { size: 13, background: true });
     }
     if (tool === 'angle' && rhinoSimActive && freeAnglePick.length > 0) {
-      for (const p of freeAnglePick) drawCross(ctx, p, RULER_COLOR, 12);
+      for (const p of freeAnglePick) drawTick(ctx, p, RULER_COLOR, 4);
       if (freeAnglePick.length >= 2)
-        drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 2, false);
+        drawLine(ctx, freeAnglePick[1], freeAnglePick[0], RULER_COLOR, 1.5, false);
       if (cursorImgPt) {
-        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 2, true);
+        drawLine(ctx, freeAnglePick[freeAnglePick.length - 1], cursorImgPt, RULER_COLOR, 1.5, false);
         if (freeAnglePick.length === 2)
           drawText(ctx, freeAnglePick[1].x + 12, freeAnglePick[1].y - 12,
             `${angleAtVertex(freeAnglePick[0], freeAnglePick[1], cursorImgPt).toFixed(1)}°`,
@@ -805,11 +805,14 @@ export default function CanvasArea(props: Props) {
     }
     // Primer punto ya marcado, esperando el segundo: cruz + línea elástica al cursor
     if (tool === 'measure' && rulerPick) {
-      drawCross(ctx, rulerPick, RULER_COLOR, 14);
+      drawTick(ctx, rulerPick, RULER_COLOR, 4);
       if (cursorImgPt) {
-        drawLine(ctx, rulerPick, cursorImgPt, RULER_COLOR, 2, true);
+        // Línea CONTINUA también en la previsualización: la discontinua
+        // fragmentaba visualmente el trazo justo mientras se busca el
+        // segundo punto, que es cuando más precisión se necesita.
+        drawLine(ctx, rulerPick, cursorImgPt, RULER_COLOR, 1.5, false);
         const d = distance(rulerPick, cursorImgPt);
-        drawMidLabel(ctx, rulerPick, cursorImgPt,
+        drawOffsetLabel(ctx, rulerPick, cursorImgPt,
           mmPerPx ? `${(d * mmPerPx).toFixed(1)} mm` : `${d.toFixed(0)} px`, RULER_COLOR);
       }
     }
@@ -3206,6 +3209,32 @@ function drawRhinoplastySplit(
   if (showSimLine && dividerX < canvas.width - 110) {
     drawText(ctx, canvas.width - 130, 26, 'SIMULACIÓN', '#86efac', { size: 13, background: true });
   }
+}
+
+/** Marca de extremo DISCRETA para mediciones: punto pequeño con halo oscuro.
+ *  Sustituye a la cruz de 20-28 px, que tapaba la anatomía justo donde se
+ *  está midiendo — al valorar un perfil la marca no debe competir con el
+ *  borde que se mide. */
+function drawTick(ctx: CanvasRenderingContext2D, p: Pt, color: string, r = 3) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(p.x, p.y, r + 1.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.restore();
+}
+
+/** Etiqueta de una medición desplazada PERPENDICULARMENTE a la línea, para
+ *  que no se plante encima de lo que se está midiendo. */
+function drawOffsetLabel(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, label: string, color: string) {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const vx = b.x - a.x, vy = b.y - a.y;
+  const len = Math.hypot(vx, vy) || 1;
+  // Normal unitaria; se elige el lado que aleja la etiqueta del centro del
+  // trazo (constante 14 px ≈ media altura del texto + margen).
+  const nx = -vy / len, ny = vx / len;
+  const off = 14;
+  drawText(ctx, mx + nx * off, my + ny * off, label, color, { size: 12, background: true });
 }
 
 /** Ángulo (°) en el vértice v entre los rayos v→p1 y v→p3, en [0, 180]. */
