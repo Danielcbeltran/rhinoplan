@@ -2789,34 +2789,38 @@ function drawPoint(
   ctx.save();
   // Todos los radios escalan con la resolución de la imagen (_uiScale) para
   // que el disco ocupe lo mismo RELATIVO a la cara en fotos grandes y chicas.
+  // Tamaño reducido ~35 % respecto al original (disco de 20 px → 13 px): un
+  // marcador más pequeño tapa menos anatomía justo donde se está midiendo,
+  // sin perder legibilidad porque se conservan los dos bordes de contraste.
+  // El radio de captura al tocar NO cambia, así que sigue siendo cómodo en iPad.
   const s = _uiScale;
   // Halo si activo o hover (escalado proporcionalmente al nuevo tamaño)
   if (active || hover) {
-    ctx.beginPath(); ctx.arc(p.x, p.y, (hover ? 22 : 18) * s, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p.x, p.y, (hover ? 14.5 : 12) * s, 0, Math.PI * 2);
     ctx.fillStyle = color + '44';
     ctx.fill();
   }
-  // Capa 1 — anillo negro exterior (1.5 px) para contraste sobre cualquier fondo
-  ctx.beginPath(); ctx.arc(p.x, p.y, 13.5 * s, 0, Math.PI * 2);
+  // Capa 1 — anillo negro exterior para contraste sobre cualquier fondo
+  ctx.beginPath(); ctx.arc(p.x, p.y, 9.2 * s, 0, Math.PI * 2);
   ctx.fillStyle = '#0b1220';
   ctx.fill();
-  // Capa 2 — borde BLANCO de 2 px
-  ctx.beginPath(); ctx.arc(p.x, p.y, 12 * s, 0, Math.PI * 2);
+  // Capa 2 — borde BLANCO
+  ctx.beginPath(); ctx.arc(p.x, p.y, 8 * s, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  // Capa 3 — disco de color (radio 10 → 20 px visibles)
-  ctx.beginPath(); ctx.arc(p.x, p.y, 10 * s, 0, Math.PI * 2);
+  // Capa 3 — disco de color (radio 6.5 → 13 px visibles)
+  ctx.beginPath(); ctx.arc(p.x, p.y, 6.5 * s, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
   // Punto central blanco para puntos detectados por IA (diferenciador visual)
   if (source === 'detected') {
-    ctx.beginPath(); ctx.arc(p.x, p.y, 3.5 * s, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2.3 * s, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.fill();
   }
   ctx.restore();
   // Etiqueta con fondo semitransparente oscuro
-  drawText(ctx, p.x + 15 * s, p.y - 12 * s, label, color, { background: true });
+  drawText(ctx, p.x + 10 * s, p.y - 8 * s, label, color, { background: true });
 }
 /** Pequeño cuadrado (símbolo de ángulo recto) en el pie de una perpendicular.
  *  baseA y baseB definen la línea base; perp es el punto desde donde sale la

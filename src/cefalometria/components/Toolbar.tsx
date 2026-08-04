@@ -67,6 +67,12 @@ export default function Toolbar(props: Props) {
   const mandatoryPoints = allPoints.filter((p) => !p.optional);
   const placedPoints = mandatoryPoints.filter((p) => points[p.id]).length;
   const totalMandatory = mandatoryPoints.length;
+  // Los OPCIONALES (Nk para el ángulo cervicomental, It para la definición de
+  // punta) se muestran aparte: el estado de "análisis completo" sigue siendo
+  // sobre los obligatorios, para que un caso terminado no aparezca incompleto
+  // por no haber colocado puntos que solo se usan en maniobras concretas.
+  const optionalPoints = allPoints.filter((p) => p.optional);
+  const placedOptional = optionalPoints.filter((p) => points[p.id]).length;
   const visibleGuideCount = guides.filter((g) => visibleLines[g.id]).length;
   const visibleLineCount = lines ? lines.filter((ln) => visibleLines[ln.id]).length : 0;
 
@@ -81,6 +87,12 @@ export default function Toolbar(props: Props) {
           <span className={`sg-count ${placedPoints >= totalMandatory ? 'complete' : ''}`}>
             {placedPoints}/{totalMandatory}
           </span>
+          {optionalPoints.length > 0 && (
+            <span className="sg-count" style={{ marginLeft: 4, opacity: 0.7 }}
+                  title={t('optionalHint')}>
+              +{placedOptional}/{optionalPoints.length} {t('optionalTag')}
+            </span>
+          )}
         </summary>
         <div className="sg-body">
           {groups.map((g) => {
