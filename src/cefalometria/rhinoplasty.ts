@@ -64,6 +64,10 @@ export interface NasalSilhouette {
    *  cae al punto medio de la recta N–Pn (aproximación de dorso recto). */
   dorsal: Pt[];
   Pn: Pt;
+  /** Infrapunta (It): quiebre infralobular entre Pn y Cm. OPCIONAL — solo
+   *  existe si el usuario colocó el punto. Es el que se estrecha con la
+   *  definición de punta. */
+  It?: Pt;
   Cm: Pt;
   Sn: Pt;
 }
@@ -85,7 +89,7 @@ export function originalNasalSilhouette(points: PointsMap): NasalSilhouette | nu
   if (dorsal.length === 0) {
     dorsal.push({ x: (N.x + Pn.x) / 2, y: (N.y + Pn.y) / 2 });
   }
-  return { N, dorsal, Pn, Cm, Sn };
+  return { N, dorsal, Pn, It: points.It, Cm, Sn };
 }
 
 /** Calcula la nueva silueta tras aplicar los cambios del simulador. */
@@ -134,6 +138,12 @@ export function computeSimulatedNose(
   let newPn = mv(Pn, gProj + sim.tipProjection, 0);
   // COLUMELA: proyección global+propia (fwd) · elevar/bajar (−down = elevar).
   let newCm = mv(Cm, gProj + sim.columellaProj, -sim.columellaLift);
+  // Infrapunta: pertenece al lóbulo, así que sigue la proyección global y gira
+  // con la punta; la proyección/elevación específicas de columela solo se le
+  // aplican a la mitad (está a medio camino entre Pn y Cm).
+  let newIt = orig.It
+    ? mv(orig.It, gProj + sim.columellaProj * 0.5, -sim.columellaLift * 0.5)
+    : undefined;
   // SUBNASAL: adelantar/retraer la base de la nariz (zona Sn).
   const newSn = mv(Sn, sim.subnasale, 0);
   if (sim.tipRotation !== 0) {
@@ -171,6 +181,7 @@ export function computeSimulatedNose(
     const rad = (deg * Math.PI / 180) * faceDir;
     newPn = rotBy(newPn, rad);
     newCm = rotBy(newCm, rad);
+    if (newIt) newIt = rotBy(newIt, rad);
   }
 
   // DORSO: 1) aplanar la giba — mezcla cada punto dorsal hacia su proyección
@@ -198,7 +209,7 @@ export function computeSimulatedNose(
     return mv({ x: px, y: py }, sim.dorsum + gProj + zone, 0);
   });
 
-  return { N: newN, dorsal, Pn: newPn, Cm: newCm, Sn: newSn };
+  return { N: newN, dorsal, Pn: newPn, It: newIt, Cm: newCm, Sn: newSn };
 }
 
 /** Controles EXTRA de warp fotográfico para el ala nasal (elevar/bajar). El
@@ -228,29 +239,32 @@ export function alarWarpControls(
 }
 
 /** Aplica refinement de punta bidireccional.
- *  refinement > 0  → acerca dorsum y Cm hacia Pn (afila/define la punta)
- *  refinement < 0  → aleja dorsum y Cm de Pn (ensancha la punta)
- *  Rango esperado: -10% a +10% (en %), mapeado internamente a ±25% de movimiento. */
+ *  refinement > 0  → acerca suprapunta e infrapunta hacia Pn (afila/define)
+ *  refinement < 0  → las aleja de Pn (ensancha la punta)
+ *  El estrechamiento actúa sobre el LÓBULO: la suprapunta (dorsales cercanos
+ *  a Pn) por arriba y la INFRAPUNTA (It) por abajo — que es el quiebre
+ *  infralobular donde clínicamente se estrecha la punta. Si It no está
+ *  colocado, el efecto inferior recae en Cm como antes, para que los casos
+ *  guardados sin ese punto sigan comportándose igual.
+ *  Rango esperado: -10% a +10% (en %), mapeado internamente a ±25%. */
 export function refineNoseTip(silhouette: NasalSilhouette, refinement: number): NasalSilhouette {
   if (Math.abs(refinement) < 0.05) return silhouette;
   // refinement en porcentaje (-10..+10) → t factor (-0.25..+0.25)
   const t = Math.max(-0.25, Math.min(0.25, refinement * 0.025));
   const n = silhouette.dorsal.length;
+  const toward = (p: Pt, k: number): Pt => ({
+    x: p.x + (silhouette.Pn.x - p.x) * t * k,
+    y: p.y + (silhouette.Pn.y - p.y) * t * k,
+  });
   return {
     ...silhouette,
-    // El refinamiento afecta la zona de la punta: los puntos dorsales cercanos
-    // a Pn (suprapunta) se mueven más que los altos (rhinion casi no cambia).
-    dorsal: silhouette.dorsal.map((p, i) => {
-      const w = 0.4 * ((i + 1) / n);
-      return {
-        x: p.x + (silhouette.Pn.x - p.x) * t * w,
-        y: p.y + (silhouette.Pn.y - p.y) * t * w,
-      };
-    }),
-    Cm: {
-      x: silhouette.Cm.x + (silhouette.Pn.x - silhouette.Cm.x) * t * 0.6,
-      y: silhouette.Cm.y + (silhouette.Pn.y - silhouette.Cm.y) * t * 0.6,
-    },
+    // Suprapunta: los dorsales cercanos a Pn se mueven más que los altos
+    // (el rhinion apenas cambia).
+    dorsal: silhouette.dorsal.map((p, i) => toward(p, 0.4 * ((i + 1) / n))),
+    // Infrapunta: el quiebre infralobular se estrecha hacia la punta.
+    It: silhouette.It ? toward(silhouette.It, 0.6) : undefined,
+    // Sin It colocado, se mantiene el comportamiento anterior sobre Cm.
+    Cm: silhouette.It ? silhouette.Cm : toward(silhouette.Cm, 0.6),
   };
 }
 
@@ -272,6 +286,10 @@ export function warpSegmentBySilhouettes(
   push(orig.N, sim.N);
   for (let i = 0; i < orig.dorsal.length; i++) push(orig.dorsal[i], sim.dorsal[i] ?? orig.dorsal[i]);
   push(orig.Pn, sim.Pn);
+  // Infrapunta entre Pn y Cm: mantiene el ORDEN anatómico que la búsqueda
+  // monótona de segmentos necesita, y lleva a la foto el estrechamiento del
+  // quiebre infralobular.
+  if (orig.It && sim.It) push(orig.It, sim.It);
   push(orig.Cm, sim.Cm);
   push(orig.Sn, sim.Sn);
 
@@ -482,10 +500,21 @@ export function applyHandlesToSilhouette(
   s: NasalSilhouette, handles: RhinoHandle[], R: number,
 ): NasalSilhouette {
   if (handles.length === 0) return s;
-  const seg = [s.N, ...s.dorsal, s.Pn, s.Cm, s.Sn];
+  // El segmento incluye It (si existe) entre Pn y Cm, así que el índice de
+  // Cm/Sn se desplaza en uno cuando el punto está colocado.
+  const hasIt = !!s.It;
+  const seg = hasIt
+    ? [s.N, ...s.dorsal, s.Pn, s.It as Pt, s.Cm, s.Sn]
+    : [s.N, ...s.dorsal, s.Pn, s.Cm, s.Sn];
   const out = applyHandlesToSegment(seg, handles, R);
   const n = s.dorsal.length;
-  return { N: out[0], dorsal: out.slice(1, 1 + n), Pn: out[1 + n], Cm: out[2 + n], Sn: out[3 + n] };
+  const iPn = 1 + n;
+  return {
+    N: out[0], dorsal: out.slice(1, iPn), Pn: out[iPn],
+    It: hasIt ? out[iPn + 1] : undefined,
+    Cm: out[iPn + (hasIt ? 2 : 1)],
+    Sn: out[iPn + (hasIt ? 3 : 2)],
+  };
 }
 
 /** Separa deformadores en cercanos al tramo (se funden en la silueta) y

@@ -5,7 +5,7 @@ export type Mode = 'perfil' | 'frente';
 
 export type PointId =
   // Perfil (tejidos blandos)
-  | 'Tr'  | 'G'   | 'N'   | 'Rh'  | 'Sp'  | 'Pn'  | 'Cm'  | 'Sn'  | 'AC'
+  | 'Tr'  | 'G'   | 'N'   | 'Rh'  | 'Sp'  | 'Pn'  | 'It'  | 'Cm'  | 'Sn'  | 'AC'
   // Relación ala–columnela (Gunter): A = ala inferior, Ba/Bp = eje narina, Cb = columnela inferior
   | 'A'   | 'Ba'  | 'Bp'  | 'Cb'
   | 'Ls'  | 'Li'  | 'Sl'  | 'Pog' | 'Me'  | 'C'   | 'Nk'
@@ -48,6 +48,7 @@ export const CEPH_POINTS: PointDef[] = [
   { id: 'Rh',  mode: 'perfil', name: 'Rhinion',      desc: 'Transición hueso-cartílago en el dorso nasal',     color: '#e879f9', group: 'p-nariz' },
   { id: 'Sp',  mode: 'perfil', name: 'Suprapunta',   desc: 'Punto más alto del lóbulo de la punta nasal (entre Rh y Pn)', color: '#f472b6', group: 'p-nariz' },
   { id: 'Pn',  mode: 'perfil', name: 'Pronasale',    desc: 'Punta de la nariz (pronasale)',                    color: '#fb7185', group: 'p-nariz' },
+  { id: 'It',  mode: 'perfil', name: 'Infrapunta',   desc: 'Punto de quiebre infralobular, entre la punta y la columela — se estrecha al definir la punta', color: '#fda4af', group: 'p-nariz', optional: true },
   { id: 'Cm',  mode: 'perfil', name: 'Columnela',    desc: 'Punto más prominente de la columela',              color: '#facc15', group: 'p-nariz' },
   { id: 'Sn',  mode: 'perfil', name: 'Subnasal',     desc: 'Base de la columela / inicio del filtrum',         color: '#fda4af', group: 'p-nariz' },
   { id: 'AC',  mode: 'perfil', name: 'Pliegue alar', desc: 'Alar Crease — unión del ala nasal con la mejilla',            color: '#38bdf8', group: 'p-nariz' },
