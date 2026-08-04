@@ -7,7 +7,7 @@ import {
   handleRadius, applyHandlesToSilhouette,
   type RhinoplastySim, type RhinoHandle,
 } from '../rhinoplasty';
-import { angleBetweenLines, type PointsMap } from '../cephalometry';
+import { angleBetweenLines, type PointsMap, type PointId } from '../cephalometry';
 import Icon from './Icon';
 import { useT } from '../i18n';
 
@@ -44,6 +44,14 @@ interface Props {
 
 const REQUIRED_POINTS = ['N', 'Pn', 'Cm', 'Sn'] as const;
 
+/** Puntos que exige cada maniobra. Es la MISMA información que el campo
+ *  `requires` de RHINO_SLIDERS; se declara también aquí como red de seguridad
+ *  para que el bloqueo del control no dependa de que ambos archivos estén en
+ *  la misma versión desplegada. Si el slider trae `requires`, manda ese. */
+const SLIDER_REQUIRES: Partial<Record<keyof RhinoplastySim, PointId[]>> = {
+  tipRefinement: ['It', 'Sp'],
+};
+
 export default function RhinoplastyPanel(props: Props) {
   const t = useT();
   const {
@@ -57,6 +65,21 @@ export default function RhinoplastyPanel(props: Props) {
   } = props;
 
   const missing = REQUIRED_POINTS.filter((id) => !points[id]);
+
+  // Si a una maniobra le faltan sus puntos imprescindibles (p. ej. definición
+  // de punta sin It/Sp), su valor se resetea a 0: el control queda bloqueado y
+  // no debe quedar un valor aplicándose "a escondidas" que el cirujano no
+  // pueda ver ni corregir desde el slider.
+  useEffect(() => {
+    const reset: Partial<RhinoplastySim> = {};
+    for (const sl of RHINO_SLIDERS) {
+      const req = (sl as { requires?: PointId[] }).requires ?? SLIDER_REQUIRES[sl.id] ?? [];
+      if (req.some((id) => !points[id]) && Math.abs(sim[sl.id]) > 0.001) {
+        reset[sl.id] = 0;
+      }
+    }
+    if (Object.keys(reset).length > 0) setSim({ ...sim, ...reset });
+  }, [points, sim, setSim]);
   const ready = missing.length === 0;
   const changes = getActiveChanges(sim);
 
@@ -157,10 +180,19 @@ export default function RhinoplastyPanel(props: Props) {
           {RHINO_SLIDERS.map((s) => {
             const val = sim[s.id];
             const isZero = Math.abs(val) < 0.05;
+            // Puntos que le faltan a ESTA maniobra: si hay alguno, el control
+            // se bloquea y se nombra cuál falta (con su nombre traducido).
+            const req = (s as { requires?: PointId[] }).requires ?? SLIDER_REQUIRES[s.id] ?? [];
+            const lack = req.filter((id) => !points[id]);
+            const locked = lack.length > 0;
             return (
-              <div key={s.id} className={`rhino-slider ${isZero ? 'inactive' : 'active'}`}>
+              <div key={s.id} className={`rhino-slider ${isZero ? 'inactive' : 'active'}`}
+                style={locked
+                  ? { opacity: 0.45, filter: 'grayscale(1)', pointerEvents: 'none' }
+                  : undefined}>
                 <div className="rs-header">
-                  <span className="rs-label">{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
+                  <span className="rs-label" style={locked ? { color: 'var(--muted)' } : undefined}>
+                    {locked && '🔒 '}{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
                   <span className="rs-value">
                     {val >= 0 && val !== 0 ? '+' : ''}{val.toFixed(s.step < 1 ? 1 : 0)}{s.unit ? ' ' + s.unit : ''}
                   </span>
@@ -170,9 +202,17 @@ export default function RhinoplastyPanel(props: Props) {
                   min={s.min} max={s.max} step={s.step}
                   value={val}
                   onChange={(e) => updateSlider(s.id, parseFloat(e.target.value))}
-                  disabled={!ready}
+                  disabled={!ready || locked}
                 />
-                <div className="rs-desc">{t('rsdesc-'+s.id) !== 'rsdesc-'+s.id ? t('rsdesc-'+s.id) : s.desc}</div>
+                {locked ? (
+                  <div className="rs-desc" style={{ color: 'var(--warn)' }}>
+                    ⚠ {t('rpNeedsPoints')}{' '}
+                    <b>{lack.map((id) => `${t('name-' + id)} (${id})`).join(' · ')}</b>{' '}
+                    {t('rpNeedsPointsEnd')}
+                  </div>
+                ) : (
+                  <div className="rs-desc">{t('rsdesc-'+s.id) !== 'rsdesc-'+s.id ? t('rsdesc-'+s.id) : s.desc}</div>
+                )}
               </div>
             );
           })}
