@@ -178,9 +178,12 @@ export default function RhinoplastyPanel(props: Props) {
             const locked = lack.length > 0;
             return (
               <div key={s.id} className={`rhino-slider ${isZero ? 'inactive' : 'active'}`}
-                style={locked ? { opacity: 0.55 } : undefined}>
+                style={locked
+                  ? { opacity: 0.45, filter: 'grayscale(1)', pointerEvents: 'none' }
+                  : undefined}>
                 <div className="rs-header">
-                  <span className="rs-label">{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
+                  <span className="rs-label" style={locked ? { color: 'var(--muted)' } : undefined}>
+                    {locked && '🔒 '}{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
                   <span className="rs-value">
                     {val >= 0 && val !== 0 ? '+' : ''}{val.toFixed(s.step < 1 ? 1 : 0)}{s.unit ? ' ' + s.unit : ''}
                   </span>
