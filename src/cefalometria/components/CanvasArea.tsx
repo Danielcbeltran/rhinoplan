@@ -1217,7 +1217,16 @@ export default function CanvasArea(props: Props) {
     }
     // En simulación NO se agarran puntos: la rama de deformadores libres (abajo)
     // debe recibir el gesto aunque caiga cerca de un punto anatómico.
-    const id = pointsLocked ? null : nearestPoint(pt, 16);
+    // Tampoco se agarran mientras se COLOCA un punto nuevo: en zonas densas
+    // (la punta nasal reúne Pn, Sp, It y Cm en pocos píxeles) el vecino más
+    // cercano secuestraba el gesto y era imposible colocar el punto elegido.
+    // Con un punto ELEGIDO en la lista, el gesto es suyo en exclusiva: no se
+    // agarra ningún vecino. En zonas densas (la punta reúne Pn, Sp, It y Cm en
+    // pocos píxeles) el vecino más cercano secuestraba el gesto y no había
+    // forma de colocar el punto elegido. Para mover otro punto, primero se
+    // deselecciona (o se elige ese otro en la lista) y luego se arrastra.
+    const pointSelected = tool === 'point' && !!activePointId;
+    const id = (pointsLocked || pointSelected) ? null : nearestPoint(pt, 16);
     if (id) {
       onBeforeChange();   // snapshot pre-arrastre (dedupe si no se mueve)
       setDragging(id);
@@ -1312,7 +1321,10 @@ export default function CanvasArea(props: Props) {
       if (!pt) { setHoverId(null); setCursorImgPt(null); return; }
       // Sin herramienta / con puntos bloqueados no se resalta nada: el hover
       // prometía "arrastra para reposicionar", que ahí sería mentira.
-      setHoverId(pointsLocked ? null : nearestPoint(pt, 14));
+      // Sin resaltar vecinos mientras se coloca un punto: el resalte sugería
+      // que ese vecino iba a recibir el gesto, que es justo lo que ya no pasa.
+      setHoverId(pointsLocked || (tool === 'point' && activePointId)
+        ? null : nearestPoint(pt, 14));
       const consumed = tool === 'point' && magnifierEnabled;
       setCursorImgPt(consumed ? pt : null);
     });
@@ -1485,7 +1497,13 @@ export default function CanvasArea(props: Props) {
 
     if (tool === 'point') {
       if (pointsLocked) return;   // simulación: puntos anatómicos bloqueados
-      const onExisting = nearestPoint(pt, 14);
+      // Si hay un punto ELEGIDO en la lista y aún no está colocado, el clic lo
+      // coloca aunque caiga junto a otro: esa es la intención explícita del
+      // usuario. Para reposicionar un punto existente se arrastra directamente.
+      // Con un punto elegido el clic SIEMPRE lo coloca (o lo recoloca): nunca
+      // se desvía a un vecino. Sin nada elegido, el clic sobre un punto lo
+      // selecciona, como siempre.
+      const onExisting = activePointId ? null : nearestPoint(pt, 14);
       if (onExisting) { setActivePointId(onExisting); return; }
       // Sin punto seleccionado, el click en zona libre no coloca nada: hay que
       // elegir primero un punto de la lista (o agarrar uno existente).
@@ -2796,31 +2814,31 @@ function drawPoint(
   const s = _uiScale;
   // Halo si activo o hover (escalado proporcionalmente al nuevo tamaño)
   if (active || hover) {
-    ctx.beginPath(); ctx.arc(p.x, p.y, (hover ? 14.5 : 12) * s, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p.x, p.y, (hover ? 11.6 : 9.6) * s, 0, Math.PI * 2);
     ctx.fillStyle = color + '44';
     ctx.fill();
   }
   // Capa 1 — anillo negro exterior para contraste sobre cualquier fondo
-  ctx.beginPath(); ctx.arc(p.x, p.y, 9.2 * s, 0, Math.PI * 2);
+  ctx.beginPath(); ctx.arc(p.x, p.y, 7.4 * s, 0, Math.PI * 2);
   ctx.fillStyle = '#0b1220';
   ctx.fill();
   // Capa 2 — borde BLANCO
-  ctx.beginPath(); ctx.arc(p.x, p.y, 8 * s, 0, Math.PI * 2);
+  ctx.beginPath(); ctx.arc(p.x, p.y, 6.4 * s, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  // Capa 3 — disco de color (radio 6.5 → 13 px visibles)
-  ctx.beginPath(); ctx.arc(p.x, p.y, 6.5 * s, 0, Math.PI * 2);
+  // Capa 3 — disco de color (radio 5.2 → 10.4 px visibles)
+  ctx.beginPath(); ctx.arc(p.x, p.y, 5.2 * s, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
   // Punto central blanco para puntos detectados por IA (diferenciador visual)
   if (source === 'detected') {
-    ctx.beginPath(); ctx.arc(p.x, p.y, 2.3 * s, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 1.9 * s, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.fill();
   }
   ctx.restore();
   // Etiqueta con fondo semitransparente oscuro
-  drawText(ctx, p.x + 10 * s, p.y - 8 * s, label, color, { background: true });
+  drawText(ctx, p.x + 8 * s, p.y - 6.5 * s, label, color, { background: true });
 }
 /** Pequeño cuadrado (símbolo de ángulo recto) en el pie de una perpendicular.
  *  baseA y baseB definen la línea base; perp es el punto desde donde sale la
