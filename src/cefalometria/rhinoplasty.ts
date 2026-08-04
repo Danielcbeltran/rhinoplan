@@ -3,7 +3,7 @@
 // calcula la posición de los nuevos puntos en el sistema local de la cara
 // (eje "down" = N→Sn, eje "forward" = perpendicular hacia la nariz).
 
-import type { PointsMap, Pt } from './cephalometry';
+import type { PointsMap, Pt, PointId } from './cephalometry';
 import { angle3pt, distance } from './cephalometry';
 
 export interface RhinoplastySim {
@@ -37,6 +37,16 @@ export interface RhinoSlider {
   min: number; max: number; step: number;
   unit: string;
   frontalOnly?: boolean;
+  /** Puntos anatómicos IMPRESCINDIBLES para la maniobra. Si falta alguno el
+   *  panel bloquea el control y avisa de cuál falta, en vez de dejar un
+   *  slider que se mueve sin producir ningún efecto. */
+  requires?: PointId[];
+}
+
+/** Puntos que le faltan a una maniobra para poder aplicarse. Vacío = lista. */
+export function missingPointsFor(slider: RhinoSlider, points: PointsMap): PointId[] {
+  if (!slider.requires) return [];
+  return slider.requires.filter((id) => !points[id]);
 }
 
 export const RHINO_SLIDERS: RhinoSlider[] = [
@@ -48,7 +58,7 @@ export const RHINO_SLIDERS: RhinoSlider[] = [
   { id: 'noseProjection',label: 'Proyección de nariz',  desc: '+ aumenta · − disminuye (nariz completa)',   min: -8,  max: 8,   step: 0.1, unit: 'mm' },
   { id: 'tipProjection', label: 'Proyección de punta (pronasale)', desc: '+ punta más prominente',           min: -10, max: 10,  step: 0.1, unit: 'mm' },
   { id: 'tipRotation',   label: 'Rotación de punta',    desc: '+ punta arriba · el valor = Δ del ángulo nasolabial', min: -20, max: 20, step: 0.5, unit: '°' },
-  { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha · req. punto It', min: -25, max: 25,  step: 0.5, unit: '%' },
+  { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha · req. It y Sp', min: -25, max: 25,  step: 0.5, unit: '%', requires: ['It', 'Sp'] },
   { id: 'columellaLift', label: 'Columela (elevar/bajar)', desc: '+ eleva · − baja',                        min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'columellaProj', label: 'Proyección columela',  desc: '+ adelante',                                 min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'subnasale',     label: 'Zona subnasal',        desc: '+ adelanta · − retrae (base de la nariz)',   min: -5,  max: 5,   step: 0.1, unit: 'mm' },

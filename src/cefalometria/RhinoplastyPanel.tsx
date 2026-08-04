@@ -1,0 +1,451 @@
+import { useEffect, useRef } from 'react';
+import {
+  missingPointsFor,
+  RHINO_SLIDERS, DEFAULT_RHINO_SIM, getActiveChanges,
+  computeSimulatedNose, refineNoseTip, originalNasalSilhouette,
+  nasolabialFromSilhouette, nasofrontalFromSilhouette, nasalProjectionFromSilhouette,
+  tipAngleFromSilhouette, distance,
+  handleRadius, applyHandlesToSilhouette,
+  type RhinoplastySim, type RhinoHandle,
+} from '../rhinoplasty';
+import { angleBetweenLines, type PointsMap } from '../cephalometry';
+import Icon from './Icon';
+import { useT } from '../i18n';
+
+interface Props {
+  sim: RhinoplastySim;
+  setSim: (s: RhinoplastySim) => void;
+  showOriginal: boolean;
+  setShowOriginal: (b: boolean) => void;
+  warpPhoto: boolean;
+  setWarpPhoto: (b: boolean) => void;
+  splitView: boolean;
+  setSplitView: (b: boolean) => void;
+  showSimLine: boolean;
+  setShowSimLine: (b: boolean) => void;
+  handles: RhinoHandle[];
+  onRemoveHandle: (i: number) => void;
+  onToggleHandleLock: (i: number) => void;
+  onResetHandles: () => void;
+  /** Fija el multiplicador de radio de influencia del deformador i (×0.3–×2). */
+  onSetHandleRadius: (i: number, r: number) => void;
+  editHandles: boolean;
+  setEditHandles: (b: boolean) => void;
+  /** Radio (multiplicador) con el que se crearán los deformadores nuevos. */
+  newHandleRadius: number;
+  setNewHandleRadius: (r: number) => void;
+  onUndo: () => void;
+  canUndo: boolean;
+  onRedo: () => void;
+  canRedo: boolean;
+  points: PointsMap;
+  mmPerPx: number | null;
+  onClose: () => void;
+}
+
+const REQUIRED_POINTS = ['N', 'Pn', 'Cm', 'Sn'] as const;
+
+export default function RhinoplastyPanel(props: Props) {
+  const t = useT();
+  const {
+    sim, setSim, showOriginal, setShowOriginal,
+    warpPhoto, setWarpPhoto, splitView, setSplitView,
+    showSimLine, setShowSimLine, handles, onRemoveHandle, onToggleHandleLock, onResetHandles,
+    onSetHandleRadius, editHandles, setEditHandles,
+    newHandleRadius, setNewHandleRadius,
+    onUndo, canUndo, onRedo, canRedo,
+    points, mmPerPx, onClose,
+  } = props;
+
+  const missing = REQUIRED_POINTS.filter((id) => !points[id]);
+
+  // Si a una maniobra le faltan sus puntos imprescindibles (p. ej. definición
+  // de punta sin It/Sp), su valor se resetea a 0: el control queda bloqueado y
+  // no debe quedar un valor aplicándose "a escondidas" que el cirujano no
+  // pueda ver ni corregir desde el slider.
+  useEffect(() => {
+    const reset: Partial<RhinoplastySim> = {};
+    for (const sl of RHINO_SLIDERS) {
+      if (missingPointsFor(sl, points).length > 0 && Math.abs(sim[sl.id]) > 0.001) {
+        reset[sl.id] = 0;
+      }
+    }
+    if (Object.keys(reset).length > 0) setSim({ ...sim, ...reset });
+  }, [points, sim, setSim]);
+  const ready = missing.length === 0;
+  const changes = getActiveChanges(sim);
+
+  // Silueta original (sin cambios) y simulada para comparativa. La simulada
+  // incluye TAMBIÉN los deformadores libres (mismo empuje smoothstep que el
+  // canvas aplica al tramo), para que {t('origVsProjected')} refleje los
+  // cambios hechos arrastrando y no solo los sliders.
+  const original = ready ? originalNasalSilhouette(points) : null;
+  const simRaw = ready ? computeSimulatedNose(points, sim, mmPerPx) : null;
+  const simRefined = simRaw ? refineNoseTip(simRaw, sim.tipRefinement) : null;
+  const simulated = (simRefined && original && handles.length > 0)
+    ? applyHandlesToSilhouette(
+        simRefined, handles,
+        handleRadius([original.N, ...original.dorsal, original.Pn, original.Cm, original.Sn]))
+    : simRefined;
+  const nasolabialOrig = original ? nasolabialFromSilhouette(original, points.Ls) : null;
+  const nasolabialSim  = simulated ? nasolabialFromSilhouette(simulated, points.Ls) : null;
+  const nasofrontalOrig = original ? nasofrontalFromSilhouette(original, points.G) : null;
+  const nasofrontalSim  = simulated ? nasofrontalFromSilhouette(simulated, points.G) : null;
+  const projOrig = original ? nasalProjectionFromSilhouette(original, points.AC) : null;
+  const projSim  = simulated ? nasalProjectionFromSilhouette(simulated, points.AC) : null;
+  const tipAngOrig = original ? tipAngleFromSilhouette(original) : null;
+  const tipAngSim  = simulated ? tipAngleFromSilhouette(simulated) : null;
+  // Rotación de punta vs plano de Frankfort: ángulo entre la columela (Sn–Cm)
+  // y el plano de Frankfort (Po–Or). El plano Po–Or NO cambia con la simulación;
+  // sí lo hacen Sn/Cm, así que la comparativa refleja la rotación proyectada.
+  // Requiere Po y Or colocados.
+  const frankfortReady = !!(points.Po && points.Or);
+  const tipRotFrankOrig = (frankfortReady && original)
+    ? angleBetweenLines(points.Po!, points.Or!, original.Sn, original.Cm) : null;
+  const tipRotFrankSim = (frankfortReady && simulated)
+    ? angleBetweenLines(points.Po!, points.Or!, simulated.Sn, simulated.Cm) : null;
+  // Distancias: largo de la nariz (N–Pn) y proyección nasal (AC–Pn). AC no se
+  // mueve en la simulación (es el pivote de la rotación), así que la proyección
+  // AC–Pn permite verificar que la rotación de punta la conserva.
+  const noseLenOrig = original ? distance(original.N, original.Pn) : null;
+  const noseLenSim  = simulated ? distance(simulated.N, simulated.Pn) : null;
+  const nasProjOrig = (original && points.AC) ? distance(points.AC, original.Pn) : null;
+  const nasProjSim  = (simulated && points.AC) ? distance(points.AC, simulated.Pn) : null;
+  const fmtDist = (px: number | null) =>
+    px == null ? '—' : mmPerPx ? `${(px * mmPerPx).toFixed(1)} mm` : `${px.toFixed(0)} px`;
+  const fmtDistDelta = (a: number | null, b: number | null) => {
+    if (a == null || b == null) return '—';
+    const d = mmPerPx ? (b - a) * mmPerPx : b - a;
+    const unit = mmPerPx ? ' mm' : ' px';
+    return `${d >= 0 ? '+' : ''}${d.toFixed(mmPerPx ? 1 : 0)}${unit}`;
+  };
+
+  // Cambios de slider COALESCIDOS a 1 commit por frame: en iPad el arrastre
+  // dispara 60-120 eventos `input`/s y cada uno re-renderizaba la App entera
+  // + el warp fotográfico → la simulación iba lentísima. Se acumula el último
+  // valor y se aplica en el siguiente requestAnimationFrame.
+  const pendingSimRef = useRef<RhinoplastySim | null>(null);
+  const simRafRef = useRef(0);
+  const simRef = useRef(sim);
+  useEffect(() => { simRef.current = sim; }, [sim]);
+  useEffect(() => () => cancelAnimationFrame(simRafRef.current), []);
+  function updateSlider<K extends keyof RhinoplastySim>(id: K, value: number) {
+    pendingSimRef.current = { ...(pendingSimRef.current ?? simRef.current), [id]: value };
+    if (!simRafRef.current) {
+      simRafRef.current = requestAnimationFrame(() => {
+        simRafRef.current = 0;
+        if (pendingSimRef.current) {
+          setSim(pendingSimRef.current);
+          pendingSimRef.current = null;
+        }
+      });
+    }
+  }
+  function resetAll() { setSim(DEFAULT_RHINO_SIM); }
+
+  return (
+    <aside className="results rhino-panel">
+      <div>
+        <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="flask" size={15} /> {t('rpTitle')}
+          </span>
+          <button className="rhino-close" onClick={onClose} title={t('rhinoplastyClose')}>✕</button>
+        </h3>
+        {!ready ? (
+          <div className="pending-note" style={{ marginTop: 8 }}>
+            {t('rpMissingNasal')} <b>{missing.join(', ')}</b>.<br />
+            {t('rpMissingNasalEnd')}
+          </div>
+        ) : (
+          <div className="calibration-status ok" style={{ marginTop: 8 }}>
+            {t('rpNasalReady')} {mmPerPx
+              ? <>{t('rpScaleLabel')} <b>{(1 / mmPerPx).toFixed(2)} px/mm</b></>
+              : <>{t('rpNoCalibSim')} <b>1 mm ≈ 5 px</b>{t('rpNoCalibSimEnd')}</>}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3>{t('rpControls')}</h3>
+        <div className="rhino-sliders">
+          {RHINO_SLIDERS.map((s) => {
+            const val = sim[s.id];
+            const isZero = Math.abs(val) < 0.05;
+            // Puntos que le faltan a ESTA maniobra: si hay alguno, el control
+            // se bloquea y se nombra cuál falta (con su nombre traducido).
+            const lack = missingPointsFor(s, points);
+            const locked = lack.length > 0;
+            return (
+              <div key={s.id} className={`rhino-slider ${isZero ? 'inactive' : 'active'}`}
+                style={locked ? { opacity: 0.55 } : undefined}>
+                <div className="rs-header">
+                  <span className="rs-label">{t('rslabel-'+s.id)}{s.frontalOnly && <span className="rs-tag">{t('frontalOnlyTag')}</span>}</span>
+                  <span className="rs-value">
+                    {val >= 0 && val !== 0 ? '+' : ''}{val.toFixed(s.step < 1 ? 1 : 0)}{s.unit ? ' ' + s.unit : ''}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={s.min} max={s.max} step={s.step}
+                  value={val}
+                  onChange={(e) => updateSlider(s.id, parseFloat(e.target.value))}
+                  disabled={!ready || locked}
+                />
+                {locked ? (
+                  <div className="rs-desc" style={{ color: 'var(--warn)' }}>
+                    ⚠ {t('rpNeedsPoints')}{' '}
+                    <b>{lack.map((id) => `${t('name-' + id)} (${id})`).join(' · ')}</b>{' '}
+                    {t('rpNeedsPointsEnd')}
+                  </div>
+                ) : (
+                  <div className="rs-desc">{t('rsdesc-'+s.id) !== 'rsdesc-'+s.id ? t('rsdesc-'+s.id) : s.desc}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <button onClick={onUndo} disabled={!canUndo} style={{ flex: 1 }}
+            title={t('undoSimTitle')}>
+            {t('rpUndo')}
+          </button>
+          <button onClick={onRedo} disabled={!canRedo} style={{ flex: 1 }}
+            title={t('redoSimTitle')}>
+            {t('rpRedo')}
+          </button>
+          <button onClick={resetAll} disabled={changes.length === 0} style={{ flex: 1 }}>
+            {t('rpReset')}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <h3>{t('rpViewSection')}</h3>
+        <label className="rhino-toggle">
+          <input
+            type="checkbox"
+            checked={showOriginal}
+            onChange={(e) => setShowOriginal(e.target.checked)}
+          />
+          {t('rpShowOriginal')}
+        </label>
+        <label className="rhino-toggle">
+          <input
+            type="checkbox"
+            checked={warpPhoto}
+            onChange={(e) => setWarpPhoto(e.target.checked)}
+          />
+          {t('rpDeformPhoto')}
+        </label>
+        <label className="rhino-toggle">
+          <input
+            type="checkbox"
+            checked={showSimLine}
+            onChange={(e) => setShowSimLine(e.target.checked)}
+          />
+          {t('rpShowSimLine')}
+        </label>
+        <label className="rhino-toggle">
+          <input
+            type="checkbox"
+            checked={splitView}
+            onChange={(e) => setSplitView(e.target.checked)}
+          />
+          {t('rpSplitView')}
+        </label>
+        <label className="rhino-toggle">
+          <input
+            type="checkbox"
+            checked={editHandles}
+            onChange={(e) => setEditHandles(e.target.checked)}
+          />
+          <Icon name="move" size={14} /> {t('rpEditDeformers')}
+        </label>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.45 }}>
+          {t('rpEditNote')}
+        </div>
+        {editHandles && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
+            <span title={t('brushRadiusTitle')}>
+              {t('rpNewDeformerRadius')}
+            </span>
+            <input
+              type="range" min={0.3} max={2} step={0.05} value={newHandleRadius}
+              onChange={(e) => setNewHandleRadius(parseFloat(e.target.value))}
+              style={{ flex: 1, minHeight: 0 }}
+            />
+            <span style={{ width: 38, textAlign: 'right' }}>×{newHandleRadius.toFixed(2)}</span>
+          </div>
+        )}
+        {handles.length > 0 && (
+          <div style={{ marginTop: 6 }}>
+            {handles.map((h, i) => {
+              const len = Math.hypot(h.to.x - h.from.x, h.to.y - h.from.y);
+              const lenTxt = mmPerPx ? `${(len * mmPerPx).toFixed(1)} mm` : `${len.toFixed(0)} px`;
+              const rMult = h.radius ?? 1;
+              return (
+                <div key={i} style={{ padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                    <span style={{ color: '#f59e0b', display: 'inline-flex' }}><Icon name="move" size={13} /></span>
+                    <span style={{ flex: 1 }}>{t('rpDeformer')} {i + 1} · {lenTxt}</span>
+                    <button
+                      onClick={() => onToggleHandleLock(i)}
+                      title={h.locked ? t('rpLockTitle') : t('rpUnlockedTitle')}
+                      style={{ padding: '1px 8px', fontSize: 12 }}
+                    >{h.locked ? '🔒' : '🔓'}</button>
+                    <button
+                      onClick={() => onRemoveHandle(i)}
+                      title={`${t('rpRemoveHandle')} ${i + 1}`}
+                      style={{ padding: '1px 8px', fontSize: 12 }}
+                    >✕</button>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }}>
+                    <span title={t('brushRadius')}>{t('rpRadius')}</span>
+                    <input
+                      type="range" min={0.3} max={2} step={0.05} value={rMult}
+                      onChange={(e) => onSetHandleRadius(i, parseFloat(e.target.value))}
+                      style={{ flex: 1, minHeight: 0 }}
+                    />
+                    <span style={{ width: 38, textAlign: 'right' }}>×{rMult.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })}
+            <button onClick={onResetHandles} style={{ marginTop: 4, width: '100%' }}>
+              {t('rpRemoveAll')} ({handles.length})
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3>{t('rpOrigVsProj')}</h3>
+        {!ready ? (
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>—</div>
+        ) : (
+          <table className="ceph">
+            <thead>
+              <tr>
+                <th>{t('rpThMeasure')}</th>
+                <th className="num">{t('rpThOriginal')}</th>
+                <th className="num">{t('rpThProjected')}</th>
+                <th className="num">Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{t('rpAngNasolabial')}</td>
+                <td className="num">{nasolabialOrig != null ? `${nasolabialOrig.toFixed(1)}°` : '—'}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>
+                  {nasolabialSim != null ? `${nasolabialSim.toFixed(1)}°` : '—'}
+                </td>
+                <td className="num">
+                  {nasolabialOrig != null && nasolabialSim != null
+                    ? `${nasolabialSim - nasolabialOrig >= 0 ? '+' : ''}${(nasolabialSim - nasolabialOrig).toFixed(1)}°`
+                    : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td>{t('rpAngNasofrontal')}</td>
+                <td className="num">{nasofrontalOrig != null ? `${nasofrontalOrig.toFixed(1)}°` : '—'}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>
+                  {nasofrontalSim != null ? `${nasofrontalSim.toFixed(1)}°` : '—'}
+                </td>
+                <td className="num">
+                  {nasofrontalOrig != null && nasofrontalSim != null
+                    ? `${nasofrontalSim - nasofrontalOrig >= 0 ? '+' : ''}${(nasofrontalSim - nasofrontalOrig).toFixed(1)}°`
+                    : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td title="Ángulo N–Pn–Sn: la cuña que forma la punta nasal, con vértice en Pn. Menor = punta más afilada; mayor = más roma.">
+                  {t('rpAngTip')}
+                </td>
+                <td className="num">{tipAngOrig != null ? `${tipAngOrig.toFixed(1)}°` : '—'}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>
+                  {tipAngSim != null ? `${tipAngSim.toFixed(1)}°` : '—'}
+                </td>
+                <td className="num">
+                  {tipAngOrig != null && tipAngSim != null
+                    ? `${tipAngSim - tipAngOrig >= 0 ? '+' : ''}${(tipAngSim - tipAngOrig).toFixed(1)}°`
+                    : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td title="Rotación de la punta: ángulo entre la columela (Sn–Cm) y el plano de Frankfort (Po–Or). Requiere Po y Or colocados. Normal 0–30°.">
+                  {t('rpTipRotation')}
+                </td>
+                <td className="num">{tipRotFrankOrig != null ? `${tipRotFrankOrig.toFixed(1)}°` : '—'}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>
+                  {tipRotFrankSim != null ? `${tipRotFrankSim.toFixed(1)}°` : '—'}
+                </td>
+                <td className="num">
+                  {tipRotFrankOrig != null && tipRotFrankSim != null
+                    ? `${tipRotFrankSim - tipRotFrankOrig >= 0 ? '+' : ''}${(tipRotFrankSim - tipRotFrankOrig).toFixed(1)}°`
+                    : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td>{t('rpNasalLength')}</td>
+                <td className="num">{fmtDist(noseLenOrig)}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>{fmtDist(noseLenSim)}</td>
+                <td className="num">{fmtDistDelta(noseLenOrig, noseLenSim)}</td>
+              </tr>
+              <tr>
+                <td>{t('rpNasalProj')}</td>
+                <td className="num">{fmtDist(nasProjOrig)}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>{fmtDist(nasProjSim)}</td>
+                <td className="num">{fmtDistDelta(nasProjOrig, nasProjSim)}</td>
+              </tr>
+              <tr>
+                <td>{points.AC ? t('ratioGoode') : t('nasalProj')}</td>
+                <td className="num">{projOrig != null ? projOrig.toFixed(2) : '—'}</td>
+                <td className="num" style={{ color: 'var(--ok-strong)' }}>
+                  {projSim != null ? projSim.toFixed(2) : '—'}
+                </td>
+                <td className="num">
+                  {projOrig != null && projSim != null
+                    ? `${projSim - projOrig >= 0 ? '+' : ''}${(projSim - projOrig).toFixed(2)}`
+                    : '—'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+        {nasolabialSim == null && ready && (
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+            (Coloca Ls para el ángulo nasolabial; G para el nasofrontal)
+          </div>
+        )}
+        {ready && !frankfortReady && (
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+            (Coloca Po y Or para la rotación de punta respecto a Frankfort)
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3>{t('rpChangesApplied')}</h3>
+        {changes.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+            {t('rpNoChanges')}
+          </div>
+        ) : (
+          <ul className="rhino-changes">
+            {changes.map((c, i) => (
+              <li key={i}>
+                <span className="rc-label">{c.label}:</span>
+                <span className="rc-value">{c.value}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
+        {t('rpGeomNote1')} <b>{t('rpGeomNoteBold')}</b> {t('rpGeomNote2')}
+      </div>
+    </aside>
+  );
+}
