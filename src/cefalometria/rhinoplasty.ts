@@ -48,7 +48,7 @@ export const RHINO_SLIDERS: RhinoSlider[] = [
   { id: 'noseProjection',label: 'Proyección de nariz',  desc: '+ aumenta · − disminuye (nariz completa)',   min: -8,  max: 8,   step: 0.1, unit: 'mm' },
   { id: 'tipProjection', label: 'Proyección de punta (pronasale)', desc: '+ punta más prominente',           min: -10, max: 10,  step: 0.1, unit: 'mm' },
   { id: 'tipRotation',   label: 'Rotación de punta',    desc: '+ punta arriba · el valor = Δ del ángulo nasolabial', min: -20, max: 20, step: 0.5, unit: '°' },
-  { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha',          min: -10, max: 10,  step: 0.5, unit: '%' },
+  { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha · req. punto It', min: -25, max: 25,  step: 0.5, unit: '%' },
   { id: 'columellaLift', label: 'Columela (elevar/bajar)', desc: '+ eleva · − baja',                        min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'columellaProj', label: 'Proyección columela',  desc: '+ adelante',                                 min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'subnasale',     label: 'Zona subnasal',        desc: '+ adelanta · − retrae (base de la nariz)',   min: -5,  max: 5,   step: 0.1, unit: 'mm' },
@@ -238,33 +238,52 @@ export function alarWarpControls(
   return out;
 }
 
-/** Aplica refinement de punta bidireccional.
+/** Aplica refinement de punta bidireccional. REQUIERE el punto It
+ *  (infrapunta): sin él la maniobra no se aplica, porque el estrechamiento
+ *  se define entre la suprapunta y el quiebre infralobular.
  *  refinement > 0  → acerca suprapunta e infrapunta hacia Pn (afila/define)
  *  refinement < 0  → las aleja de Pn (ensancha la punta)
- *  El estrechamiento actúa sobre el LÓBULO: la suprapunta (dorsales cercanos
- *  a Pn) por arriba y la INFRAPUNTA (It) por abajo — que es el quiebre
- *  infralobular donde clínicamente se estrecha la punta. Si It no está
- *  colocado, el efecto inferior recae en Cm como antes, para que los casos
- *  guardados sin ese punto sigan comportándose igual.
- *  Rango esperado: -10% a +10% (en %), mapeado internamente a ±25%. */
+ *
+ *  SOLO actúa sobre la zona de la PUNTA: el peso se calcula por la distancia
+ *  a Pn relativa a la longitud nasal N–Pn, y cae a cero antes de llegar al
+ *  dorso. Antes el peso dependía del índice del punto dorsal, así que con
+ *  Rh colocado el rhinion —dorso— también se movía.
+ *  Rango: -25% a +25%, mapeado a ±60% de recorrido hacia Pn. */
 export function refineNoseTip(silhouette: NasalSilhouette, refinement: number): NasalSilhouette {
   if (Math.abs(refinement) < 0.05) return silhouette;
-  // refinement en porcentaje (-10..+10) → t factor (-0.25..+0.25)
-  const t = Math.max(-0.25, Math.min(0.25, refinement * 0.025));
-  const n = silhouette.dorsal.length;
+  if (!silhouette.It) return silhouette;   // sin infrapunta no hay maniobra
+  // refinement en porcentaje (-25..+25) → t factor (-0.6..+0.6)
+  const t = Math.max(-0.6, Math.min(0.6, refinement * 0.024));
+  const { N, Pn } = silhouette;
+  // Longitud nasal como referencia de escala: la "zona de punta" es el tramo
+  // final del dorso (TIP_ZONE de la longitud N–Pn desde Pn hacia arriba).
+  const nasalLen = Math.hypot(Pn.x - N.x, Pn.y - N.y) || 1;
+  // 0.5 calibrado sobre anatomías reales: la suprapunta (≈20-30 % de la
+  // longitud nasal desde Pn) recibe efecto apreciable, mientras el rhinion
+  // (≈45-60 %) queda exactamente en cero.
+  const TIP_ZONE = 0.5;
   const toward = (p: Pt, k: number): Pt => ({
-    x: p.x + (silhouette.Pn.x - p.x) * t * k,
-    y: p.y + (silhouette.Pn.y - p.y) * t * k,
+    x: p.x + (Pn.x - p.x) * t * k,
+    y: p.y + (Pn.y - p.y) * t * k,
   });
+  /** Peso por cercanía a Pn: 1 sobre la punta, 0 al salir de la zona.
+   *  Smoothstep para que no haya un escalón visible en el límite. */
+  const tipWeight = (p: Pt): number => {
+    const u = Math.hypot(p.x - Pn.x, p.y - Pn.y) / (nasalLen * TIP_ZONE);
+    if (u >= 1) return 0;                  // dorso: intacto
+    const w = 1 - u;
+    return w * w * (3 - 2 * w);
+  };
   return {
     ...silhouette,
-    // Suprapunta: los dorsales cercanos a Pn se mueven más que los altos
-    // (el rhinion apenas cambia).
-    dorsal: silhouette.dorsal.map((p, i) => toward(p, 0.4 * ((i + 1) / n))),
+    // Suprapunta: solo los dorsales dentro de la zona de punta.
+    dorsal: silhouette.dorsal.map((p) => {
+      const w = tipWeight(p);
+      return w > 0 ? toward(p, 0.55 * w) : p;
+    }),
     // Infrapunta: el quiebre infralobular se estrecha hacia la punta.
-    It: silhouette.It ? toward(silhouette.It, 0.6) : undefined,
-    // Sin It colocado, se mantiene el comportamiento anterior sobre Cm.
-    Cm: silhouette.It ? silhouette.Cm : toward(silhouette.Cm, 0.6),
+    It: toward(silhouette.It, 0.75),
+    // La columela NO se toca: el estrechamiento es del lóbulo.
   };
 }
 
