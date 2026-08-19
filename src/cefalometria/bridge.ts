@@ -39,10 +39,21 @@ export interface MedicionEstado {
   customLines: unknown[];
   customAngles: unknown[];
   rulers: unknown[];
+  /** Ángulos libres de 3 clicks (medición sobre la proyección simulada).
+   *  Opcional: mediciones anteriores a este campo no lo traen. */
+  freeAngles?: unknown[];
   contourAnchors: unknown[];
   calibration: unknown | null;
   refCalibMm: number | null;
   confirmed: boolean;
+  // --- Simulación de rinoplastia (opcional, retrocompatible) ---------------
+  // Tipos opacos a propósito: bridge.ts lo importa también App.jsx (fuera del
+  // chunk diferido del módulo) y NO debe arrastrar rhinoplasty.ts al bundle
+  // principal. El módulo castea a RhinoplastySim/RhinoHandle[] al leer.
+  /** Valores de los sliders (RhinoplastySim). Ausente/null = sin simulación. */
+  rhinoSim?: Record<string, unknown> | null;
+  /** Deformadores libres (RhinoHandle[]). */
+  rhinoHandles?: unknown[];
 }
 
 export interface Medicion {
@@ -97,8 +108,16 @@ export function parseCefalometria(raw: unknown): CefalometriaData {
   return { v: typeof obj.v === 'number' ? obj.v : CEPH_FORMAT_VERSION, mediciones };
 }
 
-/** Extrae de un ModeState completo sólo la parte clínica persistible. */
-export function extraerEstado(ms: any): MedicionEstado {
+/**
+ * Extrae de un ModeState completo sólo la parte clínica persistible.
+ * `rhino` es opcional porque la simulación vive FUERA del ModeState (estado
+ * propio de App): quien guarda la pasa aparte; llamadas antiguas sin el
+ * segundo argumento siguen compilando y produciendo mediciones válidas.
+ */
+export function extraerEstado(
+  ms: any,
+  rhino?: { sim?: Record<string, unknown> | null; handles?: unknown[] },
+): MedicionEstado {
   return {
     originalSize: ms?.originalSize ?? null,
     rotationAngle: ms?.rotationAngle ?? 0,
@@ -109,10 +128,13 @@ export function extraerEstado(ms: any): MedicionEstado {
     customLines: ms?.customLines ?? [],
     customAngles: ms?.customAngles ?? [],
     rulers: ms?.rulers ?? [],
+    freeAngles: ms?.freeAngles ?? [],
     contourAnchors: ms?.contourAnchors ?? [],
     calibration: ms?.calibration ?? null,
     refCalibMm: ms?.refCalibMm ?? null,
     confirmed: !!ms?.confirmed,
+    rhinoSim: rhino?.sim ?? null,
+    rhinoHandles: rhino?.handles ?? [],
   };
 }
 
@@ -133,6 +155,7 @@ export function estadoAParche(m: Medicion, imageSrc: string | null): Record<stri
     customLines: e.customLines,
     customAngles: e.customAngles,
     rulers: e.rulers,
+    freeAngles: e.freeAngles ?? [],   // mediciones antiguas no lo traen
     contourAnchors: e.contourAnchors,
     calibration: e.calibration,
     refCalibMm: e.refCalibMm,
@@ -172,6 +195,15 @@ export interface FotoPaciente {
   id: string;
   src: string;
   momento: Momento;
+  /** Marca visible del origen de la foto (p. ej. "Simulación"). Importante
+   *  médico-legalmente: una proyección NUNCA debe confundirse con una foto
+   *  real del paciente. */
+  etiqueta?: string;
+}
+
+/** Mismo formato que usa App.jsx para sus fotos (f_ + timestamp + azar). */
+export function nuevaFotoId(): string {
+  return 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 export interface CephProps {
@@ -183,6 +215,10 @@ export interface CephProps {
   cefalometria?: CefalometriaData;
   /** Persiste el conjunto completo de mediciones. */
   onSave?: (data: CefalometriaData) => void | Promise<void>;
+  /** Añade una foto nueva al paciente (proyección simulada recomprimida y
+   *  etiquetada). La app principal la agrega al grupo de su `momento` y
+   *  persiste de inmediato, igual que hace onSave con las mediciones. */
+  onAddFoto?: (foto: FotoPaciente) => void | Promise<void>;
   /** Idioma de la app principal (por ahora informativo). */
   lang?: string;
 }

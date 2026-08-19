@@ -9,7 +9,7 @@ import ResultsTable from './components/ResultsTable';
 import CameraCapture from './components/CameraCapture';
 import {
   type CephProps, type Medicion, type FotoPaciente,
-  cefalometriaVacia, nuevaMedicionId, extraerEstado, estadoAParche,
+  cefalometriaVacia, nuevaMedicionId, nuevaFotoId, extraerEstado, estadoAParche,
   guardarMedicion, medicionesDeFoto,
 } from './bridge';
 import { useT } from './i18n';
@@ -186,7 +186,7 @@ function downscaleDataUrl(dataUrl: string, maxSide = MAX_IMAGE_SIDE): Promise<st
 // Props opcionales: cuando el modulo corre dentro de RhinoPlan recibe el
 // paciente activo; suelto (npm run dev) funciona igual que antes.
 export default function App({
-  pacienteNombre, fotos: fotosPaciente, cefalometria: cefaloIni, onSave, lang,
+  pacienteNombre, fotos: fotosPaciente, cefalometria: cefaloIni, onSave, onAddFoto, lang,
 }: CephProps = {}) {
   const tt = useT();
   const [mode, setMode] = useState<Mode>('perfil');
@@ -957,6 +957,10 @@ export default function App({
   async function loadNewImageSrc(dataUrl: string) {
     const src = await downscaleDataUrl(dataUrl);
     setRhinoHandles([]);   // los deformadores libres pertenecen a la foto anterior
+    // BUG corregido: los SLIDERS no se reseteaban aquí — al cargar otra foto
+    // quedaban aplicados los valores de la anterior. Misma decisión que al
+    // borrar un punto requerido: los valores vuelven a 0, no se conservan.
+    setRhinoSim(DEFAULT_RHINO_SIM);
     rhinoHistRef.current = [];   // …y su historial de deshacer/rehacer también
     rhinoRedoRef.current = [];
     setRhinoCanUndo(false);
@@ -1007,6 +1011,22 @@ export default function App({
       const m = previas[0];
       setMedicionActualId(m.id);
       patchCurrent(estadoAParche(m, foto.src) as any);
+      // Rehidratar la SIMULACIÓN (vive fuera del ModeState, así que
+      // estadoAParche no la toca). Merge con DEFAULT_RHINO_SIM: una medición
+      // guardada por una versión anterior puede no traer sliders añadidos
+      // después — sin el merge quedarían undefined. Mediciones sin campos
+      // rhino (formato viejo) caen limpiamente a la simulación en cero.
+      const eSim = { ...DEFAULT_RHINO_SIM, ...((m.estado.rhinoSim ?? {}) as Partial<RhinoplastySim>) };
+      const eHandles = (m.estado.rhinoHandles ?? []) as RhinoHandle[];
+      setRhinoSim(eSim);
+      setRhinoHandles(eHandles);
+      rhinoHistRef.current = [];   // el historial de deshacer era de la foto anterior
+      rhinoRedoRef.current = [];
+      setRhinoCanUndo(false);
+      setRhinoCanRedo(false);
+      // Si la medición traía una simulación con cambios, se muestra tal cual
+      // quedó — eso ES reconstruir la simulación al reabrir.
+      setRhinoSimActive(getActiveChanges(eSim).length > 0 || eHandles.length > 0);
       showToast(`${tt('measurementFrom')} ${new Date(m.fecha).toLocaleDateString()} ${tt('measRestored')}`);
     } else {
       setMedicionActualId(null);
@@ -1030,7 +1050,14 @@ export default function App({
       momento: foto.momento,
       modo: mode,
       fecha: new Date().toISOString(),
-      estado: extraerEstado(current),
+      // La simulación va aparte: vive fuera del ModeState. Se castea a los
+      // tipos opacos del bridge (que no importa rhinoplasty.ts a propósito —
+      // App.jsx también lo consume y no debe arrastrar el módulo al bundle).
+      // Solo en PERFIL: en frente no hay simulación, y guardar valores
+      // arrastrados de una sesión de perfil contaminaría la medición.
+      estado: extraerEstado(current, mode === 'perfil'
+        ? { sim: rhinoSim as unknown as Record<string, unknown>, handles: rhinoHandles }
+        : undefined),
       valores: snapshotValores(current),
     };
     const data = guardarMedicion(cefaloData, medicion);
@@ -1056,7 +1083,65 @@ export default function App({
     return exportComposerRef.current?.() ?? canvasRef.current;
   }
 
+  /** Con el modo edición de deformadores activo, las flechas ámbar y sus
+   *  círculos de influencia están pintados EN el canvas principal — saldrían
+   *  en el PNG/PDF. Se apaga la edición (gesto natural: exportar = terminar de
+   *  editar) y se difiere la exportación para que el canvas se repinte limpio:
+   *  el render es un useEffect, necesita un ciclo de React más un frame.
+   *  150 ms cubre ambos con margen en iPad. */
+  function withCleanCanvas(fn: () => void) {
+    if (rhinoSimActive && rhinoEditHandles) {
+      setRhinoEditHandles(false);
+      window.setTimeout(fn, 150);
+    } else fn();
+  }
+
+  /** Compone la foto simulada LIMPIA (solo imagen + warp) a resolución de
+   *  imagen. Lo rellena CanvasArea; null si no hay simulación aplicable. */
+  const simPhotoComposerRef = useRef<(() => HTMLCanvasElement | null) | null>(null);
+
+  // La proyección solo se puede guardar con una foto del PACIENTE activa (la
+  // foto guardada debe colgar de su historia), en perfil, y con una simulación
+  // que realmente cambie algo (guardar la foto original re-etiquetada no
+  // aporta y confunde).
+  const paramsSimActivos = getActiveChanges(rhinoSim).length > 0 || rhinoHandles.length > 0;
+  const puedeGuardarProyeccion =
+    !!onAddFoto && !!fotoActivaId && mode === 'perfil' && rhinoSimActive && paramsSimActivos;
+
+  /** Guarda la proyección simulada como FOTO del paciente: recomprimida a
+   *  ~1600 px JPEG 85 % (150–300 KB típicos, no los MB del canvas a resolución
+   *  completa) y etiquetada "Simulación" — médico-legalmente nunca debe poder
+   *  confundirse con una foto real. */
+  function guardarProyeccion() {
+    if (!onAddFoto || !puedeGuardarProyeccion) return;
+    const foto = (fotosPaciente ?? []).find((f) => f.id === fotoActivaId);
+    if (!foto) { showToast('La foto ya no existe en el paciente'); return; }
+    // Sin withCleanCanvas: este compositor pinta imagen + warp y NADA más
+    // (las flechas de edición nunca entran), así que no hay que diferir.
+    const canvas = simPhotoComposerRef.current?.();
+    if (!canvas) { showToast('No se pudo componer la proyección'); return; }
+    const long = Math.max(canvas.width, canvas.height);
+    const s = Math.min(1, 1600 / long);
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(canvas.width * s));
+    out.height = Math.max(1, Math.round(canvas.height * s));
+    const ctx = out.getContext('2d');
+    if (!ctx) { showToast('No se pudo componer la proyección'); return; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, out.width, out.height);
+    const src = out.toDataURL('image/jpeg', 0.85);
+    // Mismo momento que la foto de origen: la proyección pertenece a esa
+    // etapa de la historia. La etiqueta la distingue de las fotos reales.
+    void onAddFoto({ id: nuevaFotoId(), src, momento: foto.momento, etiqueta: 'Simulación' });
+    showToast('✓ Proyección guardada como foto del paciente');
+  }
+
   function exportPNG() {
+    withCleanCanvas(doExportPNG);
+  }
+
+  function doExportPNG() {
     const canvas = exportCanvas();
     if (!canvas) return;
     // Blob + object URL, NO data URL: Safari de iOS ignora (o falla en
@@ -1078,6 +1163,10 @@ export default function App({
   }
 
   function exportPDF() {
+    withCleanCanvas(doExportPDF);
+  }
+
+  function doExportPDF() {
     const canvas = exportCanvas();
     if (!canvas) return;
     const imgData = canvas.toDataURL('image/png');
@@ -1552,6 +1641,20 @@ export default function App({
               <Icon name="download" /> {medicionActualId ? tt('updateMeasurement') : tt('saveToPatient')}
             </button>
           )}
+          {/* Guardar la PROYECCIÓN simulada como foto del paciente. Solo
+              aparece si la app principal cablea onAddFoto; se habilita con
+              foto del paciente activa + simulación con cambios reales. */}
+          {dentroDeRhinoPlan && !!onAddFoto && (
+            <button
+              onClick={guardarProyeccion}
+              disabled={!puedeGuardarProyeccion}
+              title={puedeGuardarProyeccion
+                ? 'Guardar la proyeccion simulada como foto del paciente (etiquetada "Simulacion")'
+                : 'Activa la simulacion sobre una foto del paciente (con algun cambio aplicado) para guardar la proyeccion'}
+            >
+              <Icon name="flask" /> Foto simulada
+            </button>
+          )}
           <button onClick={exportPNG} disabled={!hasImage}><Icon name="download" /> PNG</button>
           <button className={flowStep === 'export' ? 'primary' : ''} onClick={exportPDF} disabled={!hasImage}>
             <Icon name="fileText" /> {tt('pdfReport')}
@@ -1657,6 +1760,7 @@ export default function App({
           measuresHidden={current.measuresHidden}
           calibration={current.calibration} setCalibration={setCalibration}
           mmPerPx={mmPerPx} canvasRef={canvasRef} exportComposerRef={exportComposerRef}
+          simPhotoComposerRef={simPhotoComposerRef}
           viewport={current.viewport} setViewport={setViewport}
           magnifierEnabled={magnifierEnabled}
           edgeSnapEnabled={edgeSnapEnabled}
@@ -1809,6 +1913,15 @@ export default function App({
                                      background: 'none', cursor: 'pointer', aspectRatio: '1' }}
                           >
                             <img src={f.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            {/* Etiqueta de origen (p. ej. "Simulación"): la
+                                proyección no debe confundirse con foto real */}
+                            {f.etiqueta && (
+                              <span style={{ position: 'absolute', bottom: 5, left: 5, background: '#4a9f6acc',
+                                             color: '#0b1220', fontSize: 9, fontWeight: 700,
+                                             padding: '2px 6px', borderRadius: 10 }}>
+                                {f.etiqueta}
+                              </span>
+                            )}
                             {previas.length > 0 && (
                               <span style={{ position: 'absolute', top: 5, right: 5, background: '#8b6fd4',
                                              color: '#0b1220', fontSize: 9, fontWeight: 700,

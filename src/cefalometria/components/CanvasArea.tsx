@@ -87,6 +87,10 @@ interface Props {
   /** Compositor de exportación: App lo invoca para obtener foto + anotaciones
    *  en un único canvas a resolución de imagen (el principal ya no las lleva). */
   exportComposerRef?: React.MutableRefObject<(() => HTMLCanvasElement | null) | null>;
+  /** Compositor de la foto SIMULADA limpia: imagen + warp fotográfico y nada
+   *  más (sin línea verde, divisor, flechas ni anotaciones). Es lo que se
+   *  guarda como foto del paciente etiquetada "Simulación". */
+  simPhotoComposerRef?: React.MutableRefObject<(() => HTMLCanvasElement | null) | null>;
   viewport: Viewport;
   setViewport: React.Dispatch<React.SetStateAction<Viewport>>;
   magnifierEnabled: boolean;
@@ -230,7 +234,7 @@ export default function CanvasArea(props: Props) {
     contourAnchors, setContourAnchors,
     contourCandidates,
     visibleLines, pointsHidden, anglesShown, measuresHidden,
-    calibration, setCalibration, mmPerPx, canvasRef, exportComposerRef,
+    calibration, setCalibration, mmPerPx, canvasRef, exportComposerRef, simPhotoComposerRef,
     viewport, setViewport,
     magnifierEnabled, edgeSnapEnabled, templateVisible, labelScale,
     rotationAngle, setRotation, flipH, onFlipH, autoStraighten, canAutoStraighten, autoStraightenMethod,
@@ -404,6 +408,32 @@ export default function CanvasArea(props: Props) {
       if (!octx) return null;
       octx.drawImage(main, 0, 0);
       drawAnnotationsRef.current?.(octx);
+      return out;
+    };
+  });
+
+  // Foto SIMULADA limpia: imagen + warp fotográfico, sin línea verde, divisor,
+  // flechas ni anotaciones. Se guarda como foto del paciente con etiqueta
+  // "Simulación" — médico-legalmente no debe llevar superposiciones que se
+  // confundan con la foto ni parecer una foto real. Mismo patrón sin deps que
+  // el compositor de arriba: el closure captura siempre el último estado. La
+  // caché de recorte de drawWarpedNoseMesh se comparte sin conflicto (misma
+  // imagen y mismo bbox cuantizado que el render).
+  useEffect(() => {
+    if (!simPhotoComposerRef) return;
+    simPhotoComposerRef.current = () => {
+      if (!imageEl || mode !== 'perfil') return null;
+      const field = buildPhotoWarpField(points, rhinoSim, rhinoHandles, mmPerPx, anchoredContour);
+      if (!field) return null;   // sin puntos suficientes no hay proyección que guardar
+      const { w, h } = imgSize(imageEl);
+      if (!w || !h) return null;
+      const out = document.createElement('canvas');
+      out.width = w;
+      out.height = h;
+      const octx = out.getContext('2d');
+      if (!octx) return null;
+      octx.drawImage(imageEl, 0, 0);
+      drawWarpedNoseMesh(octx, imageEl, field, 0, w, h, false);   // calidad completa, sin clip
       return out;
     };
   });
@@ -603,49 +633,22 @@ export default function CanvasArea(props: Props) {
     // queden por encima de la foto deformada.
     if (rhinoSimActive && rhinoWarpPhoto && imageEl && mode === 'perfil'
         && (getActiveChanges(rhinoSim).length > 0 || rhinoHandles.length > 0)) {
-      const orig = originalNasalSilhouette(points);
-      const simRaw = orig ? computeSimulatedNose(points, rhinoSim, mmPerPx) : null;
-      const sim = simRaw ? refineNoseTip(simRaw, rhinoSim.tipRefinement) : null;
-      if (orig && sim) {
-        // Pares (original → simulado): tramo denso del contorno real si existe;
-        // si no, los puntos de control de la silueta. El tramo se EXTIENDE con
-        // margen sobre N y bajo Sn: warpSegmentBySilhouettes clava sus extremos
-        // a cero, así los cambios en N (radix) se desvanecen suavemente en la
-        // frente en vez de cortar con salto.
-        let dOrig: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn];
-        let dSim: Pt[] = [sim.N, ...sim.dorsal, sim.Pn, sim.Cm, sim.Sn];
-        if (anchoredContour && anchoredContour.length > 10) {
-          const noseH = Math.max(10, orig.Sn.y - orig.N.y);
-          const seg = sliceContourByY(anchoredContour, orig.N.y - noseH * 0.22, orig.Sn.y + noseH * 0.08);
-          if (seg && seg.length > 5) {
-            dOrig = seg;
-            dSim = warpSegmentBySilhouettes(seg, orig, sim);
-          }
-        }
-        // Deformadores libres: los cercanos al borde se FUNDEN en el tramo
-        // (línea y foto coinciden); los interiores van como controles extra.
-        const extra = alarWarpControls(points, rhinoSim, mmPerPx);
-        if (rhinoHandles.length > 0) {
-          const HR = handleRadius(dOrig);
-          const { near, far } = splitHandlesBySegment(dOrig, rhinoHandles, HR);
-          dSim = applyHandlesToSegment(dSim, near, HR);
-          // Con HR los controles interiores llevan su radio propio (HR × mult.)
-          extra.push(...handleWarpControls(far, HR));
-        }
-        const field = buildNoseWarpField(dOrig, dSim, extra);
-        if (field) {
-          // Durante un arrastre activo o una ráfaga de sliders la malla baja a
-          // la mitad de densidad (¼ de triángulos) — calidad completa al asentarse.
-          const interacting = dragging != null || draggingHandle != null
-            || draggingAnchor != null || draggingDivider || !simSettled;
-          // Sin vista dividida: se deforma TODA la foto (clip en x=0). Con vista
-          // dividida: solo el lado derecho del divisor.
-          drawWarpedNoseMesh(
-            ctx, imageEl, field,
-            rhinoSplitView ? canvas.width * rhinoDividerRatio : 0, canvas.width, canvas.height,
-            interacting,
-          );
-        }
+      // La construcción del campo (pares original→simulado, fusión de
+      // deformadores) está factorizada en buildPhotoWarpField: la comparte el
+      // compositor de la foto simulada limpia (simPhotoComposerRef).
+      const field = buildPhotoWarpField(points, rhinoSim, rhinoHandles, mmPerPx, anchoredContour);
+      if (field) {
+        // Durante un arrastre activo o una ráfaga de sliders la malla baja a
+        // la mitad de densidad (¼ de triángulos) — calidad completa al asentarse.
+        const interacting = dragging != null || draggingHandle != null
+          || draggingAnchor != null || draggingDivider || !simSettled;
+        // Sin vista dividida: se deforma TODA la foto (clip en x=0). Con vista
+        // dividida: solo el lado derecho del divisor.
+        drawWarpedNoseMesh(
+          ctx, imageEl, field,
+          rhinoSplitView ? canvas.width * rhinoDividerRatio : 0, canvas.width, canvas.height,
+          interacting,
+        );
       }
     }
 
@@ -3036,6 +3039,52 @@ function straightenBetween(contour: Pt[], a: Pt, b: Pt, waypoints: Pt[]): Pt[] {
 /** Extrae el tramo del contorno entre dos alturas. Se recorre entero: la Y ya
  *  no es estrictamente creciente (los saltos horizontales ahora siguen la
  *  frontera real de la máscara, que baja y sube en los huecos). */
+/**
+ * Campo de deformación FOTOGRÁFICA de la simulación. Factorizado del render
+ * para compartirlo con el compositor de la foto simulada limpia
+ * (simPhotoComposerRef) — misma lógica exacta, un solo sitio que mantener.
+ *
+ * Pares (original → simulado): tramo denso del contorno real si existe; si
+ * no, los puntos de control de la silueta. El tramo se EXTIENDE con margen
+ * sobre N y bajo Sn: warpSegmentBySilhouettes clava sus extremos a cero, así
+ * los cambios en N (radix) se desvanecen suavemente en la frente en vez de
+ * cortar con salto. Deformadores libres: los cercanos al borde se FUNDEN en
+ * el tramo (línea y foto coinciden); los interiores van como controles extra
+ * con su radio propio (HR × multiplicador).
+ *
+ * Devuelve null si faltan puntos para la silueta o el campo queda vacío.
+ */
+function buildPhotoWarpField(
+  points: Partial<Record<PointId, Pt>>,
+  rhinoSim: RhinoplastySim,
+  rhinoHandles: RhinoHandle[],
+  mmPerPx: number | null,
+  anchoredContour: Pt[] | null,
+): NoseWarpField | null {
+  const orig = originalNasalSilhouette(points);
+  const simRaw = orig ? computeSimulatedNose(points, rhinoSim, mmPerPx) : null;
+  const sim = simRaw ? refineNoseTip(simRaw, rhinoSim.tipRefinement) : null;
+  if (!orig || !sim) return null;
+  let dOrig: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn];
+  let dSim: Pt[] = [sim.N, ...sim.dorsal, sim.Pn, sim.Cm, sim.Sn];
+  if (anchoredContour && anchoredContour.length > 10) {
+    const noseH = Math.max(10, orig.Sn.y - orig.N.y);
+    const seg = sliceContourByY(anchoredContour, orig.N.y - noseH * 0.22, orig.Sn.y + noseH * 0.08);
+    if (seg && seg.length > 5) {
+      dOrig = seg;
+      dSim = warpSegmentBySilhouettes(seg, orig, sim);
+    }
+  }
+  const extra = alarWarpControls(points, rhinoSim, mmPerPx);
+  if (rhinoHandles.length > 0) {
+    const HR = handleRadius(dOrig);
+    const { near, far } = splitHandlesBySegment(dOrig, rhinoHandles, HR);
+    dSim = applyHandlesToSegment(dSim, near, HR);
+    extra.push(...handleWarpControls(far, HR));
+  }
+  return buildNoseWarpField(dOrig, dSim, extra);
+}
+
 function sliceContourByY(contour: Pt[], y1: number, y2: number): Pt[] | null {
   const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
   const out: Pt[] = [];
