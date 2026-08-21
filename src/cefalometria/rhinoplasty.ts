@@ -307,6 +307,9 @@ export function warpSegmentBySilhouettes(
   seg: Pt[],
   orig: NasalSilhouette,
   sim: NasalSilhouette,
+  /** Factor 0..1 del slider "aplanar dorso". Sin él (llamadas antiguas), el
+   *  comportamiento es el histórico: solo deltas interpolados. */
+  dorsumFlatten01 = 0,
 ): Pt[] {
   if (seg.length < 2) return seg;
   // Pares de control orig → sim, en orden anatómico N → Sn
@@ -344,6 +347,10 @@ export function warpSegmentBySilhouettes(
   // silueta (margen sobre N para difuminar el radix, bajo Sn), el warp se
   // desvanece a 0 en los bordes — sin saltos con el resto del contorno. Antes
   // el radix (delta ≠ 0 en N) se propagaba constante hasta el corte y saltaba.
+  // Índices de N y Pn en el TRAMO (para el aplanado por vértice de abajo):
+  // se capturan antes del unshift, que desplazaría las posiciones del array.
+  const iMarkN = marks[0].i;
+  const iMarkPn = marks[1 + orig.dorsal.length].i;
   if (marks[0].i > 3) marks.unshift({ i: 0, dx: 0, dy: 0 });
   if (marks[marks.length - 1].i < seg.length - 4) {
     marks.push({ i: seg.length - 1, dx: 0, dy: 0 });
@@ -367,7 +374,40 @@ export function warpSegmentBySilhouettes(
   const last = marks[marks.length - 1];
   for (let i = last.i; i < n; i++) { DX[i] = last.dx; DY[i] = last.dy; }
 
-  return seg.map((p, i) => ({ x: p.x + DX[i], y: p.y + DY[i] }));
+  const out = seg.map((p, i) => ({ x: p.x + DX[i], y: p.y + DY[i] }));
+
+  // APLANADO DEL DORSO POR VÉRTICE. Los deltas interpolados de arriba
+  // aterrizan los CONTROLES (Rh, Sp) exactos en la recta N'–Pn', pero un
+  // vértice denso ENTRE controles hereda un delta mezclado que no sabe de su
+  // altura propia sobre la cuerda — la giba real, cuyo pico suele caer entre
+  // N y Rh, sobrevivía proporcionalmente y al 100 % el dorso no quedaba
+  // plano (lo detectó Daniel midiendo con la herramienta Línea). Pasada
+  // final: cada vértice del tramo dorsal se proyecta ÉL MISMO contra la
+  // cuerda N'–Pn' mezclado por f. Al 100 %, plano exacto por construcción.
+  // A valores intermedios el tramo entre controles queda algo más aplanado
+  // que los propios controles (el delta interpolado ya traía parte del
+  // aplanado); es monótono, suave, y en los extremos 0 %/100 % es exacto —
+  // clínicamente, limar de más entre puntos de apoyo es lo que hace una lima.
+  if (dorsumFlatten01 > 0) {
+    const f = Math.min(1, dorsumFlatten01);
+    const A = sim.N, B = sim.Pn;
+    const lx = B.x - A.x, ly = B.y - A.y;
+    const lLen2 = lx * lx + ly * ly;
+    if (lLen2 > 1e-6) {
+      // Tramo dorsal = entre las MARCAS de N (control 0) y Pn (control
+      // 1 + nº dorsales), calculadas antes del posible unshift del ancla.
+      const i0 = iMarkN, i1 = iMarkPn;
+      for (let i = i0; i <= i1; i++) {
+        const p = out[i];
+        const t = ((p.x - A.x) * lx + (p.y - A.y) * ly) / lLen2;
+        const qx = A.x + t * lx, qy = A.y + t * ly;   // pie sobre la cuerda
+        p.x += (qx - p.x) * f;
+        p.y += (qy - p.y) * f;
+      }
+    }
+  }
+
+  return out;
 }
 
 /** Ángulo nasolabial aproximado (Cm-Sn-Ls). Requiere Ls. */

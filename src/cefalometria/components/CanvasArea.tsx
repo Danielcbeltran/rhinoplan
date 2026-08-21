@@ -673,7 +673,7 @@ export default function CanvasArea(props: Props) {
           const seg = sliceContourByY(anchoredContour, orig.N.y - noseH * 0.22, orig.Sn.y + noseH * 0.08);
           if (seg && seg.length > 5) {
             denseOrig = seg;
-            denseSim = warpSegmentBySilhouettes(seg, orig, sim);
+            denseSim = warpSegmentBySilhouettes(seg, orig, sim, rhinoSim.dorsumFlatten / 100);
             // Deformadores libres cercanos al borde: misma fusión que la foto
             if (rhinoHandles.length > 0) {
               const HR = handleRadius(seg);
@@ -3170,7 +3170,7 @@ function buildPhotoWarpField(
     const seg = sliceContourByY(anchoredContour, orig.N.y - noseH * 0.22, orig.Sn.y + noseH * 0.08);
     if (seg && seg.length > 5) {
       dOrig = seg;
-      dSim = warpSegmentBySilhouettes(seg, orig, sim);
+      dSim = warpSegmentBySilhouettes(seg, orig, sim, rhinoSim.dorsumFlatten / 100);
     }
   }
   const extra = alarWarpControls(points, rhinoSim, mmPerPx);
