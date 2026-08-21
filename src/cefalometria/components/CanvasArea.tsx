@@ -348,6 +348,7 @@ export default function CanvasArea(props: Props) {
     octx.clip();
     drawAnnotationsRef.current?.(octx);
     drawLivePreview(octx);
+    if (missRef.current) drawMissRing(octx, missRef.current);
     octx.restore();
   }, [canvasRef]);
 
@@ -926,6 +927,47 @@ export default function CanvasArea(props: Props) {
     const coarse = window.matchMedia('(any-pointer: coarse)').matches;
     return Math.max(uiScale, 1) * (coarse ? 1.7 : 1);
   }, [uiScale]);
+
+  // ============ Aviso de toque FALLIDO (Línea / Ángulo) ============
+  // Esas herramientas conectan puntos anatómicos colocados: un toque en zona
+  // libre no hace nada — y hacía ese "nada" EN SILENCIO, que se lee como
+  // herramienta rota (le pasó al propio Daniel). El aviso es doble y no
+  // necesita cadenas nuevas: (1) anillo ámbar efímero en el punto exacto del
+  // toque ("tu toque registró, pero ahí no hay punto anatómico") y (2) flash
+  // de la barra de hint, que YA muestra la instrucción correcta traducida.
+  // Animación con refs + rAF llamando a redrawOverlay, sin setState por frame
+  // (misma disciplina que la previsualización viva del Apple Pencil).
+  const missRef = useRef<{ pt: Pt; at: number; scale: number } | null>(null);
+  const missRafRef = useRef(0);
+  const [hintFlash, setHintFlash] = useState(false);
+  const hintFlashTimerRef = useRef(0);
+
+  function signalMiss(pt: Pt) {
+    // El factor de escala se captura AL TOCAR: redrawOverlay es un callback
+    // estable y no debe depender de hitScale.
+    missRef.current = { pt, at: performance.now(), scale: hitScale };
+    cancelAnimationFrame(missRafRef.current);
+    const loop = () => {
+      const m = missRef.current;
+      if (!m) return;
+      if (performance.now() - m.at >= MISS_RING_MS) {
+        missRef.current = null;
+        redrawOverlay();   // último repintado: borra el anillo
+        return;
+      }
+      redrawOverlay();
+      missRafRef.current = requestAnimationFrame(loop);
+    };
+    missRafRef.current = requestAnimationFrame(loop);
+    setHintFlash(true);
+    window.clearTimeout(hintFlashTimerRef.current);
+    hintFlashTimerRef.current = window.setTimeout(() => setHintFlash(false), 1100);
+  }
+
+  useEffect(() => () => {
+    cancelAnimationFrame(missRafRef.current);
+    window.clearTimeout(hintFlashTimerRef.current);
+  }, []);
 
   // Puntos anatómicos BLOQUEADOS: durante la simulación no se colocan, mueven
   // ni borran. El agarre de un punto se evalúa antes que la rama de
@@ -1569,7 +1611,7 @@ export default function CanvasArea(props: Props) {
     }
     if (tool === 'line') {
       const id = nearestPoint(pt);
-      if (!id) return;
+      if (!id) { signalMiss(pt); return; }   // zona libre: avisar, no fallar en silencio
       if (!linePick) { setLinePick(id); return; }
       if (linePick !== id) { onBeforeChange(); setCustomLines((prev) => [...prev, { a: linePick, b: id }]); }
       setLinePick(null);
@@ -1591,7 +1633,7 @@ export default function CanvasArea(props: Props) {
         return;
       }
       const id = nearestPoint(pt);
-      if (!id) return;
+      if (!id) { signalMiss(pt); return; }   // zona libre: avisar, no fallar en silencio
       const next = [...anglePick, id];
       if (next.length === 3) {
         onBeforeChange();
@@ -1629,7 +1671,15 @@ export default function CanvasArea(props: Props) {
     }
   }
 
-  useEffect(() => { setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); setFreeAnglePick([]); livePreviewRef.current = null; }, [tool, mode]);
+  useEffect(() => {
+    setLinePick(null); setAnglePick([]); setCalibPick([]); setRulerPick(null); setFreeAnglePick([]);
+    livePreviewRef.current = null;
+    // El aviso de toque fallido pertenece a la herramienta que lo produjo.
+    missRef.current = null;
+    cancelAnimationFrame(missRafRef.current);
+    setHintFlash(false);
+    window.clearTimeout(hintFlashTimerRef.current);
+  }, [tool, mode]);
 
   // ============ Zoom controls ============
   // Zoom hacia el centro del viewport — sin desplazamiento.
@@ -1965,7 +2015,25 @@ export default function CanvasArea(props: Props) {
             )}
           </div>
 
-          {hint && <div className="hint">{hint}</div>}
+          {hint && (
+            <div
+              className="hint"
+              // Flash tras un toque fallido de Línea/Ángulo: la barra YA dice
+              // qué hay que hacer (traducida) — solo hay que atraer la mirada.
+              // Estilos inline para no depender de index.css.
+              style={{
+                transition: 'background 0.25s, color 0.25s, transform 0.25s',
+                ...(hintFlash ? {
+                  background: '#f59e0b',
+                  color: '#0b1220',
+                  fontWeight: 600,
+                  transform: 'scale(1.04)',
+                } : {}),
+              }}
+            >
+              {hint}
+            </div>
+          )}
           <div className="canvas-host" style={{ transform, transformOrigin: 'center center' }}>
             <canvas
               ref={canvasRef}
@@ -1987,6 +2055,36 @@ export default function CanvasArea(props: Props) {
       )}
     </div>
   );
+}
+
+/** Duración del anillo de toque fallido. */
+const MISS_RING_MS = 800;
+
+/** Anillo ámbar que se expande y desvanece en el punto de un toque FALLIDO
+ *  de Línea/Ángulo. Coordenadas de imagen (el overlay ya lleva el transform).
+ *  `scale` es el hitScale capturado al tocar: el anillo termina aprox. en el
+ *  radio de captura real, enseñando de paso cuánto hay que acercarse. */
+function drawMissRing(
+  octx: CanvasRenderingContext2D,
+  m: { pt: Pt; at: number; scale: number },
+) {
+  const t01 = clamp((performance.now() - m.at) / MISS_RING_MS, 0, 1);
+  const ease = 1 - (1 - t01) * (1 - t01);   // easeOutQuad
+  const r = (8 + 12 * ease) * m.scale;
+  octx.save();
+  octx.globalAlpha = 0.85 * (1 - t01);
+  octx.strokeStyle = '#f59e0b';
+  octx.lineWidth = 2 * m.scale;
+  octx.beginPath();
+  octx.arc(m.pt.x, m.pt.y, r, 0, Math.PI * 2);
+  octx.stroke();
+  // Punto central fijo: "aquí registré tu toque"
+  octx.globalAlpha = 0.7 * (1 - t01);
+  octx.fillStyle = '#f59e0b';
+  octx.beginPath();
+  octx.arc(m.pt.x, m.pt.y, 2 * m.scale, 0, Math.PI * 2);
+  octx.fill();
+  octx.restore();
 }
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
