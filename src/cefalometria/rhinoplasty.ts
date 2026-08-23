@@ -16,7 +16,7 @@ export interface RhinoplastySim {
   tipProjection: number; // mm — positivo = punta más prominente
   tipRotation: number;   // grados — positivo = rotar punta hacia arriba (abre nasolabial)
   tipRefinement: number; // % — + define la punta · − la ensancha
-  columellaLift: number; // mm — + eleva · − baja la columela ENTERA: el segmento Cm–Sn (con Cb) en bloque; It a la mitad como transición; Pn quieto
+  columellaLift: number; // mm — + eleva · − baja el tramo ENTRE Cm y Sn con EXTREMOS FIJOS: solo Cb (interior) lleva el desplazamiento; Cm, Sn, It y Pn quietos
   columellaProj: number; // mm — positivo = columela hacia adelante
   subnasale: number;     // mm — + adelanta · − retrae la zona del SUBNASAL (Sn)
   alaLift: number;       // mm — + eleva · − baja el ala nasal (solo warp de foto:
@@ -59,7 +59,7 @@ export const RHINO_SLIDERS: RhinoSlider[] = [
   { id: 'tipProjection', label: 'Proyección de punta (pronasale)', desc: '+ punta más prominente',           min: -10, max: 10,  step: 0.1, unit: 'mm' },
   { id: 'tipRotation',   label: 'Rotación de punta',    desc: '+ punta arriba · el valor = Δ del ángulo nasolabial', min: -20, max: 20, step: 0.5, unit: '°' },
   { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha · req. It y Sp', min: -25, max: 25,  step: 0.5, unit: '%', requires: ['It', 'Sp'] },
-  { id: 'columellaLift', label: 'Columela (elevar/bajar)', desc: '+ eleva · − baja el segmento Cm–Sn en bloque', min: -5,  max: 5,   step: 0.1, unit: 'mm' },
+  { id: 'columellaLift', label: 'Columela (elevar/bajar)', desc: '+ eleva · − baja el tramo entre Cm y Sn (extremos fijos) · req. Cb', min: -5,  max: 5,   step: 0.1, unit: 'mm', requires: ['Cb'] },
   { id: 'columellaProj', label: 'Proyección columela',  desc: '+ adelante',                                 min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'subnasale',     label: 'Zona subnasal',        desc: '+ adelanta · − retrae (base de la nariz)',   min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'alaLift',       label: 'Ala nasal (elevar/bajar)', desc: '+ eleva · − baja (requiere AC o A)',     min: -5,  max: 5,   step: 0.1, unit: 'mm' },
@@ -152,14 +152,18 @@ export function computeSimulatedNose(
   // PRONASALE: proyección global + de punta (fwd).
   let newPn = mv(Pn, gProj + sim.tipProjection, 0);
   // COLUMELA: proyección global+propia (fwd) · elevar/bajar (−down = elevar).
-  // columellaLift (decisión de Daniel, ago 2026, 2ª iteración): eleva/baja la
-  // columela ENTERA — el segmento Cm–Sn (Cm, Cb y Sn) se traslada EN BLOQUE
-  // con el desplazamiento completo. Los tres controles con delta idéntico
-  // hacen que el warp interpole constante entre ellos: traslación rígida del
-  // tramo, sin doblarse. It recibe la mitad (transición hacia la punta, que
-  // queda quieta); por debajo de Sn el tramo extendido del warp desvanece a
-  // cero hacia el labio.
-  let newCm = mv(Cm, gProj + sim.columellaProj, -sim.columellaLift);
+  // columellaLift (decisión de Daniel, ago 2026, 3ª iteración): eleva/baja el
+  // tramo ENTRE Cm y Sn con los EXTREMOS FIJOS. Solo Cb (interior del tramo)
+  // lleva el desplazamiento completo; el warp interpola con smoothstep
+  // Cm(0) → Cb(lift) → Sn(0): arco suave con máximo en Cb — donde el show
+  // columelar es máximo — anclado en ambos extremos.
+  //
+  // LECCIÓN (2ª iteración, cazada en video por Daniel): mover Cm y Sn con el
+  // lift ACOPLABA sliders — la calibración numérica de tipRotation usa
+  // newCm/newSn, así que arrastrar la columela re-rotaba la punta entera
+  // ("se modifican otras áreas"). Extremos fijos = acople eliminado de raíz.
+  // NO devolver el lift a Cm/Sn sin resolver antes ese acople.
+  let newCm = mv(Cm, gProj + sim.columellaProj, 0);
   let newCb = orig.Cb
     ? mv(orig.Cb, gProj + sim.columellaProj * 0.5, -sim.columellaLift)
     : undefined;
@@ -167,10 +171,10 @@ export function computeSimulatedNose(
   // con la punta; la proyección/elevación específicas de columela solo se le
   // aplican a la mitad (está a medio camino entre Pn y Cm).
   let newIt = orig.It
-    ? mv(orig.It, gProj + sim.columellaProj * 0.5, -sim.columellaLift * 0.5)   // transición hacia la punta
+    ? mv(orig.It, gProj + sim.columellaProj * 0.5, 0)   // fuera del tramo: quieto
     : undefined;
   // SUBNASAL: adelantar/retraer la base de la nariz (zona Sn).
-  const newSn = mv(Sn, sim.subnasale, -sim.columellaLift);   // extremo del bloque Cm–Sn
+  const newSn = mv(Sn, sim.subnasale, 0);   // extremo FIJO del tramo
   if (sim.tipRotation !== 0) {
     // En imagen el eje Y crece hacia abajo; faceDir compensa la orientación.
     // Signo verificado midiendo el nasolabial: +rotación = punta ARRIBA
