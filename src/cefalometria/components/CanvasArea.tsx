@@ -302,6 +302,13 @@ export default function CanvasArea(props: Props) {
   // redibuja al cambiar el viewport → el texto se rasteriza siempre a la
   // resolución física de la pantalla.
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  // Vista previa del ÁREA DE INFLUENCIA de un deformador ANTES de colocarlo:
+  // círculo fantasma que sigue al puntero en modo edición (ratón y hover del
+  // Apple Pencil; el toque directo no tiene hover — ahí el círculo aparece al
+  // empezar el arrastre, como siempre). Mismo patrón refs+rAF del livePreview:
+  // sin setState por movimiento.
+  const handleBaseRRef = useRef<number | null>(null);
+  const handlePreviewRef = useRef<{ pt: Pt; r: number } | null>(null);
   /** Punto vivo del puntero para la PREVISUALIZACIÓN de medición (línea
    *  elástica y grados en curso). Va en un ref, no en estado: cada muestra
    *  del Apple Pencil (~120 Hz) provocaba un re-render de React que repintaba
@@ -349,6 +356,7 @@ export default function CanvasArea(props: Props) {
     drawAnnotationsRef.current?.(octx);
     drawLivePreview(octx);
     if (missRef.current) drawMissRing(octx, missRef.current);
+    if (handlePreviewRef.current) drawHandlePreview(octx, handlePreviewRef.current);
     octx.restore();
   }, [canvasRef]);
 
@@ -687,6 +695,7 @@ export default function CanvasArea(props: Props) {
         // cálculo que usa el warp: tramo denso si existe, si no la silueta).
         handleBaseR = handleRadius(denseOrig ?? [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn]);
       }
+      handleBaseRRef.current = handleBaseR;   // para la vista previa del deformador
       // El divisor solo en vista dividida
       if (rhinoSplitView) drawBeforeAfterDivider(ctx, canvas, dividerX);
       // Deformadores libres: flecha origen→destino con empuñadura. Ocultables
@@ -1229,6 +1238,7 @@ export default function CanvasArea(props: Props) {
   // secundario (isPrimary=false) y cualquier evento durante un pinch: esos
   // gestos de 2 dedos los maneja el handler de touch (zoom).
   function onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    handlePreviewRef.current = null;   // el gesto real toma el relevo de la vista previa
     if (!imageEl || pinchingRef.current || !e.isPrimary) return;
     // El flag "acabo de arrastrar" se limpia aquí, al EMPEZAR el siguiente
     // gesto, no por temporizador. Con el reset a 80 ms el `click` sintético del
@@ -1356,6 +1366,32 @@ export default function CanvasArea(props: Props) {
       }
       return;
     }
+    // Vista previa del deformador: en modo edición, un círculo fantasma con el
+    // radio que TENDRÁ el deformador (base × multiplicador 1 de un deformador
+    // nuevo) sigue al puntero antes de tocar. Se oculta sobre un deformador
+    // existente (ese ya enseña su propio círculo) y con las herramientas que
+    // el gate de deformadores cede (measure/angle/erase no crean deformador).
+    const previewOn = rhinoSimActive && rhinoEditHandles && mode === 'perfil'
+      && !spacePressed && draggingHandle == null
+      && tool !== 'measure' && tool !== 'angle' && tool !== 'erase'
+      && handleBaseRRef.current != null;
+    if (previewOn) {
+      const pt = getImagePtFromClient(e.clientX, e.clientY);
+      const overExisting = pt != null && rhinoHandles.some(
+        (h) => Math.hypot(h.from.x - pt.x, h.from.y - pt.y) < 14 * hitScale);
+      handlePreviewRef.current = pt && !overExisting
+        ? { pt, r: (handleBaseRRef.current as number) * 1 }
+        : null;
+      if (!hoverRafRef.current) {
+        hoverRafRef.current = requestAnimationFrame(() => {
+          hoverRafRef.current = 0;
+          redrawOverlay();
+        });
+      }
+    } else if (handlePreviewRef.current) {
+      handlePreviewRef.current = null;
+      redrawOverlay();
+    }
     hoverPosRef.current = { x: e.clientX, y: e.clientY };
     if (hoverRafRef.current) return;
     hoverRafRef.current = requestAnimationFrame(() => {
@@ -1378,11 +1414,19 @@ export default function CanvasArea(props: Props) {
   function onPointerLeaveCanvas() {
     hoverPosRef.current = null;   // descarta el rAF de hover pendiente
     livePreviewRef.current = null;
+    handlePreviewRef.current = null;
     redrawOverlay();
     setHoverId(null);
     setCursorImgPt(null);
   }
   useEffect(() => () => { if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current); }, []);
+  // Al apagar el modo edición (o la simulación), la vista previa desaparece.
+  useEffect(() => {
+    if (!rhinoEditHandles || !rhinoSimActive) {
+      handlePreviewRef.current = null;
+      redrawOverlay();
+    }
+  }, [rhinoEditHandles, rhinoSimActive, redrawOverlay]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -3593,6 +3637,22 @@ function angleAtVertex(p1: Pt, v: Pt, p3: Pt): number {
  *  con empuñadura arrastrable. Ámbar para distinguirlo de anclas ◇ (teal) y
  *  puntos (amarillo/azul). `influenceR` (px de imagen): dibuja además el
  *  círculo punteado del área de influencia (solo en modo edición). */
+/** Círculo FANTASMA del área de influencia que tendrá un deformador nuevo,
+ *  siguiendo al puntero antes de colocarlo. Mismo lenguaje visual que el
+ *  círculo de un deformador existente (trazo ámbar discontinuo) pero más
+ *  tenue, con un punto central: "aquí nacerá, hasta aquí llegará". */
+function drawHandlePreview(ctx: CanvasRenderingContext2D, p: { pt: Pt; r: number }) {
+  ctx.save();
+  ctx.setLineDash([6, 6]);
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(245,158,11,0.35)';
+  ctx.beginPath(); ctx.arc(p.pt.x, p.pt.y, p.r, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(245,158,11,0.6)';
+  ctx.beginPath(); ctx.arc(p.pt.x, p.pt.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function drawRhinoHandle(ctx: CanvasRenderingContext2D, h: RhinoHandle, influenceR?: number | null) {
   const color = '#f59e0b';
   ctx.save();
