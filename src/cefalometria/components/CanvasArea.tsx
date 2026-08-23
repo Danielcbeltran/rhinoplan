@@ -3277,15 +3277,15 @@ function drawWarpedNoseMesh(
   // identidad: sin costuras. Bonus: en cambios locales se saltan la mayoría
   // de los triángulos.
   const MASK_EPS = 0.05;
-  const drawCell = new Uint8Array(G * G);
-  let anyCell = false;
-  const markDisc = (px: number, py: number, rad: number) => {
+  const maskC = new Uint8Array(G * G);   // discos geométricos del CONTORNO (conservador)
+  const maskH = new Uint8Array(G * G);   // discos de DEFORMADORES / controles extra
+  const markDisc = (arr: Uint8Array, px: number, py: number, rad: number) => {
     const i0 = Math.max(0, Math.floor((px - rad - x0) / sx) - 1);
     const i1 = Math.min(G - 1, Math.floor((px + rad - x0) / sx) + 1);
     const j0 = Math.max(0, Math.floor((py - rad - y0) / sy) - 1);
     const j1 = Math.min(G - 1, Math.floor((py + rad - y0) / sy) + 1);
     for (let jj = j0; jj <= j1; jj++)
-      for (let ii = i0; ii <= i1; ii++) { drawCell[jj * G + ii] = 1; anyCell = true; }
+      for (let ii = i0; ii <= i1; ii++) arr[jj * G + ii] = 1;
   };
   const C = field.contour;
   const nzC = (c: { dx: number; dy: number }) =>
@@ -3296,11 +3296,51 @@ function drawWarpedNoseMesh(
       && !(ci < C.length - 1 && nzC(C[ci + 1]))) continue;
     const dPrev = ci > 0 ? Math.hypot(C[ci].x - C[ci - 1].x, C[ci].y - C[ci - 1].y) : 0;
     const dNext = ci < C.length - 1 ? Math.hypot(C[ci + 1].x - C[ci].x, C[ci + 1].y - C[ci].y) : 0;
-    markDisc(C[ci].x, C[ci].y, field.R + Math.max(dPrev, dNext) / 2 + 2);
+    markDisc(maskC, C[ci].x, C[ci].y, field.R + Math.max(dPrev, dNext) / 2 + 2);
   }
   for (const h of field.handles) {
-    if (nzC(h)) markDisc(h.x, h.y, (h.r ?? field.R) + 2);
+    if (nzC(h)) markDisc(maskH, h.x, h.y, (h.r ?? field.R) + 2);
   }
+
+  // REFINADO (2ª pasada, ago 2026): el disco geométrico del contorno es
+  // CONSERVADOR — cubre celdas cuyo desplazamiento real es 0 por la regla del
+  // segmento más cercano (p. ej. piel pegada al borde QUIETO del dorso, dentro
+  // del disco de la columela que sí se mueve). Redibujarlas las remuestreaba
+  // en identidad y el shimmer volvía por la puerta de atrás — Daniel lo midió
+  // por correlación de fase: ~0.3 px en el dorso al arrastrar la columela,
+  // con la columela misma en el piso de ruido. Se muestrean 9 puntos por
+  // celda (4 esquinas ya calculadas en vx/vy + centro + 4 medios de arista) y
+  // si TODOS son ~0 la celda se salta. SOLO para celdas de contorno: las
+  // marcadas por un deformador se dibujan SIEMPRE — su kernel puede ser más
+  // pequeño que el paso de muestreo en malla rápida (G=10, celdas de ~60 px)
+  // y colarse entre muestras; el campo del contorno varía a escala R y no puede.
+  for (let j = 0; j < G; j++) {
+    for (let i = 0; i < G; i++) {
+      const k = j * G + i;
+      if (!maskC[k] || maskH[k]) continue;
+      const bx = x0 + i * sx, by = y0 + j * sy;
+      const kk = j * nx + i;
+      let peak = 0;
+      const corner = (idx: number, cxp: number, cyp: number) => {
+        const m = Math.abs(vx[idx] - cxp) + Math.abs(vy[idx] - cyp);
+        if (m > peak) peak = m;
+      };
+      corner(kk, bx, by);
+      corner(kk + 1, bx + sx, by);
+      corner(kk + nx, bx, by + sy);
+      corner(kk + nx + 1, bx + sx, by + sy);
+      if (peak <= MASK_EPS) {
+        for (const [fx, fy] of [[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]] as const) {
+          const d = evalWarpAt(field, bx + fx * sx, by + fy * sy);
+          const m = Math.abs(d.x) + Math.abs(d.y);
+          if (m > peak) { peak = m; if (peak > MASK_EPS) break; }
+        }
+      }
+      if (peak <= MASK_EPS) maskC[k] = 0;   // identidad en toda la celda: no redibujar
+    }
+  }
+  let anyCell = false;
+  for (let k = 0; k < G * G; k++) if (maskC[k] || maskH[k]) { anyCell = true; break; }
   if (!anyCell) return;   // campo sin desplazamiento real: nada que redibujar
 
   ctx.save();
@@ -3309,7 +3349,7 @@ function drawWarpedNoseMesh(
   ctx.clip();
   for (let j = 0; j < G; j++) {
     for (let i = 0; i < G; i++) {
-      if (!drawCell[j * G + i]) continue;   // sin influencia: píxel original intacto
+      if (!maskC[j * G + i] && !maskH[j * G + i]) continue;   // sin desplazamiento real: píxel original intacto
       // Coordenadas fuente RELATIVAS al recorte
       const X = offX + i * sx, Y = offY + j * sy;
       const s00 = { x: X, y: Y },           s10 = { x: X + sx, y: Y };
