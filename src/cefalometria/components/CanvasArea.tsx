@@ -3666,33 +3666,38 @@ function drawRhinoHandle(ctx: CanvasRenderingContext2D, h: RhinoHandle, influenc
     ctx.beginPath(); ctx.arc(h.from.x, h.from.y, influenceR, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
   }
-  ctx.lineWidth = 2.5;
+  // Marcas un ~60 % más pequeñas (ago 2026): la empuñadura de r=8 con flechas
+  // de 20 px TAPABA el cambio de 2–3 mm que se quiere evaluar. El radio de
+  // CAPTURA táctil no cambia — el hit-test (nearestHandleGrab) es independiente
+  // del dibujo, mismo principio que la reducción del 45 % de los puntos
+  // anatómicos.
+  ctx.lineWidth = 1.8;
   ctx.strokeStyle = 'rgba(0,0,0,0.7)';
   // halo oscuro de la línea
   ctx.beginPath(); ctx.moveTo(h.from.x, h.from.y); ctx.lineTo(h.to.x, h.to.y); ctx.stroke();
-  ctx.lineWidth = 1.6;
+  ctx.lineWidth = 1.1;
   ctx.strokeStyle = color;
   ctx.beginPath(); ctx.moveTo(h.from.x, h.from.y); ctx.lineTo(h.to.x, h.to.y); ctx.stroke();
   // origen: anillo hueco
   ctx.fillStyle = '#0b1220';
-  ctx.beginPath(); ctx.arc(h.from.x, h.from.y, 6, 0, Math.PI * 2); ctx.fill();
-  ctx.lineWidth = 2; ctx.strokeStyle = color;
-  ctx.beginPath(); ctx.arc(h.from.x, h.from.y, 6, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(h.from.x, h.from.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = color;
+  ctx.beginPath(); ctx.arc(h.from.x, h.from.y, 2.5, 0, Math.PI * 2); ctx.stroke();
   // destino: empuñadura sólida + punta de flecha
   ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(h.to.x, h.to.y, 8, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#0b1220'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(h.to.x, h.to.y, 8, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(h.to.x, h.to.y, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#0b1220'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(h.to.x, h.to.y, 3.5, 0, Math.PI * 2); ctx.stroke();
   const len = Math.hypot(h.to.x - h.from.x, h.to.y - h.from.y);
-  if (len > 14) {
+  if (len > 9) {
     const ang = Math.atan2(h.to.y - h.from.y, h.to.x - h.from.x);
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.4;
     for (const s of [-1, 1]) {
       ctx.beginPath();
-      ctx.moveTo(h.to.x - Math.cos(ang) * 8, h.to.y - Math.sin(ang) * 8);
+      ctx.moveTo(h.to.x - Math.cos(ang) * 3.5, h.to.y - Math.sin(ang) * 3.5);
       ctx.lineTo(
-        h.to.x - Math.cos(ang + s * 0.5) * 20,
-        h.to.y - Math.sin(ang + s * 0.5) * 20,
+        h.to.x - Math.cos(ang + s * 0.5) * 11,
+        h.to.y - Math.sin(ang + s * 0.5) * 11,
       );
       ctx.stroke();
     }
