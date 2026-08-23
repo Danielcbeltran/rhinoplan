@@ -79,6 +79,11 @@ export interface NasalSilhouette {
    *  definición de punta. */
   It?: Pt;
   Cm: Pt;
+  /** Columela inferior (Cb, el "C" de Gunter): margen caudal de la columela,
+   *  parte del contorno visible del perfil entre Cm y Sn. OPCIONAL en la
+   *  estructura (tolera fotos a medio marcar), aunque Cb es punto obligatorio.
+   *  Es el objetivo de columellaLift. */
+  Cb?: Pt;
   Sn: Pt;
 }
 
@@ -99,7 +104,7 @@ export function originalNasalSilhouette(points: PointsMap): NasalSilhouette | nu
   if (dorsal.length === 0) {
     dorsal.push({ x: (N.x + Pn.x) / 2, y: (N.y + Pn.y) / 2 });
   }
-  return { N, dorsal, Pn, It: points.It, Cm, Sn };
+  return { N, dorsal, Pn, It: points.It, Cm, Cb: points.Cb, Sn };
 }
 
 /** Calcula la nueva silueta tras aplicar los cambios del simulador. */
@@ -147,12 +152,18 @@ export function computeSimulatedNose(
   // PRONASALE: proyección global + de punta (fwd).
   let newPn = mv(Pn, gProj + sim.tipProjection, 0);
   // COLUMELA: proyección global+propia (fwd) · elevar/bajar (−down = elevar).
-  // columellaLift YA NO mueve Cm (decisión de Daniel, ago 2026): elevar/bajar
+  // columellaLift NO mueve Cm (decisión de Daniel, ago 2026): elevar/bajar
   // la columela actúa sobre el MARGEN CAUDAL (Cb, el "C" de Gunter que define
   // el show columelar), no sobre el punto más anterior — mover Cm doblaba la
-  // silueta frontal, que es la palanca equivocada. El efecto vive ahora en
-  // columellaWarpControls (solo foto, mismo patrón que el ala).
+  // silueta frontal, que es la palanca equivocada. Cb SÍ es parte del contorno
+  // visible del perfil, así que va en la silueta (abajo): línea verde y foto
+  // se mueven JUNTAS por los mismos pares, como el resto de sliders.
   let newCm = mv(Cm, gProj + sim.columellaProj, 0);
+  // COLUMELA INFERIOR (Cb): lift completo; media proyección de columela (está
+  // entre Cm, que recibe entera, y Sn, que no recibe); proyección global entera.
+  let newCb = orig.Cb
+    ? mv(orig.Cb, gProj + sim.columellaProj * 0.5, -sim.columellaLift)
+    : undefined;
   // Infrapunta: pertenece al lóbulo, así que sigue la proyección global y gira
   // con la punta; la proyección/elevación específicas de columela solo se le
   // aplican a la mitad (está a medio camino entre Pn y Cm).
@@ -197,6 +208,7 @@ export function computeSimulatedNose(
     newPn = rotBy(newPn, rad);
     newCm = rotBy(newCm, rad);
     if (newIt) newIt = rotBy(newIt, rad);
+    if (newCb) newCb = rotBy(newCb, rad);   // la columela gira entera, sin doblarse en Cb
   }
 
   // DORSO: 1) aplanar la giba — mezcla cada punto dorsal hacia su proyección
@@ -224,7 +236,7 @@ export function computeSimulatedNose(
     return mv({ x: px, y: py }, sim.dorsum + gProj + zone, 0);
   });
 
-  return { N: newN, dorsal, Pn: newPn, It: newIt, Cm: newCm, Sn: newSn };
+  return { N: newN, dorsal, Pn: newPn, It: newIt, Cm: newCm, Cb: newCb, Sn: newSn };
 }
 
 /** Controles EXTRA de warp fotográfico para el ala nasal (elevar/bajar). El
@@ -251,35 +263,6 @@ export function alarWarpControls(
     if (p) out.push({ x: p.x, y: p.y, dx: ux, dy: uy });
   }
   return out;
-}
-
-/** Control EXTRA de warp para elevar/bajar la COLUMELA por su margen caudal
- *  (Cb, el punto "C" de Gunter que define el show columelar). Mismo patrón
- *  que el ala: Cb no forma parte de la silueta del perfil, así que se deforma
- *  con un control puntual que solo afecta a la FOTO — la línea verde objetivo
- *  no cambia. Radio PROPIO que cubre la columela entera (de Cb a Cm y a Sn,
- *  con margen): el radio global del campo (0.12× nasal) arrastraría punta y
- *  labio. En el centro (Cb) el kernel vale 1 → el desplazamiento es EXACTO al
- *  valor del slider (promesa verificable con la regla: fila del QA clínico). */
-export function columellaWarpControls(
-  points: PointsMap,
-  sim: RhinoplastySim,
-  mmPerPx: number | null,
-): WarpControl[] {
-  if (Math.abs(sim.columellaLift) < 0.05) return [];
-  const N = points.N, Sn = points.Sn, Cb = points.Cb;
-  if (!N || !Sn || !Cb) return [];
-  const dx = Sn.x - N.x, dy = Sn.y - N.y;
-  const dLen = Math.hypot(dx, dy);
-  if (dLen < 1e-3) return [];
-  const pxPerMm = mmPerPx ? 1 / mmPerPx : dLen / 55;
-  // elevar (+) = hacia ARRIBA en el eje facial = −down (misma convención que el ala)
-  const ux = -(dx / dLen) * sim.columellaLift * pxPerMm;
-  const uy = -(dy / dLen) * sim.columellaLift * pxPerMm;
-  const dCm = points.Cm ? Math.hypot(Cb.x - points.Cm.x, Cb.y - points.Cm.y) : 0;
-  const dSn = Math.hypot(Cb.x - Sn.x, Cb.y - Sn.y);
-  const r = Math.max(12, 1.15 * Math.max(dCm, dSn));
-  return [{ x: Cb.x, y: Cb.y, dx: ux, dy: uy, r }];
 }
 
 /** Aplica refinement de punta bidireccional. REQUIERE el punto It
@@ -357,6 +340,9 @@ export function warpSegmentBySilhouettes(
   // quiebre infralobular.
   if (orig.It && sim.It) push(orig.It, sim.It);
   push(orig.Cm, sim.Cm);
+  // Columela inferior entre Cm y Sn: mismo orden anatómico que exige la
+  // búsqueda monótona. Lleva el lift de columela a la línea y a la foto.
+  if (orig.Cb && sim.Cb) push(orig.Cb, sim.Cb);
   push(orig.Sn, sim.Sn);
 
   // Índice del segmento para cada control: búsqueda MONÓTONA hacia adelante.
@@ -603,21 +589,25 @@ export function applyHandlesToSilhouette(
   s: NasalSilhouette, handles: RhinoHandle[], R: number,
 ): NasalSilhouette {
   if (handles.length === 0) return s;
-  // El segmento incluye It (si existe) entre Pn y Cm, así que el índice de
-  // Cm/Sn se desplaza en uno cuando el punto está colocado.
-  const hasIt = !!s.It;
-  const seg = hasIt
-    ? [s.N, ...s.dorsal, s.Pn, s.It as Pt, s.Cm, s.Sn]
-    : [s.N, ...s.dorsal, s.Pn, s.Cm, s.Sn];
+  // El segmento incluye los OPCIONALES colocados (It entre Pn y Cm; Cb entre
+  // Cm y Sn), así que los índices se desplazan según cuáles existan. Se
+  // reconstruye con un cursor en vez de aritmética condicional — con dos
+  // opcionales las combinaciones ya no caben en un ternario legible.
+  const seg: Pt[] = [s.N, ...s.dorsal, s.Pn];
+  if (s.It) seg.push(s.It);
+  seg.push(s.Cm);
+  if (s.Cb) seg.push(s.Cb);
+  seg.push(s.Sn);
   const out = applyHandlesToSegment(seg, handles, R);
-  const n = s.dorsal.length;
-  const iPn = 1 + n;
-  return {
-    N: out[0], dorsal: out.slice(1, iPn), Pn: out[iPn],
-    It: hasIt ? out[iPn + 1] : undefined,
-    Cm: out[iPn + (hasIt ? 2 : 1)],
-    Sn: out[iPn + (hasIt ? 3 : 2)],
-  };
+  let i = 0;
+  const N = out[i++];
+  const dorsal = out.slice(i, i + s.dorsal.length); i += s.dorsal.length;
+  const Pn = out[i++];
+  const It = s.It ? out[i++] : undefined;
+  const Cm = out[i++];
+  const Cb = s.Cb ? out[i++] : undefined;
+  const Sn = out[i++];
+  return { N, dorsal, Pn, It, Cm, Cb, Sn };
 }
 
 /** Separa deformadores en cercanos al tramo (se funden en la silueta) y

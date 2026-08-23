@@ -15,7 +15,7 @@ import {
 import {
   computeSimulatedNose, originalNasalSilhouette, refineNoseTip,
   warpSegmentBySilhouettes, buildNoseWarpField, evalWarpAt, getActiveChanges,
-  alarWarpControls, columellaWarpControls, handleRadius, handleWarpControls, applyHandlesToSegment,
+  alarWarpControls, handleRadius, handleWarpControls, applyHandlesToSegment,
   splitHandlesBySegment,
   type RhinoplastySim, type NasalSilhouette, type NoseWarpField, type RhinoHandle,
 } from '../rhinoplasty';
@@ -3163,8 +3163,10 @@ function buildPhotoWarpField(
   const simRaw = orig ? computeSimulatedNose(points, rhinoSim, mmPerPx) : null;
   const sim = simRaw ? refineNoseTip(simRaw, rhinoSim.tipRefinement) : null;
   if (!orig || !sim) return null;
-  let dOrig: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn];
-  let dSim: Pt[] = [sim.N, ...sim.dorsal, sim.Pn, sim.Cm, sim.Sn];
+  let dOrig: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm,
+    ...(orig.Cb && sim.Cb ? [orig.Cb] : []), orig.Sn];
+  let dSim: Pt[] = [sim.N, ...sim.dorsal, sim.Pn, sim.Cm,
+    ...(orig.Cb && sim.Cb ? [sim.Cb] : []), sim.Sn];
   if (anchoredContour && anchoredContour.length > 10) {
     const noseH = Math.max(10, orig.Sn.y - orig.N.y);
     const seg = sliceContourByY(anchoredContour, orig.N.y - noseH * 0.22, orig.Sn.y + noseH * 0.08);
@@ -3174,8 +3176,6 @@ function buildPhotoWarpField(
     }
   }
   const extra = alarWarpControls(points, rhinoSim, mmPerPx);
-  // Elevar/bajar columela: control puntual sobre Cb (solo foto, como el ala)
-  extra.push(...columellaWarpControls(points, rhinoSim, mmPerPx));
   if (rhinoHandles.length > 0) {
     const HR = handleRadius(dOrig);
     const { near, far } = splitHandlesBySegment(dOrig, rhinoHandles, HR);
@@ -3259,12 +3259,57 @@ function drawWarpedNoseMesh(
     }
   }
 
+  // MÁSCARA DE INFLUENCIA: solo se redibujan las celdas alcanzadas por algún
+  // control con desplazamiento real. El resto de la caja conserva el píxel
+  // ORIGINAL de la foto (ya pintado debajo) en vez de la identidad
+  // REMUESTREADA por triángulos, que suaviza los bordes de textura y hacía
+  // que "cambiaran" zonas que ningún slider tocaba (lo reportó Daniel en
+  // video: rastro tenue por todo el dorso al mover cualquier slider). La
+  // máscara es GEOMÉTRICA (no muestreada): banda R alrededor de los tramos
+  // del contorno con delta ≠ 0 — disco de radio R + medio tramo en cada
+  // extremo cubre el segmento interpolado entero — y disco r propio de cada
+  // control extra. Conservadora por construcción: puede pintar celdas de
+  // más, nunca de menos, así que ningún kernel pequeño puede "colarse"
+  // entre muestras (el riesgo del enfoque por muestreo de esquinas con
+  // celdas de 60 px en modo rápido). Las celdas dibujadas junto a celdas
+  // saltadas tienen desplazamiento ~0 en el borde compartido (smoothstep →
+  // 0 en R) y el crecimiento de 0.5 px de drawWarpTriangle solapa con
+  // identidad: sin costuras. Bonus: en cambios locales se saltan la mayoría
+  // de los triángulos.
+  const MASK_EPS = 0.05;
+  const drawCell = new Uint8Array(G * G);
+  let anyCell = false;
+  const markDisc = (px: number, py: number, rad: number) => {
+    const i0 = Math.max(0, Math.floor((px - rad - x0) / sx) - 1);
+    const i1 = Math.min(G - 1, Math.floor((px + rad - x0) / sx) + 1);
+    const j0 = Math.max(0, Math.floor((py - rad - y0) / sy) - 1);
+    const j1 = Math.min(G - 1, Math.floor((py + rad - y0) / sy) + 1);
+    for (let jj = j0; jj <= j1; jj++)
+      for (let ii = i0; ii <= i1; ii++) { drawCell[jj * G + ii] = 1; anyCell = true; }
+  };
+  const C = field.contour;
+  const nzC = (c: { dx: number; dy: number }) =>
+    Math.abs(c.dx) > MASK_EPS || Math.abs(c.dy) > MASK_EPS;
+  for (let ci = 0; ci < C.length; ci++) {
+    if (!nzC(C[ci])
+      && !(ci > 0 && nzC(C[ci - 1]))
+      && !(ci < C.length - 1 && nzC(C[ci + 1]))) continue;
+    const dPrev = ci > 0 ? Math.hypot(C[ci].x - C[ci - 1].x, C[ci].y - C[ci - 1].y) : 0;
+    const dNext = ci < C.length - 1 ? Math.hypot(C[ci + 1].x - C[ci].x, C[ci + 1].y - C[ci].y) : 0;
+    markDisc(C[ci].x, C[ci].y, field.R + Math.max(dPrev, dNext) / 2 + 2);
+  }
+  for (const h of field.handles) {
+    if (nzC(h)) markDisc(h.x, h.y, (h.r ?? field.R) + 2);
+  }
+  if (!anyCell) return;   // campo sin desplazamiento real: nada que redibujar
+
   ctx.save();
   ctx.beginPath();
   ctx.rect(Math.max(clipX0, x0), y0, x1 - Math.max(clipX0, x0), y1 - y0);
   ctx.clip();
   for (let j = 0; j < G; j++) {
     for (let i = 0; i < G; i++) {
+      if (!drawCell[j * G + i]) continue;   // sin influencia: píxel original intacto
       // Coordenadas fuente RELATIVAS al recorte
       const X = offX + i * sx, Y = offY + j * sy;
       const s00 = { x: X, y: Y },           s10 = { x: X + sx, y: Y };
@@ -3332,8 +3377,13 @@ function drawRhinoplastySplit(
   showSimLine = true,
   labels: { projection: string; original: string } = { projection: 'PROJECTION', original: 'Original' },
 ) {
-  const origPts: Pt[] = [orig.N, ...orig.dorsal, orig.Pn, orig.Cm, orig.Sn];
-  const simPts:  Pt[] = [sim.N,  ...sim.dorsal,  sim.Pn,  sim.Cm,  sim.Sn];
+  // La spline de respaldo (sin contorno trazado) pasa por TODOS los puntos
+  // de la silueta, incluidos los opcionales colocados — sin It el refinamiento
+  // de punta no se veía en el fallback, y sin Cb tampoco el lift de columela.
+  const origPts: Pt[] = [orig.N, ...orig.dorsal, orig.Pn,
+    ...(orig.It ? [orig.It] : []), orig.Cm, ...(orig.Cb ? [orig.Cb] : []), orig.Sn];
+  const simPts:  Pt[] = [sim.N,  ...sim.dorsal,  sim.Pn,
+    ...(sim.It ? [sim.It] : []), sim.Cm, ...(sim.Cb ? [sim.Cb] : []), sim.Sn];
 
   // Trazo: si hay contorno real denso, se dibuja tal cual (polilínea fiel);
   // si no, fallback a la spline suave por los puntos de control.
