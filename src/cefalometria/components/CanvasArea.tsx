@@ -15,7 +15,7 @@ import {
 import {
   computeSimulatedNose, originalNasalSilhouette, refineNoseTip,
   warpSegmentBySilhouettes, buildNoseWarpField, evalWarpAt, getActiveChanges,
-  alarWarpControls, handleRadius, handleWarpControls, applyHandlesToSegment,
+  alarWarpControls, columellaWarpControls, handleRadius, handleWarpControls, applyHandlesToSegment,
   splitHandlesBySegment,
   type RhinoplastySim, type NasalSilhouette, type NoseWarpField, type RhinoHandle,
 } from '../rhinoplasty';
@@ -3174,6 +3174,8 @@ function buildPhotoWarpField(
     }
   }
   const extra = alarWarpControls(points, rhinoSim, mmPerPx);
+  // Elevar/bajar columela: control puntual sobre Cb (solo foto, como el ala)
+  extra.push(...columellaWarpControls(points, rhinoSim, mmPerPx));
   if (rhinoHandles.length > 0) {
     const HR = handleRadius(dOrig);
     const { near, far } = splitHandlesBySegment(dOrig, rhinoHandles, HR);

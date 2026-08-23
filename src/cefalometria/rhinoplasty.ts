@@ -16,7 +16,7 @@ export interface RhinoplastySim {
   tipProjection: number; // mm — positivo = punta más prominente
   tipRotation: number;   // grados — positivo = rotar punta hacia arriba (abre nasolabial)
   tipRefinement: number; // % — + define la punta · − la ensancha
-  columellaLift: number; // mm — + eleva · − baja la columela (eje vertical facial)
+  columellaLift: number; // mm — + eleva · − baja el MARGEN CAUDAL de la columela (punto Cb / "C" de Gunter; solo warp de foto, como el ala)
   columellaProj: number; // mm — positivo = columela hacia adelante
   subnasale: number;     // mm — + adelanta · − retrae la zona del SUBNASAL (Sn)
   alaLift: number;       // mm — + eleva · − baja el ala nasal (solo warp de foto:
@@ -59,7 +59,7 @@ export const RHINO_SLIDERS: RhinoSlider[] = [
   { id: 'tipProjection', label: 'Proyección de punta (pronasale)', desc: '+ punta más prominente',           min: -10, max: 10,  step: 0.1, unit: 'mm' },
   { id: 'tipRotation',   label: 'Rotación de punta',    desc: '+ punta arriba · el valor = Δ del ángulo nasolabial', min: -20, max: 20, step: 0.5, unit: '°' },
   { id: 'tipRefinement', label: 'Definición de punta',  desc: '+ define la punta · − la ensancha · req. It y Sp', min: -25, max: 25,  step: 0.5, unit: '%', requires: ['It', 'Sp'] },
-  { id: 'columellaLift', label: 'Columela (elevar/bajar)', desc: '+ eleva · − baja',                        min: -5,  max: 5,   step: 0.1, unit: 'mm' },
+  { id: 'columellaLift', label: 'Columela inf. (elevar/bajar)', desc: '+ eleva · − baja el punto C (req. Cb)', min: -5,  max: 5,   step: 0.1, unit: 'mm', requires: ['Cb'] },
   { id: 'columellaProj', label: 'Proyección columela',  desc: '+ adelante',                                 min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'subnasale',     label: 'Zona subnasal',        desc: '+ adelanta · − retrae (base de la nariz)',   min: -5,  max: 5,   step: 0.1, unit: 'mm' },
   { id: 'alaLift',       label: 'Ala nasal (elevar/bajar)', desc: '+ eleva · − baja (requiere AC o A)',     min: -5,  max: 5,   step: 0.1, unit: 'mm' },
@@ -147,12 +147,17 @@ export function computeSimulatedNose(
   // PRONASALE: proyección global + de punta (fwd).
   let newPn = mv(Pn, gProj + sim.tipProjection, 0);
   // COLUMELA: proyección global+propia (fwd) · elevar/bajar (−down = elevar).
-  let newCm = mv(Cm, gProj + sim.columellaProj, -sim.columellaLift);
+  // columellaLift YA NO mueve Cm (decisión de Daniel, ago 2026): elevar/bajar
+  // la columela actúa sobre el MARGEN CAUDAL (Cb, el "C" de Gunter que define
+  // el show columelar), no sobre el punto más anterior — mover Cm doblaba la
+  // silueta frontal, que es la palanca equivocada. El efecto vive ahora en
+  // columellaWarpControls (solo foto, mismo patrón que el ala).
+  let newCm = mv(Cm, gProj + sim.columellaProj, 0);
   // Infrapunta: pertenece al lóbulo, así que sigue la proyección global y gira
   // con la punta; la proyección/elevación específicas de columela solo se le
   // aplican a la mitad (está a medio camino entre Pn y Cm).
   let newIt = orig.It
-    ? mv(orig.It, gProj + sim.columellaProj * 0.5, -sim.columellaLift * 0.5)
+    ? mv(orig.It, gProj + sim.columellaProj * 0.5, 0)   // el lift ya no sube por la cadena
     : undefined;
   // SUBNASAL: adelantar/retraer la base de la nariz (zona Sn).
   const newSn = mv(Sn, sim.subnasale, 0);
@@ -246,6 +251,35 @@ export function alarWarpControls(
     if (p) out.push({ x: p.x, y: p.y, dx: ux, dy: uy });
   }
   return out;
+}
+
+/** Control EXTRA de warp para elevar/bajar la COLUMELA por su margen caudal
+ *  (Cb, el punto "C" de Gunter que define el show columelar). Mismo patrón
+ *  que el ala: Cb no forma parte de la silueta del perfil, así que se deforma
+ *  con un control puntual que solo afecta a la FOTO — la línea verde objetivo
+ *  no cambia. Radio PROPIO que cubre la columela entera (de Cb a Cm y a Sn,
+ *  con margen): el radio global del campo (0.12× nasal) arrastraría punta y
+ *  labio. En el centro (Cb) el kernel vale 1 → el desplazamiento es EXACTO al
+ *  valor del slider (promesa verificable con la regla: fila del QA clínico). */
+export function columellaWarpControls(
+  points: PointsMap,
+  sim: RhinoplastySim,
+  mmPerPx: number | null,
+): WarpControl[] {
+  if (Math.abs(sim.columellaLift) < 0.05) return [];
+  const N = points.N, Sn = points.Sn, Cb = points.Cb;
+  if (!N || !Sn || !Cb) return [];
+  const dx = Sn.x - N.x, dy = Sn.y - N.y;
+  const dLen = Math.hypot(dx, dy);
+  if (dLen < 1e-3) return [];
+  const pxPerMm = mmPerPx ? 1 / mmPerPx : dLen / 55;
+  // elevar (+) = hacia ARRIBA en el eje facial = −down (misma convención que el ala)
+  const ux = -(dx / dLen) * sim.columellaLift * pxPerMm;
+  const uy = -(dy / dLen) * sim.columellaLift * pxPerMm;
+  const dCm = points.Cm ? Math.hypot(Cb.x - points.Cm.x, Cb.y - points.Cm.y) : 0;
+  const dSn = Math.hypot(Cb.x - Sn.x, Cb.y - Sn.y);
+  const r = Math.max(12, 1.15 * Math.max(dCm, dSn));
+  return [{ x: Cb.x, y: Cb.y, dx: ux, dy: uy, r }];
 }
 
 /** Aplica refinement de punta bidireccional. REQUIERE el punto It
@@ -467,7 +501,7 @@ export function getActiveChanges(sim: RhinoplastySim): Array<{ label: string; va
   if (Math.abs(sim.tipProjection) > 0.05)   out.push({ label: 'Proyección de punta',   value: fmt(sim.tipProjection, 'mm') });
   if (Math.abs(sim.tipRotation) > 0.4)      out.push({ label: 'Rotación de punta',     value: fmt(sim.tipRotation, '°', 1) });
   if (Math.abs(sim.tipRefinement) > 0.4)    out.push({ label: 'Definición de punta',   value: fmt(sim.tipRefinement, '%', 1) });
-  if (Math.abs(sim.columellaLift) > 0.05)   out.push({ label: 'Columela (elevar/bajar)', value: fmt(sim.columellaLift, 'mm') });
+  if (Math.abs(sim.columellaLift) > 0.05)   out.push({ label: 'Columela inf. (elevar/bajar)', value: fmt(sim.columellaLift, 'mm') });
   if (Math.abs(sim.columellaProj) > 0.05)   out.push({ label: 'Proyección columela',   value: fmt(sim.columellaProj, 'mm') });
   if (Math.abs(sim.subnasale) > 0.05)       out.push({ label: 'Zona subnasal',         value: fmt(sim.subnasale, 'mm') });
   if (Math.abs(sim.alaLift) > 0.05)         out.push({ label: 'Ala nasal (elevar/bajar)', value: fmt(sim.alaLift, 'mm') });
