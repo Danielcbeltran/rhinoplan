@@ -3246,7 +3246,10 @@ function drawWarpedNoseMesh(
   // triángulo; 20 durante un arrastre activo (fluidez en iPad; al soltar se
   // redibuja a calidad completa). El coste sigue siendo bajo porque se mapea
   // desde el recorte cacheado, no desde la foto completa.
-  const G = fast ? 10 : 40;
+  // Rápido 20 (antes 10): la máscara ya salta la mayoría de las celdas, así
+  // que el presupuesto liberado se invierte en malla más fina DURANTE el
+  // arrastre — menos jitter de aproximación lineal en la zona que sí se mueve.
+  const G = fast ? 20 : 40;
   const nx = G + 1;
   const sx = (x1 - x0) / G, sy = (y1 - y0) / G;
   const vx = new Float32Array(nx * nx), vy = new Float32Array(nx * nx);
@@ -3276,7 +3279,13 @@ function drawWarpedNoseMesh(
   // 0 en R) y el crecimiento de 0.5 px de drawWarpTriangle solapa con
   // identidad: sin costuras. Bonus: en cambios locales se saltan la mayoría
   // de los triángulos.
-  const MASK_EPS = 0.05;
+  // 0.35 px (antes 0.05): por debajo de un tercio de píxel, el artefacto de
+  // REMUESTREAR la celda es más visible que el desplazamiento mismo — y en la
+  // frontera del umbral las celdas ALTERNABAN redibujada/original fotograma a
+  // fotograma durante el arrastre: textura que "respira", que el ojo caza
+  // aunque la correlación de fase mida <0.4 px (5º video de Daniel). Con el
+  // umbral en 0.35 la frontera queda donde el salto es sub-perceptual.
+  const MASK_EPS = 0.35;
   const maskC = new Uint8Array(G * G);   // discos geométricos del CONTORNO (conservador)
   const maskH = new Uint8Array(G * G);   // discos de DEFORMADORES / controles extra
   const markDisc = (arr: Uint8Array, px: number, py: number, rad: number) => {
