@@ -83,9 +83,7 @@ function normFotos(raw){
     const arr=Array.isArray(raw&&raw[k])?raw[k]:[];
     out[k]=arr.map(f=>{
       if(typeof f==="string")return{id:nuevaFotoId(),src:f};        // v1 -> v2
-      // etiqueta (p. ej. "Simulación") se CONSERVA: sin esto, la marca
-      // medico-legal de las proyecciones se perdia al recargar el paciente.
-      if(f&&typeof f.src==="string")return{id:f.id||nuevaFotoId(),src:f.src,...(f.etiqueta?{etiqueta:f.etiqueta}:{})};
+      if(f&&typeof f.src==="string")return{id:f.id||nuevaFotoId(),src:f.src};
       return null;
     }).filter(Boolean);
   }
@@ -575,10 +573,7 @@ function RhinoPlannerMain(){
   // paciente (ver abrirPaciente).
   const PACIENTE_LIST_COLS = "id,nombre,documento,tipo_doc,fecha,created_at";
   async function loadPacientes(tk){try{const d=await supaFetch("pacientes?order=created_at.desc&select="+PACIENTE_LIST_COLS,tk||token);setPacientes(Array.isArray(d)?d:[]);}catch(e){console.error(e);}}
-  // `overrideFotos`: mismo motivo que overrideCefalo — setFotos es asincrono,
-  // asi que quien acaba de anadir una foto (p. ej. onAddFoto del modulo de
-  // cefalometria) pasa el conjunto nuevo explicitamente para persistirlo ya.
-  async function savePaciente(overrideCefalo,overrideFotos){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(overrideFotos&&(overrideFotos.pre||overrideFotos.post)?overrideFotos:fotos),cefalometria:JSON.stringify(overrideCefalo&&overrideCefalo.mediciones?overrideCefalo:cefalometria),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
+  async function savePaciente(overrideCefalo){if(!isPro&&!patientId&&pacientes.length>=3){alert(t.limitPatients);setShowSettings(true);return;}setSaving(true);setSaveMsg("");try{const body={nombre:patient.nombre,documento:patient.documento,tipo_doc:patient.tipoDoc,edad:patient.edad,sexo:patient.sexo,fecha:patient.fecha,cirujano:patient.cirujano,notas:patient.notas,anotaciones:JSON.stringify({...plan,_notes:planNotes}),fotos:JSON.stringify(fotos),cefalometria:JSON.stringify(overrideCefalo&&overrideCefalo.mediciones?overrideCefalo:cefalometria),user_id:authUser?.id};if(patientId){await supaFetch("pacientes?id=eq."+patientId,token,"PATCH",body);}else{const d=await supaFetch("pacientes",token,"POST",body);if(d?.[0])setPatientId(d[0].id);}setSaveMsg(t.saved);loadPacientes();}catch(e){setSaveMsg(t.error);}finally{setSaving(false);setTimeout(()=>setSaveMsg(""),3000);}}
   /** Abre un paciente de la lista: la lista es ligera (sin plan/fotos/cefalo),
    *  así que aquí se trae la fila COMPLETA y luego se vuelca al editor.
    *  Si la fila ya viene completa (p.ej. tras guardar) se usa tal cual. */
@@ -932,7 +927,6 @@ function RhinoPlannerMain(){
                 {fotos[tipo].map((f,i)=>(
                   <div key={f.id} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid #354A62",aspectRatio:"1",cursor:"pointer"}} onClick={()=>openFoto(f.id)}>
                     <img src={f.src} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-                    {f.etiqueta&&<span style={{position:"absolute",bottom:3,left:3,background:"#4A9F6ACC",color:"#0b1220",fontSize:8,fontWeight:700,padding:"2px 5px",borderRadius:8}}>{f.etiqueta}</span>}
                     <button onClick={e=>{e.stopPropagation();removeFoto(tipo,i);}} style={{position:"absolute",top:3,right:3,background:"#000000AA",border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
                   </div>
                 ))}
@@ -957,8 +951,6 @@ function RhinoPlannerMain(){
         onTouchEnd={()=>setFotoDrag(null)}
       >
         <img src={allFotosFlat[fotoIdx]?.src} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:8,transform:`scale(${fotoZoom}) translate(${fotoPan.x/fotoZoom}px,${fotoPan.y/fotoZoom}px)`,transition:fotoDrag?"none":"transform 0.15s",userSelect:"none",pointerEvents:"none"}} draggable={false}/>
-        {/* Marca medico-legal: la proyeccion ampliada tampoco debe poder confundirse con una foto real */}
-        {allFotosFlat[fotoIdx]?.etiqueta&&<div style={{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"#4A9F6ACC",color:"#0b1220",fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:14,zIndex:10,pointerEvents:"none"}}>{allFotosFlat[fotoIdx].etiqueta}</div>}
         {/* Close */}
         <button onClick={closeFoto} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18,zIndex:10}}>✕</button>
         {/* Prev */}
@@ -1060,7 +1052,7 @@ function RhinoPlannerMain(){
       {/* HEADER */}
       <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
         <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
-        <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan{isPro&&<span style={{background:"#F5BE3A",color:"#152238",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,marginLeft:4,textTransform:"uppercase"}}>Pro</span>}</div><div style={{flex:1}}/>
+        <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan{isPro&&<span style={{background:isPlus?"#8B6FD4":"#F5BE3A",color:isPlus?"#fff":"#152238",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,marginLeft:4,textTransform:"uppercase"}}>{isPlus?"Plus":"Pro"}</span>}</div><div style={{flex:1}}/>
         <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.patients}</button>
         <button onClick={()=>{setShowTemplates(true);loadUserTemplates();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.templates}</button>
         {hasP&&<button onClick={()=>setShowFotos(true)} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.photos}{(fotos.pre.length+fotos.post.length)>0?` (${fotos.pre.length+fotos.post.length})`:""}</button>}
@@ -1156,17 +1148,6 @@ function RhinoPlannerMain(){
               // pulsar Guardar en el paciente, la medicion se perderia.
               // Se pasa `data` explicitamente porque setState es asincrono.
               if(patientId)savePaciente(data);
-            }}
-            onAddFoto={f=>{
-              // Proyeccion simulada del modulo: se agrega al grupo de su
-              // momento conservando la etiqueta ("Simulación") y se persiste
-              // de inmediato, igual que onSave. `next` explicito: setState
-              // es asincrono y savePaciente leeria las fotos viejas.
-              const tipo=f.momento==="post"?"post":"pre";
-              const nueva={id:f.id||nuevaFotoId(),src:f.src,...(f.etiqueta?{etiqueta:f.etiqueta}:{})};
-              const next={...fotos,[tipo]:[...fotos[tipo],nueva]};
-              setFotos(next);
-              if(patientId)savePaciente(undefined,next);
             }}
           />
           <button onClick={()=>setShowCeph(false)} title={t.close} style={{position:"fixed",top:10,right:14,zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
