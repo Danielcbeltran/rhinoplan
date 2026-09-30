@@ -233,7 +233,10 @@
   padding: 6px 16px;
   /* Safe areas del PWA (viewport-fit=cover + status bar translúcida): sin
      esto la hora/batería de iOS se pintan ENCIMA del logo y los botones. */
-  padding-top: calc(6px + env(safe-area-inset-top, 0px));
+  /* + holgura de iPadOS 27 (var publicada por App.jsx): en iPad instalado el
+     sistema desenfoca los ~64 pt superiores sin opt-out; el texto debe
+     quedar por debajo de esa banda. 0 px en todo lo demas. */
+  padding-top: calc(6px + env(safe-area-inset-top, 0px) + var(--top-edge-clearance, 0px));
   padding-left: calc(16px + env(safe-area-inset-left, 0px));
   padding-right: calc(16px + env(safe-area-inset-right, 0px));
   background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);

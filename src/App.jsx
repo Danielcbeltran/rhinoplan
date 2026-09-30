@@ -76,6 +76,10 @@ const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 // foto. Con el formato v1, al borrar una foto intermedia los indices se
 // desplazaban y cualquier referencia quedaba apuntando a otra imagen en
 // silencio. La conversion es automatica al cargar el paciente.
+// Identificador de BUILD visible en Ajustes. Subirlo en cada deploy (fecha +
+// letra). Existe para distinguir "codigo nuevo que falla" de "service worker
+// sirviendo codigo viejo" — ambiguedad que ya costo tres diagnosticos.
+const BUILD_ID="2026-09-29b";
 function nuevaFotoId(){return "f_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function normFotos(raw){
   const out={pre:[],post:[]};
@@ -1054,11 +1058,16 @@ function RhinoPlannerMain(){
           <a href="https://rhinoplan.app/terms.html" target="_blank" rel="noopener" style={{color:"#5B8DB8",fontSize:12,textDecoration:"none"}}>{t.termsConditions}</a>
           <button onClick={changePassword} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:12,cursor:"pointer",textAlign:"left",padding:0,fontFamily:"inherit"}}>{t.changePassword}</button>
           <button onClick={deleteAccount} style={{background:"none",border:"none",color:"#CC1111",fontSize:12,cursor:"pointer",textAlign:"left",padding:0,fontFamily:"inherit",marginTop:8}}>{t.deleteAccount}</button>
+          {/* Diagnostico: build en ejecucion + modo (instalada/pestana) + zona segura
+              superior real. Si el build no coincide con el ultimo deploy, es cache. */}
+          <div style={{color:"#4A5F7A",fontSize:10,marginTop:14,fontFamily:"inherit",userSelect:"all"}}>
+            build {BUILD_ID} · {(window.navigator.standalone||window.matchMedia("(display-mode: standalone)").matches)?"instalada":"pestaña"} · {window.innerWidth}×{window.innerHeight} · safe-top {Math.round(medirSafeTop())}px · holgura {getComputedStyle(document.documentElement).getPropertyValue("--top-edge-clearance").trim()||"0px"}
+          </div>
         </div>
       </div></div>)}
 
       {/* HEADER */}
-      <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",paddingTop:"calc(6px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
+      <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",paddingTop:"calc(6px + env(safe-area-inset-top, 0px) + var(--top-edge-clearance, 0px))",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
         <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
         <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan{isPro&&<span style={{background:isPlus?"#8B6FD4":"#F5BE3A",color:isPlus?"#fff":"#152238",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,marginLeft:4,textTransform:"uppercase"}}>{isPlus?"Plus":"Pro"}</span>}</div><div style={{flex:1}}/>
         <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.patients}</button>
@@ -1216,7 +1225,51 @@ function SafeAreaFrame({children}){
   </div>;
 }
 
+// ---- Holgura del borde superior en iPadOS 27 -------------------------------
+// En iPhone, la franja + el marco fixed bastan: el borde es "soft" y WebKit lo
+// oculta al encontrar la caja fija. En iPad con iPadOS 27 el borde superior
+// usa el estilo "hard" de UIKit y WebKit NUNCA lo oculta para la pagina:
+// desenfoca los ~64 pt superiores (32 de barra de estado + la primera linea
+// del header) pase lo que pase — con caja fija, sticky, viewport-fit=auto,
+// lo que sea (laboratorios de terceros sobre iPad real, sep 2026). No hay
+// opt-out. Lo unico que funciona es GEOMETRIA: que el texto no este debajo.
+// Sobre navy plano el desenfoque es invisible, asi que se anaden hasta 40 px
+// de padding superior al header y a la topbar del modulo (var CSS comun),
+// SOLO en iPad + instalada + inset superior positivo (pantalla completa).
+function medirSafeTop(){
+  try{
+    const el=document.createElement("div");
+    el.style.cssText="position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
+    document.body.appendChild(el);
+    const h=el.getBoundingClientRect().height;
+    el.remove();
+    return h;
+  }catch(e){return 0;}
+}
+function esIPad(){
+  const ua=navigator.userAgent||"";
+  // iPadOS 13+ se presenta como Mac con pantalla tactil
+  return /iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+}
+function esInstalada(){
+  try{return window.navigator.standalone===true||window.matchMedia("(display-mode: standalone)").matches;}catch(e){return false;}
+}
+function useTopEdgeClearance(){
+  useEffect(()=>{
+    const aplicar=()=>{
+      const px=(esIPad()&&esInstalada()&&medirSafeTop()>0)?40:0;
+      document.documentElement.style.setProperty("--top-edge-clearance",px+"px");
+    };
+    aplicar();
+    // Al pasar de ventana a pantalla completa (iPadOS 27) cambia el inset
+    window.addEventListener("resize",aplicar);
+    window.addEventListener("orientationchange",aplicar);
+    return()=>{window.removeEventListener("resize",aplicar);window.removeEventListener("orientationchange",aplicar);};
+  },[]);
+}
+
 export default function RhinoPlanner(){
+  useTopEdgeClearance();
   const recoveryToken=(()=>{
     try{
       if(window.location.hash&&window.location.hash.length>2){
