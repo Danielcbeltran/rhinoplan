@@ -1196,6 +1196,26 @@ function SafeAreaCap(){
   return <div aria-hidden="true" style={{position:"fixed",top:0,left:0,right:0,height:"env(safe-area-inset-top, 0px)",background:"#152238",zIndex:2147483647,pointerEvents:"none"}}/>;
 }
 
+// El efecto tiene DOS mitades. La franja de arriba corrige el COLOR (ya no
+// hay niebla blanca), pero WebKit ademas DIFUMINA el contenido que considera
+// "desplazable" bajo el borde superior — y un header en el flujo normal del
+// documento cuenta como tal: la primera fila (Pacientes, Plantillas, logo)
+// salia borrosa mientras la segunda, fuera del alcance, quedaba nitida. Lo
+// que vive dentro de una caja position:fixed NO es contenido desplazable y
+// no se difumina. Este marco mete la app entera en una — es la solucion que
+// funciono para proyectos afectados incluso en iOS 27, donde el efecto llega
+// mas abajo. Es neutro para el layout: body ya es overflow:hidden y la raiz
+// ocupa 100vh, asi que el marco mide exactamente lo mismo; los modales
+// (fixed) siguen siendo relativos al viewport porque el marco no usa
+// transform. Un div y no el body: la heuristica de WebKit ignora al body
+// (su fondo se propaga al canvas y el body queda sin caja pintada).
+function SafeAreaFrame({children}){
+  return <div style={{position:"fixed",inset:0,background:"#152238",overflow:"hidden"}}>
+    {children}
+    <SafeAreaCap/>
+  </div>;
+}
+
 export default function RhinoPlanner(){
   const recoveryToken=(()=>{
     try{
@@ -1210,10 +1230,10 @@ export default function RhinoPlanner(){
   })();
   const[recovering,setRecovering]=useState(!!recoveryToken);
   if(recovering&&recoveryToken){
-    return <><SafeAreaCap/><RecoveryScreen recoveryToken={recoveryToken} onDone={()=>{
+    return <SafeAreaFrame><RecoveryScreen recoveryToken={recoveryToken} onDone={()=>{
       try{history.replaceState(null,"",window.location.pathname);}catch(e){}
       setRecovering(false);
-    }}/></>;
+    }}/></SafeAreaFrame>;
   }
-  return <><SafeAreaCap/><RhinoPlannerMain/></>;
+  return <SafeAreaFrame><RhinoPlannerMain/></SafeAreaFrame>;
 }
