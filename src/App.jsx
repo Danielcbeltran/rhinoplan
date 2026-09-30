@@ -79,7 +79,7 @@ const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 // Identificador de BUILD visible en Ajustes. Subirlo en cada deploy (fecha +
 // letra). Existe para distinguir "codigo nuevo que falla" de "service worker
 // sirviendo codigo viejo" — ambiguedad que ya costo tres diagnosticos.
-const BUILD_ID="2026-09-29c";
+const BUILD_ID="2026-09-29d";
 function nuevaFotoId(){return "f_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function normFotos(raw){
   const out={pre:[],post:[]};
@@ -964,7 +964,7 @@ function RhinoPlannerMain(){
         {/* Marca medico-legal: la proyeccion ampliada tampoco debe poder confundirse con una foto real */}
         {allFotosFlat[fotoIdx]?.etiqueta&&<div style={{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",background:"#4A9F6ACC",color:"#0b1220",fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:14,zIndex:10,pointerEvents:"none"}}>{allFotosFlat[fotoIdx].etiqueta}</div>}
         {/* Close */}
-        <button onClick={closeFoto} style={{position:"absolute",top:16,right:16,background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18,zIndex:10}}>✕</button>
+        <button onClick={closeFoto} style={{position:"absolute",top:"calc(16px + env(safe-area-inset-top, 0px) + var(--top-edge-clearance, 0px))",right:"calc(16px + env(safe-area-inset-right, 0px))",background:"#ffffff22",border:"none",color:"#fff",width:36,height:36,borderRadius:"50%",cursor:"pointer",fontSize:18,zIndex:10}}>✕</button>
         {/* Prev */}
         {fotoIdx>0&&<button onClick={e=>{e.stopPropagation();prevFoto();}} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"#ffffff22",border:"none",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,zIndex:10}}>‹</button>}
         {/* Next */}
@@ -1178,7 +1178,10 @@ function RhinoPlannerMain(){
               if(patientId)savePaciente(undefined,next);
             }}
           />
-          <button onClick={()=>setShowCeph(false)} title={t.close} style={{position:"fixed",top:10,right:14,zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
+          {/* fixed se mide desde el borde FISICO (barra translucida): sin la zona
+              segura + holgura iPad, el boton quedaba bajo la barra de estado, dentro
+              de la banda difuminada y tapado por la franja navy. */}
+          <button onClick={()=>setShowCeph(false)} title={t.close} style={{position:"fixed",top:"calc(10px + env(safe-area-inset-top, 0px) + var(--top-edge-clearance, 0px))",right:"calc(14px + env(safe-area-inset-right, 0px))",zIndex:950,background:"#152238",border:"1px solid #5B8DB8",color:"#9FC0DD",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>✕ RhinoPlan</button>
         </Suspense>
       )}
     </div>
