@@ -79,7 +79,7 @@ const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 // Identificador de BUILD visible en Ajustes. Subirlo en cada deploy (fecha +
 // letra). Existe para distinguir "codigo nuevo que falla" de "service worker
 // sirviendo codigo viejo" — ambiguedad que ya costo tres diagnosticos.
-const BUILD_ID="2026-09-29b";
+const BUILD_ID="2026-09-29c";
 function nuevaFotoId(){return "f_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function normFotos(raw){
   const out={pre:[],post:[]};
@@ -1236,6 +1236,13 @@ function SafeAreaFrame({children}){
 // Sobre navy plano el desenfoque es invisible, asi que se anaden hasta 40 px
 // de padding superior al header y a la topbar del modulo (var CSS comun),
 // SOLO en iPad + instalada + inset superior positivo (pantalla completa).
+//
+// Cuanto: la banda cubre ~64 pt desde el borde fisico. Con inset ~32 pt y
+// 6 px de padding propio del header, 28 px dejan el texto en ~66 pt — justo
+// por debajo, sin margen muerto de sobra (los 40 px de la referencia externa
+// desperdiciaban ~14 pt). Si en algun iPad la primera linea vuelve a salir
+// borrosa, subir este numero es el unico ajuste necesario.
+const IPAD_TOP_CLEARANCE_PX=28;
 function medirSafeTop(){
   try{
     const el=document.createElement("div");
@@ -1257,7 +1264,7 @@ function esInstalada(){
 function useTopEdgeClearance(){
   useEffect(()=>{
     const aplicar=()=>{
-      const px=(esIPad()&&esInstalada()&&medirSafeTop()>0)?40:0;
+      const px=(esIPad()&&esInstalada()&&medirSafeTop()>0)?IPAD_TOP_CLEARANCE_PX:0;
       document.documentElement.style.setProperty("--top-edge-clearance",px+"px");
     };
     aplicar();
