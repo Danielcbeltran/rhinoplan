@@ -2,14 +2,30 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: la pagina se extiende bajo la barra de estado del
+         iPhone/iPad instalado y env(safe-area-inset-*) pasa a reportar los
+         margenes reales. Sin esto, iOS 26 fabrica su "scroll edge effect"
+         (niebla blanca difuminada) sobre el header. Va en tandem con la
+         franja SafeAreaCap de App.jsx y los paddings de los headers. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Barra de estado TRANSLUCIDA: el reloj/bateria se dibujan sobre la
+         pagina, y la pagina (headers + SafeAreaCap, navy #152238) pinta el
+         fondo bajo ellos — parte superior continua, como una app nativa.
+         OJO: los cambios de meta en una PWA instalada solo aplican al
+         REINSTALARLA (borrar de pantalla de inicio y volver a anadir). -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#152238">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon-192.png">
     <title>RhinoPlan — Planificador Quirúrgico</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      /* Fondo raiz NAVY: cualquier zona que la app no pinte (overscroll,
+         bordes de la zona segura, huecos durante la carga) queda del color
+         de la marca y no blanca — es tambien el color del que iOS deriva
+         sus efectos de borde. */
+      html { background: #152238; }
       body {
         overflow: hidden;
         touch-action: pan-x pan-y pinch-zoom;

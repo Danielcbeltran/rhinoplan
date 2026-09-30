@@ -1058,7 +1058,7 @@ function RhinoPlannerMain(){
       </div></div>)}
 
       {/* HEADER */}
-      <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
+      <div style={{background:"#152238",borderBottom:"3px solid #5B8DB8",padding:"6px 12px",paddingTop:"calc(6px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",minHeight:40}}>
         <button onClick={()=>setSideOpen(s=>!s)} style={{background:"none",border:"none",color:"#5B8DB8",fontSize:18,cursor:"pointer",padding:"2px 6px"}}>{sideOpen?"◀":"▶"}</button>
         <div style={{color:"#5B8DB8",fontSize:compact?14:17,fontWeight:700,display:"flex",alignItems:"center",gap:6}}><svg viewBox="-28 -42 56 72" width={compact?16:20} height={compact?20:26} style={{flexShrink:0}}><path d="M0,-38 L-10,4 L0,20 L10,4 Z" fill="#F5BE3A"/><path d="M0,-38 L10,4 L0,20 Z" fill="#EDAE2A"/><path d="M-10,4 L-24,18 L-12,26 L0,20" fill="#E8A825"/><path d="M10,4 L24,18 L12,26 L0,20" fill="#D49A18"/><path d="M-14,20 L-8,18 L-6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M14,20 L8,18 L6,22 Z" fill="#C48B10" opacity="0.25"/><path d="M0,-38 L-10,4 L-24,18 L-12,26 L0,20 L12,26 L24,18 L10,4 Z" fill="none" stroke="#C48B10" strokeWidth="1.2" strokeLinejoin="round"/></svg>RhinoPlan{isPro&&<span style={{background:isPlus?"#8B6FD4":"#F5BE3A",color:isPlus?"#fff":"#152238",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,marginLeft:4,textTransform:"uppercase"}}>{isPlus?"Plus":"Pro"}</span>}</div><div style={{flex:1}}/>
         <button onClick={()=>{setShowPacList(true);loadPacientes();}} style={{background:"#1E2F45",border:"1px solid #5B8DB844",color:"#5B8DB8",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>{t.patients}</button>
@@ -1179,6 +1179,23 @@ function RhinoPlannerMain(){
 
 // Wrapper de arranque: intercepta el enlace de recovery ANTES de montar la app
 // pesada (canvas, sesión, etc.), evitando el render en blanco.
+// ---- Franja de la zona segura (iOS 26+) -------------------------------------
+// Desde iOS 26, la web app instalada recibe el "scroll edge effect" de Liquid
+// Glass: iOS difumina la parte superior de la pagina y fabrica la transicion
+// con el color de fondo que encuentra (html claro => niebla blanca sobre el
+// header, visible en iPad y iPhone). No existe meta ni CSS que lo apague;
+// WebKit solo lo OMITE cuando un elemento fixed con color de fondo cubre el
+// borde superior (>10 px de alto, >=90 % del ancho) — y entonces usa SU color
+// para la zona bajo el reloj. Esta franja es ese elemento: navy del header,
+// altura = la zona segura exacta (con viewport-fit=cover en index.html,
+// env() es ~47-59 px en iPhone y ~24 px en iPad instalados — la heuristica se
+// cumple sin solapar los headers, que ya pintan su propio fondo debajo). Por
+// encima de todo (modulo de cefalometria incluido, cuya .topbar en flujo no
+// satisface la heuristica por si sola) y sin capturar toques.
+function SafeAreaCap(){
+  return <div aria-hidden="true" style={{position:"fixed",top:0,left:0,right:0,height:"env(safe-area-inset-top, 0px)",background:"#152238",zIndex:2147483647,pointerEvents:"none"}}/>;
+}
+
 export default function RhinoPlanner(){
   const recoveryToken=(()=>{
     try{
@@ -1193,10 +1210,10 @@ export default function RhinoPlanner(){
   })();
   const[recovering,setRecovering]=useState(!!recoveryToken);
   if(recovering&&recoveryToken){
-    return <RecoveryScreen recoveryToken={recoveryToken} onDone={()=>{
+    return <><SafeAreaCap/><RecoveryScreen recoveryToken={recoveryToken} onDone={()=>{
       try{history.replaceState(null,"",window.location.pathname);}catch(e){}
       setRecovering(false);
-    }}/>;
+    }}/></>;
   }
-  return <RhinoPlannerMain/>;
+  return <><SafeAreaCap/><RhinoPlannerMain/></>;
 }
