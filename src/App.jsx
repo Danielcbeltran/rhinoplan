@@ -79,7 +79,7 @@ const EMPTY_PLAN={pre:{...EMPTY_ANN},post:{...EMPTY_ANN}};
 // Identificador de BUILD visible en Ajustes. Subirlo en cada deploy (fecha +
 // letra). Existe para distinguir "codigo nuevo que falla" de "service worker
 // sirviendo codigo viejo" — ambiguedad que ya costo tres diagnosticos.
-const BUILD_ID="2026-09-29d";
+const BUILD_ID="2026-10-06a";
 function nuevaFotoId(){return "f_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function normFotos(raw){
   const out={pre:[],post:[]};
@@ -416,6 +416,16 @@ function RhinoPlannerMain(){
   const[sideOpen,setSideOpen]=useState(window.innerWidth>900);
   const[notesOpen,setNotesOpen]=useState(window.innerWidth>1100);
   const[showCeph,setShowCeph]=useState(false);
+  // iOS: si la PAGINA se escala (pinch que escapa del canvas, doble toque) o
+  // queda con scroll residual, la capa visual y la de toques se desalinean
+  // en el contenido fixed — "hay que tocar mas arriba del boton". Dentro del
+  // modulo el pellizco pertenece al canvas, asi que el zoom de pagina es
+  // siempre accidental: se desactiva mientras el modulo esta abierto y se
+  // restaura (valor de index.html) al cerrarlo.
+  useEffect(()=>{
+    document.body.style.touchAction=showCeph?"pan-x pan-y":"";
+    return()=>{document.body.style.touchAction="";};
+  },[showCeph]);
   const[winSize,setWinSize]=useState({w:window.innerWidth,h:window.innerHeight});
   useEffect(()=>{const onR=()=>{setWinSize({w:window.innerWidth,h:window.innerHeight});};window.addEventListener("resize",onR);return()=>window.removeEventListener("resize",onR);},[]);
   const compact=winSize.w<900;
@@ -1061,7 +1071,7 @@ function RhinoPlannerMain(){
           {/* Diagnostico: build en ejecucion + modo (instalada/pestana) + zona segura
               superior real. Si el build no coincide con el ultimo deploy, es cache. */}
           <div style={{color:"#4A5F7A",fontSize:10,marginTop:14,fontFamily:"inherit",userSelect:"all"}}>
-            build {BUILD_ID} · {(window.navigator.standalone||window.matchMedia("(display-mode: standalone)").matches)?"instalada":"pestaña"} · {window.innerWidth}×{window.innerHeight} · safe-top {Math.round(medirSafeTop())}px · holgura {getComputedStyle(document.documentElement).getPropertyValue("--top-edge-clearance").trim()||"0px"}
+            build {BUILD_ID} · {(window.navigator.standalone||window.matchMedia("(display-mode: standalone)").matches)?"instalada":"pestaña"} · {window.innerWidth}×{window.innerHeight} · safe-top {Math.round(medirSafeTop())}px · holgura {getComputedStyle(document.documentElement).getPropertyValue("--top-edge-clearance").trim()||"0px"} · zoom {window.visualViewport?window.visualViewport.scale.toFixed(2):"?"} · desplaz. {Math.round(window.scrollY)}/{window.visualViewport?Math.round(window.visualViewport.offsetTop):"?"}px
           </div>
         </div>
       </div></div>)}
@@ -1278,8 +1288,34 @@ function useTopEdgeClearance(){
   },[]);
 }
 
+// Scroll residual: al cerrar el teclado, iOS a veces deja el layout viewport
+// desplazado (window.scrollY > 0) aunque body sea overflow:hidden; el
+// contenido fixed se dibuja en un sitio y recibe toques en otro. Se vuelve a
+// (0,0) al perder foco un campo y cuando el visual viewport cambia sin zoom.
+function useViewportSanity(){
+  useEffect(()=>{
+    const reset=()=>{
+      const vv=window.visualViewport;
+      const zoomed=vv&&Math.abs(vv.scale-1)>0.01;
+      if(!zoomed&&(window.scrollY||window.scrollX||(vv&&(vv.offsetTop||vv.offsetLeft)))){
+        try{window.scrollTo(0,0);}catch(e){}
+      }
+    };
+    const onBlur=()=>requestAnimationFrame(reset);
+    document.addEventListener("focusout",onBlur);
+    window.visualViewport?.addEventListener("resize",reset);
+    window.visualViewport?.addEventListener("scroll",reset);
+    return()=>{
+      document.removeEventListener("focusout",onBlur);
+      window.visualViewport?.removeEventListener("resize",reset);
+      window.visualViewport?.removeEventListener("scroll",reset);
+    };
+  },[]);
+}
+
 export default function RhinoPlanner(){
   useTopEdgeClearance();
+  useViewportSanity();
   const recoveryToken=(()=>{
     try{
       if(window.location.hash&&window.location.hash.length>2){
