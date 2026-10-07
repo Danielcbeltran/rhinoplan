@@ -1844,3 +1844,70 @@
   .ceph-app .badge.warn { color: #9a3412; }
   .ceph-app .badge.error { color: #991b1b; }
 }
+
+/* ============ Modo TELÉFONO (≤ 600 px) — oct 2026 ============
+   El módulo nació para iPad/escritorio; en un iPhone (390 px) la barra
+   superior se envolvía en CINCO filas (~45 % de la pantalla) y, con los dos
+   paneles apilados, el visor de la foto quedaba con altura CERO entre ambos
+   (Daniel, captura 06-oct). Reglas: la barra pasa a UNA fila deslizable en
+   horizontal; el stepper se oculta (es informativo); los paneles ceden altura
+   con scroll propio para que la foto se lleve ~60 % de la pantalla; y las
+   pestañas de replegar — pensadas para un layout en columnas (laterales a
+   media altura) — se recolocan para el apilado: la del panel superior en el
+   borde superior izquierdo del visor, la del inferior en el borde inferior
+   derecho, y la de la barra superior sigue arriba al centro. Solo ≤600 px:
+   iPad vertical (820 px) conserva su apilado actual. */
+@media (max-width: 600px) {
+  /* --- Barra superior: una sola fila que se desliza --- */
+  .ceph-app .topbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px 8px;
+    padding-left: 10px;
+    /* hueco para el botón fijo "✕ RhinoPlan" (App.jsx), que se superpone al
+       extremo derecho: el último botón de la fila sale de debajo al deslizar */
+    padding-right: 120px;
+  }
+  .ceph-app .topbar::-webkit-scrollbar { display: none; }
+  .ceph-app .topbar > * { flex-shrink: 0; }
+  /* Marca: queda solo el logo */
+  .ceph-app .topbar .brand > div:not(.logo) { display: none; }
+  /* Stepper de flujo: fuera en teléfono */
+  .ceph-app .flow-stepper { display: none; }
+
+  /* --- Paneles apilados: la foto es la protagonista --- */
+  .ceph-app .main > .sidebar  { max-height: 18vh; overflow-y: auto; }
+  .ceph-app .main > .results  { max-height: 18vh; overflow-y: auto; }
+  .ceph-app .main > .canvas-wrap { min-height: 0; }
+
+  /* --- Pestañas de replegar, recolocadas para el apilado --- */
+  .ceph-app .panel-toggle.left,
+  .ceph-app .panel-toggle.right {
+    width: 44px;
+    height: 18px;
+    transform: none;
+  }
+  /* panel de ARRIBA (sidebar): pestaña en el borde superior izquierdo */
+  .ceph-app .panel-toggle.left {
+    top: 0;
+    bottom: auto;
+    left: 10px;
+    border-top: none;
+    border-left: 1px solid var(--border-strong);
+    border-radius: 0 0 7px 7px;
+  }
+  /* panel de ABAJO (resultados): pestaña en el borde inferior derecho */
+  .ceph-app .panel-toggle.right {
+    top: auto;
+    bottom: 0;
+    right: 10px;
+    border-bottom: none;
+    border-right: 1px solid var(--border-strong);
+    border-radius: 7px 7px 0 0;
+  }
+  /* barra superior: arriba al centro (ya lo estaba), algo más alta al tacto */
+  .ceph-app .panel-toggle.top { height: 18px; }
+}
