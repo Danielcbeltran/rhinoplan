@@ -1872,6 +1872,13 @@
     padding-right: 120px;
   }
   .ceph-app .topbar::-webkit-scrollbar { display: none; }
+  /* Pista de que la fila CONTINUA: el borde derecho se desvanece (mascara).
+     Con el padding-right de 120 px, al llegar al final la mascara cae sobre el
+     hueco vacio y el ultimo boton se ve entero. */
+  .ceph-app .topbar {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 150px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 150px), transparent);
+  }
   .ceph-app .topbar > * { flex-shrink: 0; }
   /* Marca: queda solo el logo */
   .ceph-app .topbar .brand > div:not(.logo) { display: none; }

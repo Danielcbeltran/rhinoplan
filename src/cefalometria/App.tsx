@@ -1786,6 +1786,8 @@ export default function App({
           rhinoShowSimLine={rhinoShowSimLine}
           rhinoDividerRatio={rhinoDividerRatio}
           setRhinoDividerRatio={setRhinoDividerRatio}
+          onRequestPatientPhotos={dentroDeRhinoPlan ? () => setShowFotoPicker(true) : undefined}
+          patientPhotosCount={dentroDeRhinoPlan ? fotosPaciente!.length : undefined}
           onRequestLoad={() => fileInputRef.current?.click()}
           onRequestCamera={() => setShowCamera(true)}
           sidebarHidden={sidebarHidden}

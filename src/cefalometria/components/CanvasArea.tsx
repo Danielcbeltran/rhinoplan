@@ -127,6 +127,11 @@ interface Props {
    *  canvas (el usuario nuevo no debería tener que buscar en la topbar). */
   onRequestLoad?: () => void;
   onRequestCamera?: () => void;
+  /** Dentro de RhinoPlan: abrir el selector de fotos del paciente desde el
+   *  estado vacio (en telefono la barra superior se desliza y el boton queda
+   *  fuera de vista; aqui es la fuente natural y siempre visible). */
+  onRequestPatientPhotos?: () => void;
+  patientPhotosCount?: number;
   /** Paneles laterales retraíbles individualmente: botones en los bordes del
    *  visor (especialmente útiles en iPad para dar espacio a la foto). */
   sidebarHidden?: boolean;
@@ -243,7 +248,7 @@ export default function CanvasArea(props: Props) {
     rhinoHandles, setRhinoHandles, rhinoEditHandles,
     rhinoNewHandleRadius, rhinoSplitView, rhinoShowSimLine,
     rhinoDividerRatio, setRhinoDividerRatio,
-    onRequestLoad, onRequestCamera,
+    onRequestLoad, onRequestCamera, onRequestPatientPhotos, patientPhotosCount,
     sidebarHidden, onToggleSidebar, resultsHidden, onToggleResults,
     topbarHidden, onToggleTopbar,
   } = props;
@@ -1836,10 +1841,55 @@ export default function CanvasArea(props: Props) {
 
   const transform = `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`;
 
+  // Pestanas de replegar paneles/barra: se dibujan TAMBIEN en el estado vacio
+  // (antes solo con foto cargada → en telefono no habia forma de ganar sitio
+  // antes de cargar la foto).
+  const panelToggles = (
+    <>
+      {onToggleSidebar && (
+        <button
+          className="panel-toggle left"
+          onClick={onToggleSidebar}
+          title={sidebarHidden
+            ? 'Mostrar el panel de herramientas'
+            : 'Ocultar el panel de herramientas'}
+          aria-expanded={!sidebarHidden}
+        >
+          {sidebarHidden ? '▸' : '◂'}
+        </button>
+      )}
+      {onToggleResults && (
+        <button
+          className="panel-toggle right"
+          onClick={onToggleResults}
+          title={resultsHidden
+            ? 'Mostrar el panel de resultados'
+            : 'Ocultar el panel de resultados'}
+          aria-expanded={!resultsHidden}
+        >
+          {resultsHidden ? '◂' : '▸'}
+        </button>
+      )}
+      {onToggleTopbar && (
+        <button
+          className="panel-toggle top"
+          onClick={onToggleTopbar}
+          title={topbarHidden
+            ? 'Mostrar la barra superior'
+            : 'Ocultar la barra superior'}
+          aria-expanded={!topbarHidden}
+        >
+          {topbarHidden ? '▾' : '▴'}
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div className="canvas-wrap">
       {!imageEl ? (
         <div className="canvas-empty">
+          {panelToggles}
           <div className="icon"><Icon name="photo" size={46} /></div>
           <h2>
             {mode === 'perfil'
@@ -1851,10 +1901,16 @@ export default function CanvasArea(props: Props) {
             {' '}{t('emptyHint2')} <b>{t('emptyHintLoupe')}</b>
             {' '}{t('emptyHint3')} <b>{t('emptyHintZoom')}</b> {t('emptyHint4')}
           </p>
-          {(onRequestLoad || onRequestCamera) && (
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
+          {(onRequestLoad || onRequestCamera || onRequestPatientPhotos) && (
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18, flexWrap: 'wrap' }}>
+              {onRequestPatientPhotos && (
+                <button className="primary" style={{ padding: '10px 20px', fontSize: 14 }} onClick={onRequestPatientPhotos}>
+                  <Icon name="folder" /> {t('patientPhotos')}
+                  {!!patientPhotosCount && ` (${patientPhotosCount})`}
+                </button>
+              )}
               {onRequestLoad && (
-                <button className="primary" style={{ padding: '10px 20px', fontSize: 14 }} onClick={onRequestLoad}>
+                <button className={onRequestPatientPhotos ? '' : 'primary'} style={{ padding: '10px 20px', fontSize: 14 }} onClick={onRequestLoad}>
                   <Icon name="folder" /> {t('loadPhotoBtn')}
                 </button>
               )}
@@ -1868,42 +1924,7 @@ export default function CanvasArea(props: Props) {
         </div>
       ) : (
         <div className={`canvas-viewport ${fsFallback ? 'fs-fallback' : ''}`} ref={wrapperRef}>
-          {onToggleSidebar && (
-            <button
-              className="panel-toggle left"
-              onClick={onToggleSidebar}
-              title={sidebarHidden
-                ? 'Mostrar el panel de herramientas'
-                : 'Ocultar el panel de herramientas'}
-              aria-expanded={!sidebarHidden}
-            >
-              {sidebarHidden ? '▸' : '◂'}
-            </button>
-          )}
-          {onToggleResults && (
-            <button
-              className="panel-toggle right"
-              onClick={onToggleResults}
-              title={resultsHidden
-                ? 'Mostrar el panel de resultados'
-                : 'Ocultar el panel de resultados'}
-              aria-expanded={!resultsHidden}
-            >
-              {resultsHidden ? '◂' : '▸'}
-            </button>
-          )}
-          {onToggleTopbar && (
-            <button
-              className="panel-toggle top"
-              onClick={onToggleTopbar}
-              title={topbarHidden
-                ? 'Mostrar la barra superior'
-                : 'Ocultar la barra superior'}
-              aria-expanded={!topbarHidden}
-            >
-              {topbarHidden ? '▾' : '▴'}
-            </button>
-          )}
+          {panelToggles}
           <div className="zoom-controls">
             {zoomOpen ? (
               <>
